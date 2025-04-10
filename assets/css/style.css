@@ -1,0 +1,287 @@
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700&display=swap');
+
+:root {
+    --primary: #FF6B35;     /* Vibrant Orange */
+    --secondary: #FCA311;   /* Golden Orange */
+    --accent: #FFD23F;      /* Warm Yellow */
+    --light: #FFF3E6;       /* Light Peach */
+    --white: #FFFFFF;
+    --dark: #2F2E41;        /* Deep Navy for text */
+    
+    /* Font Variables */
+    --heading-font: 'Titillium Web', sans-serif;
+    --body-font: 'Schibsted Grotesk', sans-serif;
+}
+
+/* Base Typography */
+body {
+    font-family: var(--body-font);
+    color: var(--dark);
+    padding-top: 60px; /* Add padding for fixed navbar */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--heading-font);
+}
+
+
+
+/* Custom Bootstrap Overrides */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+    font-family: var(--body-font);
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background-color: #e85f2f;
+    border-color: #e85f2f;
+}
+
+.btn-secondary {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
+    color: var(--white);
+    font-family: var(--body-font);
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background-color: #e5940f;
+    border-color: #e5940f;
+}
+
+/* Custom Navbar Styles */
+.navbar-custom {
+    background-color: var(--light);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1030;
+}
+
+.navbar-custom .navbar-brand {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.5rem;
+    font-family: var(--heading-font);
+}
+
+.navbar-custom .nav-link {
+    color: var(--dark);
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.navbar-custom .nav-link:hover {
+    color: var(--primary);
+}
+
+.navbar-custom .nav-link.active {
+    color: var(--primary);
+}
+
+/* Custom Footer Styles */
+.footer {
+    background-color: var(--light);
+    padding: 3rem 0;
+    margin-top: 3rem;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+    padding: 6rem 0;
+    margin-bottom: 3rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    opacity: 0.3;
+    z-index: 1;
+}
+
+.hero-section .container {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-section h1 {
+    color: var(--white);
+    font-weight: bold;
+    font-size: 3.5rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    font-family: var(--heading-font);
+}
+
+.hero-section .lead {
+    color: var(--white);
+    font-size: 1.25rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    font-family: var(--body-font);
+    font-weight: 300;
+}
+
+/* Card Customization */
+.card {
+    border: none;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Add transition only to meal kit and blog cards */
+.meal-card, .blog-card {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: scale(1);
+    transform-origin: center;
+}
+
+.meal-card:hover, .blog-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+.card-title {
+    font-family: var(--heading-font);
+    font-weight: 600;
+}
+
+.card-text {
+    font-family: var(--body-font);
+    font-weight: 300;
+}
+
+/* Auth Cards */
+.auth-card {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* Custom Utilities */
+.bg-primary-light {
+    background-color: var(--light);
+}
+
+.text-primary-custom {
+    color: var(--primary);
+}
+
+.text-secondary-custom {
+    color: var(--secondary);
+}
+
+/* Health Tip Section */
+.health-tip-section {
+    background-color: var(--light);
+    position: relative;
+}
+
+.health-tip-section::before {
+    content: '"';
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 60px;
+    color: var(--primary);
+    opacity: 0.2;
+    font-family: var(--heading-font);
+}
+
+.health-tip-section h3 {
+    font-family: var(--heading-font);
+    font-weight: 600;
+}
+
+/* Blog Cards */
+.blog-card {
+    height: 100%;
+}
+
+.blog-card .card-footer {
+    background-color: var(--white);
+    border-top: 1px solid rgba(0,0,0,0.05);
+    font-family: var(--body-font);
+    font-size: 0.9rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 4rem 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+    
+    .card-img-top {
+        height: 180px;
+    }
+}
+
+/* Nutrition Item Styles */
+.nutrition-item {
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: var(--light);
+    transition: transform 0.3s ease;
+}
+
+.nutrition-item:hover {
+    transform: translateY(-5px);
+}
+
+.nutrition-item h6 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.nutrition-item p {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Meal Details Page */
+.meal-details .card {
+    border: none;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.meal-details .card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.meal-details .table th {
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.meal-details .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+}
+
+/* Navbar Search Styles */
+form[role="search"] {
+    min-width: 300px;
+    position: relative;
+}
