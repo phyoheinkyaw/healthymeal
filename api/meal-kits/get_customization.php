@@ -182,13 +182,6 @@ $html .= '
         </table>
     </div>
 
-    <div class="row mb-3">
-        <div class="col-12">
-            <label for="customization_notes" class="form-label">Special Instructions</label>
-            <textarea class="form-control" id="customization_notes" name="customization_notes" rows="2" placeholder="Any special instructions or requests for this meal kit..."></textarea>
-        </div>
-    </div>
-
     <div class="row">
         <div class="col-md-6">
             <div class="alert alert-info">
@@ -209,6 +202,15 @@ $html .= '
 // Initialize listeners after content is loaded
 initializeQuantityListeners();
 </script>';
+
+// Remove special instructions textarea from customization modal
+$html = str_replace('<div class="row mb-3">
+        <div class="col-12">
+            <label for="customization_notes" class="form-label">Special Instructions</label>
+            <textarea class="form-control" id="customization_notes" name="customization_notes" rows="2" placeholder="Any special instructions or requests for this meal kit..."></textarea>
+        </div>
+    </div>
+', '', $html);
 
 // Return the HTML content
 echo json_encode([

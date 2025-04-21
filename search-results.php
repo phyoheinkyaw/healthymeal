@@ -2,6 +2,17 @@
 session_start();
 require_once 'config/connection.php';
 
+// Helper function to get image URL from DB value (copied from meal-kits.php)
+function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
+    if (!$image_url_db) return 'https://placehold.co/600x400/FFF3E6/FF6B35?text=' . urlencode($meal_kit_name);
+    if (preg_match('/^https?:\/\//i', $image_url_db)) {
+        return $image_url_db;
+    }
+    $parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+    $projectBase = '/' . $parts[0];
+    return $projectBase . '/uploads/meal-kits/' . $image_url_db;
+}
+
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $per_page = 12;
@@ -71,10 +82,8 @@ $result = $stmt->get_result();
             <?php while ($meal = $result->fetch_assoc()): ?>
             <div class="col">
                 <div class="card h-100">
-                    <?php if ($meal['image_url']): ?>
-                    <img src="<?php echo htmlspecialchars($meal['image_url']); ?>" class="card-img-top"
-                        alt="<?php echo htmlspecialchars($meal['name']); ?>">
-                    <?php endif; ?>
+                    <?php $img_url = get_meal_kit_image_url($meal['image_url'], $meal['name']); ?>
+                    <img src="<?php echo htmlspecialchars($img_url); ?>" class="card-img-top" alt="Meal Kit Image">
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($meal['name']); ?></h5>
                         <p class="card-text">

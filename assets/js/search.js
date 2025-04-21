@@ -44,6 +44,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Helper function to get meal kit image URL (mirrors PHP logic)
+    function getMealKitImageUrl(imageUrl, mealName) {
+        if (!imageUrl || imageUrl.trim() === '') {
+            return `https://placehold.co/600x400/FFF3E6/FF6B35?text=${encodeURIComponent(mealName)}`;
+        }
+        if (/^https?:\/\//i.test(imageUrl)) {
+            return imageUrl;
+        }
+        // Get the base project path from the current URL (e.g. '/hm')
+        const parts = window.location.pathname.replace(/^\//, '').split('/');
+        const projectBase = '/' + parts[0]; // e.g. '/hm'
+        return `${projectBase}/uploads/meal-kits/${imageUrl}`;
+    }
+
     // Function to display search results
     function displayResults(data) {
         if (!data.data || !data.data.length) {
@@ -55,16 +69,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        let html = data.data.map(meal => `
-            <a href="/hm/meal-details.php?id=${meal.id}" class="search-result-item">
-                ${meal.image_url ? `<img src="${meal.image_url}" alt="${meal.name}">` : ''}
-                <div class="search-result-info">
-                    <div class="search-result-name">${meal.name}</div>
-                    <div class="search-result-price">$${Number(meal.price).toFixed(2)}</div>
-                    <p class="search-result-description">${meal.description}</p>
-                </div>
-            </a>
-        `).join('');
+        let html = data.data.map(meal => {
+            let imgUrl = getMealKitImageUrl(meal.image_url, meal.name);
+            return `
+                <a href="/hm/meal-details.php?id=${meal.id}" class="search-result-item">
+                    <img src="${imgUrl}" alt="${meal.name}">
+                    <div class="search-result-info">
+                        <div class="search-result-name">${meal.name}</div>
+                        <div class="search-result-price">$${Number(meal.price).toFixed(2)}</div>
+                        <p class="search-result-description">${meal.description}</p>
+                    </div>
+                </a>
+            `;
+        }).join('');
 
         if (data.has_more) {
             html += `

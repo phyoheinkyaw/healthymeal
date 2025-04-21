@@ -2,6 +2,17 @@
 session_start();
 require_once 'config/connection.php';
 
+// Helper function to get image URL from DB value (copied from meal-kits.php)
+function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
+    if (!$image_url_db) return 'https://placehold.co/800x600/FFF3E6/FF6B35?text=' . urlencode($meal_kit_name);
+    if (preg_match('/^https?:\/\//i', $image_url_db)) {
+        return $image_url_db;
+    }
+    $parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+    $projectBase = '/' . $parts[0];
+    return $projectBase . '/uploads/meal-kits/' . $image_url_db;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -104,13 +115,8 @@ while ($ingredient = $ingredients->fetch_assoc()) {
         <div class="row">
             <!-- Meal Kit Image and Basic Info -->
             <div class="col-lg-6 mb-4">
-                <?php if (isset($meal_kit['image_url']) && !empty($meal_kit['image_url'])): ?>
-                <img src="<?php echo htmlspecialchars($meal_kit['image_url']); ?>" class="img-fluid rounded mb-4"
-                    alt="<?php echo htmlspecialchars($meal_kit['name']); ?>">
-                <?php else: ?>
-                <img src="https://placehold.co/800x600/FFF3E6/FF6B35?text=<?php echo urlencode($meal_kit['name']); ?>"
-                    class="img-fluid rounded mb-4" alt="Meal kit placeholder">
-                <?php endif; ?>
+                <?php $img_url = get_meal_kit_image_url($meal_kit['image_url'], $meal_kit['name']); ?>
+                <img src="<?php echo htmlspecialchars($img_url); ?>" class="img-fluid rounded mb-4" alt="Meal Kit Image">
 
                 <div class="card mb-4">
                     <div class="card-body">

@@ -10,6 +10,17 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// Helper function to get meal kit image URL
+function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
+    if (!$image_url_db) return 'https://placehold.co/600x400/FFF3E6/FF6B35?text=' . urlencode($meal_kit_name);
+    if (preg_match('/^https?:\/\//i', $image_url_db)) {
+        return $image_url_db;
+    }
+    $parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+    $projectBase = '/' . $parts[0];
+    return $projectBase . '/uploads/meal-kits/' . $image_url_db;
+}
+
 // Fetch cart items from database
 $stmt = $mysqli->prepare("
     SELECT ci.*, mk.name as meal_kit_name, mk.image_url, c.name as category_name
@@ -121,14 +132,10 @@ $_SESSION['cart_count'] = $total_items;
                         <?php foreach ($cart_items as $item): ?>
                         <div class="row mb-4 pb-3 border-bottom">
                             <div class="col-md-3">
-                                <?php if ($item['meal_kit']['image_url']): ?>
-                                <img src="<?php echo htmlspecialchars($item['meal_kit']['image_url']); ?>"
+                                <?php $img_url = get_meal_kit_image_url($item['meal_kit']['image_url'], $item['meal_kit']['name']); ?>
+                                <img src="<?php echo htmlspecialchars($img_url); ?>"
                                     class="img-fluid rounded"
                                     alt="<?php echo htmlspecialchars($item['meal_kit']['name']); ?>">
-                                <?php else: ?>
-                                <img src="https://placehold.co/300x200/FFF3E6/FF6B35?text=<?php echo urlencode($item['meal_kit']['name']); ?>"
-                                    class="img-fluid rounded" alt="Placeholder">
-                                <?php endif; ?>
                             </div>
                             <div class="col-md-9">
                                 <div class="d-flex justify-content-between align-items-start">

@@ -34,6 +34,18 @@ $mealKits = $mysqli->query("
     WHERE mk.is_active = 1
     GROUP BY mk.meal_kit_id
 ");
+
+// Helper function to get image URL from DB value (copied from admin/meal-kits.php)
+function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
+    if (!$image_url_db) return 'https://placehold.co/600x400/FFF3E6/FF6B35?text=' . urlencode($meal_kit_name);
+    if (preg_match('/^https?:\/\//i', $image_url_db)) {
+        return $image_url_db;
+    }
+    // Get the base URL up to the project root (e.g. /hm or /yourproject)
+    $parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+    $projectBase = '/' . $parts[0]; // e.g. '/hm'
+    return $projectBase . '/uploads/meal-kits/' . $image_url_db;
+}
 ?>
 
 <!DOCTYPE html>
@@ -122,13 +134,8 @@ $mealKits = $mysqli->query("
             <div class="col-md-6 col-lg-4 meal-kit-card" data-category="<?php echo $mealKit['category_id']; ?>"
                 data-calories="<?php echo $mealKit['base_calories']; ?>">
                 <div class="card h-100">
-                    <?php if ($mealKit['image_url']): ?>
-                    <img src="<?php echo htmlspecialchars($mealKit['image_url']); ?>" class="card-img-top"
-                        alt="<?php echo htmlspecialchars($mealKit['name']); ?>">
-                    <?php else: ?>
-                    <img src="https://placehold.co/600x400/FFF3E6/FF6B35?text=<?php echo urlencode($mealKit['name']); ?>"
-                        class="card-img-top" alt="Placeholder">
-                    <?php endif; ?>
+                    <?php $img_url = get_meal_kit_image_url($mealKit['image_url'], $mealKit['name']); ?>
+                    <img src="<?php echo htmlspecialchars($img_url); ?>" class="card-img-top" alt="Meal Kit Image">
 
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($mealKit['name']); ?></h5>
