@@ -10,8 +10,9 @@ if (!$role || $role !== 'admin') {
     exit();
 }
 
-// Check if file was uploaded
-if (!isset($_FILES['meal_kit_image']) || $_FILES['meal_kit_image']['error'] !== UPLOAD_ERR_OK) {
+// Check if file was uploaded (accept both 'image' and 'meal_kit_image' field names for flexibility)
+$fileField = isset($_FILES['image']) ? 'image' : (isset($_FILES['meal_kit_image']) ? 'meal_kit_image' : null);
+if (!$fileField || !isset($_FILES[$fileField]) || $_FILES[$fileField]['error'] !== UPLOAD_ERR_OK) {
     echo json_encode([
         'success' => false, 
         'message' => 'No file uploaded or upload error occurred'
@@ -26,7 +27,7 @@ if (!file_exists($upload_dir)) {
 }
 
 // Get file info
-$file = $_FILES['meal_kit_image'];
+$file = $_FILES[$fileField];
 $file_name = $file['name'];
 $file_tmp = $file['tmp_name'];
 $file_size = $file['size'];
@@ -56,18 +57,18 @@ if ($file_size > 5242880) {
     exit();
 }
 
-// Generate a unique filename
-$new_file_name = uniqid('meal_kit_') . '.' . $file_ext;
+// Generate a unique short filename (8 chars)
+$short_id = substr(md5(uniqid('', true)), 0, 8);
+$new_file_name = 'meal_kit_' . $short_id . '.' . $file_ext;
 $upload_path = $upload_dir . $new_file_name;
 
 // Move uploaded file to destination
 if (move_uploaded_file($file_tmp, $upload_path)) {
-    // Return success with the relative URL to the image
-    $relative_url = '/uploads/meal-kits/' . $new_file_name;
+    // Return success with the image name only (not full URL)
     echo json_encode([
         'success' => true, 
         'message' => 'Image uploaded successfully',
-        'image_url' => $relative_url
+        'image_name' => $new_file_name
     ]);
 } else {
     echo json_encode([

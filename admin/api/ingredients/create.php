@@ -55,6 +55,19 @@ if (!$calories || !$protein || !$carbs || !$fat || !$price) {
 $mysqli->begin_transaction();
 
 try {
+    // Check for duplicate ingredient name (case-insensitive)
+    $dup_stmt = $mysqli->prepare("SELECT ingredient_id FROM ingredients WHERE LOWER(name) = LOWER(?) LIMIT 1");
+    $dup_stmt->bind_param("s", $name);
+    $dup_stmt->execute();
+    $dup_stmt->store_result();
+    if ($dup_stmt->num_rows > 0) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Ingredient with this name already exists.'
+        ]);
+        exit();
+    }
+
     $stmt = $mysqli->prepare("
         INSERT INTO ingredients (
             name, calories_per_100g, protein_per_100g, carbs_per_100g, 

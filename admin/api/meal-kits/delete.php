@@ -69,45 +69,79 @@ try {
             throw new Exception('Meal kit not found');
         }
 
-        // Delete from cart_items first (if any)
-        $delete_cart_stmt = $mysqli->prepare("DELETE FROM cart_items WHERE meal_kit_id = ?");
-        if (!$delete_cart_stmt) {
-            throw new Exception('Database error preparing cart items delete: ' . $mysqli->error);
-        }
-        $delete_cart_stmt->bind_param("i", $meal_kit_id);
-        if (!$delete_cart_stmt->execute()) {
-            throw new Exception('Database error deleting cart items: ' . $mysqli->error);
-        }
-
-        // Delete from order_items (if any)
-        $delete_order_items_stmt = $mysqli->prepare("DELETE FROM order_items WHERE meal_kit_id = ?");
-        if (!$delete_order_items_stmt) {
-            throw new Exception('Database error preparing order items delete: ' . $mysqli->error);
-        }
-        $delete_order_items_stmt->bind_param("i", $meal_kit_id);
-        if (!$delete_order_items_stmt->execute()) {
-            throw new Exception('Database error deleting order items: ' . $mysqli->error);
-        }
-
-        // Finally delete the meal kit
-        $delete_stmt = $mysqli->prepare("DELETE FROM meal_kits WHERE meal_kit_id = ?");
-        if (!$delete_stmt) {
-            throw new Exception('Database error preparing statement: ' . $mysqli->error);
-        }
-        $delete_stmt->bind_param("i", $meal_kit_id);
-        if (!$delete_stmt->execute()) {
-            throw new Exception('Database error executing delete: ' . $mysqli->error);
-        }
-
-        // Commit transaction
-        if (!$mysqli->commit()) {
-            throw new Exception('Database error committing transaction: ' . $mysqli->error);
-        }
+        // Check for related orders
+        $order_check_stmt = $mysqli->prepare("SELECT COUNT(*) FROM order_items WHERE meal_kit_id = ?");
+        $order_check_stmt->bind_param("i", $meal_kit_id);
+        $order_check_stmt->execute();
+        $order_check_stmt->bind_result($order_count);
+        $order_check_stmt->fetch();
+        $order_check_stmt->close();
         
-        echo json_encode([
-            'success' => true,
-            'message' => 'Meal kit deleted successfully'
-        ]);
+        if ($order_count > 0) {
+            // Set is_active to 0 (inactive)
+            $inactive_stmt = $mysqli->prepare("UPDATE meal_kits SET is_active = 0 WHERE meal_kit_id = ?");
+            $inactive_stmt->bind_param("i", $meal_kit_id);
+            if (!$inactive_stmt->execute()) {
+                throw new Exception('Database error setting inactive: ' . $mysqli->error);
+            }
+            $mysqli->commit();
+            echo json_encode(['success' => true, 'message' => 'Meal kit cannot be deleted because it has related orders. Meal kit set to inactive.']);
+            exit;
+        }
+
+        // No related orders: try to delete meal kit and all related records
+        try {
+            // Delete from cart_items first (if any)
+            $delete_cart_stmt = $mysqli->prepare("DELETE FROM cart_items WHERE meal_kit_id = ?");
+            $delete_cart_stmt->bind_param("i", $meal_kit_id);
+            $delete_cart_stmt->execute();
+
+            // Delete from meal_kit_ingredients
+            $delete_ingredients_stmt = $mysqli->prepare("DELETE FROM meal_kit_ingredients WHERE meal_kit_id = ?");
+            $delete_ingredients_stmt->bind_param("i", $meal_kit_id);
+            $delete_ingredients_stmt->execute();
+
+            // Get image filename before deleting meal kit
+            $img_stmt = $mysqli->prepare("SELECT image_url FROM meal_kits WHERE meal_kit_id = ?");
+            $img_stmt->bind_param("i", $meal_kit_id);
+            $img_stmt->execute();
+            $img_stmt->bind_result($image_url);
+            $img_stmt->fetch();
+            $img_stmt->close();
+
+            // Finally delete the meal kit
+            $delete_stmt = $mysqli->prepare("DELETE FROM meal_kits WHERE meal_kit_id = ?");
+            $delete_stmt->bind_param("i", $meal_kit_id);
+            if (!$delete_stmt->execute()) {
+                // If delete fails for any reason, set inactive
+                $inactive_stmt = $mysqli->prepare("UPDATE meal_kits SET is_active = 0 WHERE meal_kit_id = ?");
+                $inactive_stmt->bind_param("i", $meal_kit_id);
+                $inactive_stmt->execute();
+                $mysqli->commit();
+                echo json_encode(['success' => true, 'message' => 'Meal kit could not be deleted due to an error. Meal kit set to inactive.']);
+                exit;
+            }
+
+            // Unlink uploaded image file if it is not a remote URL and not empty
+            if (!empty($image_url) && !preg_match('/^https?:\/\//i', $image_url)) {
+                $img_path = realpath(__DIR__ . '/../../../uploads/meal-kits/' . $image_url);
+                if ($img_path && file_exists($img_path)) {
+                    unlink($img_path);
+                }
+            }
+
+            $mysqli->commit();
+            echo json_encode(['success' => true, 'message' => 'Meal kit deleted successfully']);
+            exit;
+        } catch (Exception $e) {
+            // If any error occurs, set inactive
+            $inactive_stmt = $mysqli->prepare("UPDATE meal_kits SET is_active = 0 WHERE meal_kit_id = ?");
+            $inactive_stmt->bind_param("i", $meal_kit_id);
+            $inactive_stmt->execute();
+            $mysqli->commit();
+            echo json_encode(['success' => true, 'message' => 'Meal kit could not be deleted due to an error. Meal kit set to inactive.']);
+            exit;
+        }
 
     } catch (Exception $e) {
         // Rollback transaction on error

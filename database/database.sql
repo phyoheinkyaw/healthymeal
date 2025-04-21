@@ -81,6 +81,19 @@ CREATE TABLE meal_kit_ingredients (
     PRIMARY KEY (meal_kit_id, ingredient_id)
 );
 
+-- Order Status table
+CREATE TABLE order_status (
+    status_id INT PRIMARY KEY AUTO_INCREMENT,
+    status_name VARCHAR(50) NOT NULL
+);
+
+-- Insert default statuses
+INSERT INTO order_status (status_name) VALUES
+('pending'),
+('confirmed'),
+('delivered'),
+('cancelled');
+
 -- Orders table
 CREATE TABLE orders (
     order_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -88,7 +101,7 @@ CREATE TABLE orders (
     meal_kit_id INT NOT NULL,
     quantity INT NOT NULL,
     total_price DECIMAL(10,2) NOT NULL,
-    status ENUM('pending', 'confirmed', 'delivered', 'cancelled') DEFAULT 'pending',
+    status_id INT DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     delivery_address TEXT NOT NULL,
@@ -97,7 +110,8 @@ CREATE TABLE orders (
     payment_method VARCHAR(50) NOT NULL,
     delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     FOREIGN KEY (user_id) REFERENCES users(user_id),
-    FOREIGN KEY (meal_kit_id) REFERENCES meal_kits(meal_kit_id)
+    FOREIGN KEY (meal_kit_id) REFERENCES meal_kits(meal_kit_id),
+    FOREIGN KEY (status_id) REFERENCES order_status(status_id)
 );
 
 -- Order Items Table
@@ -110,6 +124,16 @@ CREATE TABLE order_items (
     customization_notes TEXT,
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
     FOREIGN KEY (meal_kit_id) REFERENCES meal_kits(meal_kit_id)
+);
+
+-- Order Item Ingredients Table: stores per-ingredient customization for each order item
+CREATE TABLE order_item_ingredients (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_item_id INT NOT NULL,
+    ingredient_id INT NOT NULL,
+    custom_grams DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (order_item_id) REFERENCES order_items(order_item_id),
+    FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
 );
 
 -- Blog Posts table
@@ -177,7 +201,6 @@ CREATE TABLE cart_item_ingredients (
     FOREIGN KEY (cart_item_id) REFERENCES cart_items(cart_item_id) ON DELETE CASCADE,
     FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id) ON DELETE CASCADE
 );
-
 
 -- Insert sample data
 -- Users (1372004zinlaimon)
@@ -257,12 +280,12 @@ INSERT INTO health_tips (content) VALUES
 ('Practice mindful eating for better digestion and portion control.');
 
 -- Insert Sample Orders (assuming user_id 2 exists)
-INSERT INTO orders (user_id, meal_kit_id, quantity, total_price, status, created_at, delivery_address, contact_number, delivery_notes, payment_method, delivery_fee) VALUES
-(2, 1, 1, 24.99, 'delivered', '2024-02-01 10:00:00', '123 Main St, City, State 12345', '555-0123', 'Please leave at front door', 'Credit Card', 5.00),
-(2, 2, 1, 19.99, 'confirmed', '2024-02-15 14:30:00', '123 Main St, City, State 12345', '555-0123', NULL, 'PayPal', 5.00),
-(2, 3, 1, 22.99, 'confirmed', '2024-02-28 09:15:00', '123 Main St, City, State 12345', '555-0123', 'Ring doorbell', 'Credit Card', 5.00),
-(2, 2, 1, 19.99, 'pending', '2024-03-01 16:45:00', '123 Main St, City, State 12345', '555-0123', NULL, 'Credit Card', 5.00),
-(2, 1, 1, 24.99, 'cancelled', '2024-02-10 11:20:00', '123 Main St, City, State 12345', '555-0123', 'Cancelled due to out of stock', 'Credit Card', 5.00);
+INSERT INTO orders (user_id, meal_kit_id, quantity, total_price, status_id, created_at, delivery_address, contact_number, delivery_notes, payment_method, delivery_fee) VALUES
+(2, 1, 1, 24.99, 4, '2024-02-01 10:00:00', '123 Main St, City, State 12345', '555-0123', 'Please leave at front door', 'Credit Card', 5.00),
+(2, 2, 1, 19.99, 2, '2024-02-15 14:30:00', '123 Main St, City, State 12345', '555-0123', NULL, 'PayPal', 5.00),
+(2, 3, 1, 22.99, 2, '2024-02-28 09:15:00', '123 Main St, City, State 12345', '555-0123', 'Ring doorbell', 'Credit Card', 5.00),
+(2, 2, 1, 19.99, 1, '2024-03-01 16:45:00', '123 Main St, City, State 12345', '555-0123', NULL, 'Credit Card', 5.00),
+(2, 1, 1, 24.99, 3, '2024-02-10 11:20:00', '123 Main St, City, State 12345', '555-0123', 'Cancelled due to out of stock', 'Credit Card', 5.00);
 
 -- Insert Sample Order Items (assuming meal_kit_id 1-3 exist)
 INSERT INTO order_items (order_id, meal_kit_id, quantity, price_per_unit, customization_notes) VALUES
@@ -286,6 +309,13 @@ INSERT INTO order_items (order_id, meal_kit_id, quantity, price_per_unit, custom
 -- Order 5 items
 (5, 1, 1, 24.99, NULL),
 (5, 2, 1, 19.99, 'Low sodium');
+
+-- Insert Sample Order Item Ingredients
+INSERT INTO order_item_ingredients (order_item_id, ingredient_id, custom_grams) VALUES
+    (1, 1, 150.00), -- Chicken 150g for order_item_id 1
+    (1, 2, 100.00), -- Rice 100g for order_item_id 1
+    (1, 3, 50.00),  -- Broccoli 50g for order_item_id 1
+    (2, 3, 120.00); -- Broccoli 120g for order_item_id 2
 
 -- Update sample data for meal kits
 UPDATE meal_kits SET 

@@ -71,6 +71,29 @@ if ($result) {
         .alert-success .btn-close {
             filter: brightness(0) saturate(100%) invert(16%) sepia(97%) saturate(6407%) hue-rotate(358deg) brightness(95%) contrast(96%);
         }
+        
+        /* Input box border shade for ingredient forms */
+        .ingredient-form .form-control {
+            border: 2px solid #dee2e6;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            border-radius: 0.5rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .ingredient-form .form-control:focus {
+            border-color: #6c63ff;
+            box-shadow: 0 0 0 0.2rem rgba(108,99,255,0.15);
+        }
+        .ingredient-form .row {
+            margin-left: -0.5rem;
+            margin-right: -0.5rem;
+        }
+        .ingredient-form .col-md-6 {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        .ingredient-form .mb-3 {
+            margin-bottom: 1.25rem;
+        }
     </style>
 </head>
 <body>
@@ -156,32 +179,34 @@ if ($result) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="addIngredientForm">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Calories (per 100g)</label>
-                        <input type="number" class="form-control" name="calories_per_100g" step="0.01" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Protein (per 100g)</label>
-                        <input type="number" class="form-control" name="protein_per_100g" step="0.01" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Carbs (per 100g)</label>
-                        <input type="number" class="form-control" name="carbs_per_100g" step="0.01" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Fat (per 100g)</label>
-                        <input type="number" class="form-control" name="fat_per_100g" step="0.01" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Price (per 100g)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" name="price_per_100g" step="0.01" min="0" required>
+                <form id="addIngredientForm" class="ingredient-form">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Calories (per 100g)</label>
+                            <input type="number" class="form-control" name="calories_per_100g" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Protein (per 100g)</label>
+                            <input type="number" class="form-control" name="protein_per_100g" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Carbs (per 100g)</label>
+                            <input type="number" class="form-control" name="carbs_per_100g" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fat (per 100g)</label>
+                            <input type="number" class="form-control" name="fat_per_100g" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Price (per 100g)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="price_per_100g" step="0.01" min="0" required>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -203,33 +228,35 @@ if ($result) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editIngredientForm">
+                <form id="editIngredientForm" class="ingredient-form">
                     <input type="hidden" name="ingredient_id">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Calories (per 100g)</label>
-                        <input type="number" class="form-control" name="calories_per_100g" step="0.01" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Protein (per 100g)</label>
-                        <input type="number" class="form-control" name="protein_per_100g" step="0.01" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Carbs (per 100g)</label>
-                        <input type="number" class="form-control" name="carbs_per_100g" step="0.01" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Fat (per 100g)</label>
-                        <input type="number" class="form-control" name="fat_per_100g" step="0.01" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Price (per 100g)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" name="price_per_100g" step="0.01" min="0" required>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Calories (per 100g)</label>
+                            <input type="number" class="form-control" name="calories_per_100g" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Protein (per 100g)</label>
+                            <input type="number" class="form-control" name="protein_per_100g" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Carbs (per 100g)</label>
+                            <input type="number" class="form-control" name="carbs_per_100g" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fat (per 100g)</label>
+                            <input type="number" class="form-control" name="fat_per_100g" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Price (per 100g)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="price_per_100g" step="0.01" min="0" required>
+                            </div>
                         </div>
                     </div>
                 </form>

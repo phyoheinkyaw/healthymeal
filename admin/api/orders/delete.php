@@ -45,12 +45,22 @@ try {
     }
     $stmt->close();
 
-    // Delete order items first (due to foreign key constraint)
+    // Delete from order_item_ingredients first (due to foreign key constraint)
+    $stmt = $mysqli->prepare("DELETE FROM order_item_ingredients WHERE order_item_id IN (SELECT order_item_id FROM order_items WHERE order_id = ?)");
+    if (!$stmt) {
+        throw new Exception('Failed to prepare statement: ' . $mysqli->error);
+    }
+    $stmt->bind_param("i", $order_id);
+    if (!$stmt->execute()) {
+        throw new Exception('Failed to delete order item ingredients: ' . $stmt->error);
+    }
+    $stmt->close();
+
+    // Delete order items
     $stmt = $mysqli->prepare("DELETE FROM order_items WHERE order_id = ?");
     if (!$stmt) {
         throw new Exception('Failed to prepare statement: ' . $mysqli->error);
     }
-
     $stmt->bind_param("i", $order_id);
     if (!$stmt->execute()) {
         throw new Exception('Failed to delete order items: ' . $stmt->error);

@@ -52,14 +52,16 @@ window.addEventListener('resize', function() {
 
 // Initialize DataTables
 $(document).ready(function() {
-    $('#ordersTable').DataTable({
-        responsive: true,
-        order: [[2, 'desc']], // Sort by date column by default
-        language: {
-            search: "Search orders:",
-            lengthMenu: "Show _MENU_ orders per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ orders",
-            emptyTable: "No orders available"
-        }
-    });
+    if (!$.fn.DataTable.isDataTable('#ordersTable')) {
+        $('#ordersTable').DataTable({
+            responsive: true,
+            order: [[2, 'desc']], // Sort by date column by default
+            language: {
+                search: "Search orders:",
+                lengthMenu: "Show _MENU_ orders per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ orders",
+                emptyTable: "No orders available"
+            }
+        });
+    }
 });

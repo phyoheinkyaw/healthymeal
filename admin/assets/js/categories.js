@@ -26,6 +26,15 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         updateCategory();
     });
+
+    // Show alert if present in localStorage (after reload)
+    const storedMsg = localStorage.getItem('categoryMessage');
+    const storedType = localStorage.getItem('categoryMessageType');
+    if (storedMsg && storedType) {
+        showAlert(storedType, storedMsg);
+        localStorage.removeItem('categoryMessage');
+        localStorage.removeItem('categoryMessageType');
+    }
 });
 
 // Function to save new category
@@ -40,9 +49,11 @@ function saveCategory() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('success', data.message);
+            // Store message for after reload
+            localStorage.setItem('categoryMessage', data.message);
+            localStorage.setItem('categoryMessageType', 'success');
             $('#addCategoryModal').modal('hide');
-            location.reload(); // Reload to show new category
+            location.reload();
         } else {
             showAlert('error', data.message);
         }
@@ -86,9 +97,11 @@ function updateCategory() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('success', data.message);
+            // Store message for after reload
+            localStorage.setItem('categoryMessage', data.message);
+            localStorage.setItem('categoryMessageType', 'success');
             $('#editCategoryModal').modal('hide');
-            location.reload(); // Reload to show updated category
+            location.reload();
         } else {
             showAlert('error', data.message);
         }
@@ -112,8 +125,9 @@ function deleteCategory(categoryId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showAlert('success', data.message);
-                location.reload(); // Reload to remove deleted category
+                localStorage.setItem('categoryMessage', data.message);
+                localStorage.setItem('categoryMessageType', 'success');
+                location.reload();
             } else {
                 showAlert('error', data.message);
             }
@@ -145,4 +159,4 @@ function showAlert(type, message) {
             bsAlert.close();
         }
     }, 5000);
-} 
+}

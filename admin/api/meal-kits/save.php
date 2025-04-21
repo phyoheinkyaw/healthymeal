@@ -40,15 +40,31 @@ if ($is_meat && ($is_vegetarian || $is_vegan)) {
     exit();
 }
 
-// Handle image URL or keep it null
-$image_url = null;
-if (!empty($_POST['image_url'])) {
-    // If it's a valid URL, use it directly
-    if (filter_var($_POST['image_url'], FILTER_VALIDATE_URL)) {
-        $image_url = $_POST['image_url'];
+// Handle image upload (if file provided)
+$image_uploaded = false;
+if (isset($_FILES['imageFile']) && $_FILES['imageFile']['error'] === UPLOAD_ERR_OK) {
+    $uploadDir = '../../../uploads/meal-kits/';
+    $ext = pathinfo($_FILES['imageFile']['name'], PATHINFO_EXTENSION);
+    $fileName = uniqid('mk_', true) . '.' . $ext;
+    $targetPath = $uploadDir . $fileName;
+    if (move_uploaded_file($_FILES['imageFile']['tmp_name'], $targetPath)) {
+        $image_url = $fileName;
+        $image_uploaded = true;
     } else {
-        // If it's not a valid URL but not empty, it might be a relative path from an upload
-        $image_url = $_POST['image_url'];
+        echo json_encode(['success' => false, 'message' => 'Failed to upload image.']);
+        exit();
+    }
+} else {
+    // If no image uploaded, use image_url from POST if provided
+    $image_url = null;
+    if (!empty($_POST['image_url'])) {
+        // If it's a valid URL, use it directly
+        if (filter_var($_POST['image_url'], FILTER_VALIDATE_URL)) {
+            $image_url = $_POST['image_url'];
+        } else {
+            // If it's not a valid URL but not empty, it might be a relative path from an upload
+            $image_url = $_POST['image_url'];
+        }
     }
 }
 
@@ -66,13 +82,13 @@ try {
     $stmt = $mysqli->prepare("
         INSERT INTO meal_kits (
             name, description, category_id, preparation_price, base_calories, 
-            cooking_time, servings, image_url, is_meat, is_vegetarian, is_vegan, is_halal
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            cooking_time, servings, image_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
-    $stmt->bind_param("ssidiiisiiii", 
+    $stmt->bind_param("ssidiiis", 
         $name, $description, $category_id, $preparation_price, $base_calories,
-        $cooking_time, $servings, $image_url, $is_meat, $is_vegetarian, $is_vegan, $is_halal
+        $cooking_time, $servings, $image_url
     );
     
     if (!$stmt->execute()) {

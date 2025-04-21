@@ -14,6 +14,18 @@ if (!$role || $role !== 'admin') {
 $flash_message = isset($_SESSION['flash_message']) ? $_SESSION['flash_message'] : null;
 unset($_SESSION['flash_message']);
 
+// Helper function to get image URL from DB value
+function get_meal_kit_image_url($image_url_db) {
+    if (!$image_url_db) return 'https://placehold.co/120x90?text=No+Image';
+    if (preg_match('/^https?:\/\//i', $image_url_db)) {
+        return $image_url_db;
+    }
+    // Get the base URL up to the project root (e.g. /hm or /yourproject)
+    $parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+    $projectBase = '/' . $parts[0]; // e.g. '/hm'
+    return $projectBase . '/uploads/meal-kits/' . $image_url_db;
+}
+
 // Fetch all meal kits with calculated total calories
 $meal_kits = [];
 $result = $mysqli->query("
@@ -111,6 +123,61 @@ if ($ing_result) {
         }
     }
     </style>
+    <style>
+      input.form-control, select.form-select, textarea.form-control {
+        border: 2px solid #b8b8b8 !important;
+        box-shadow: 0 0 0 0.1rem #e0e0e0 !important;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      input.form-control:focus, select.form-select:focus, textarea.form-control:focus {
+        border-color: #007bff !important;
+        box-shadow: 0 0 0 0.2rem #b3d7ff !important;
+      }
+      /* Ingredient select: show 6 visible options, scroll after 6 */
+      select.ingredient-select {
+        height: auto !important;
+        min-height: 38px;
+        max-height: calc(6 * 38px);
+        overflow-y: auto;
+        display: block;
+      }
+      /* New grid-style for ingredient rows */
+      #ingredientsList {
+        display: grid;
+        grid-template-columns: 2fr 1fr 60px;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      .ingredient-row {
+        display: contents;
+      }
+      .ingredient-select, .ingredient-quantity {
+        width: 100%;
+      }
+      .ingredient-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+    <style>
+      /* Grid for all input fields in the modal */
+      .modal-body .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px 32px;
+        margin-bottom: 18px;
+        align-items: end;
+      }
+      .form-grid .mb-3 {
+        margin-bottom: 0 !important;
+      }
+      @media (max-width: 768px) {
+        .modal-body .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
 </head>
 
 <body>
@@ -148,6 +215,91 @@ if ($ing_result) {
         </div>
     </div>
 
+    <!-- Meal Kit Modal (used for both add & edit) -->
+    <div class="modal fade" id="mealKitModal" tabindex="-1" aria-labelledby="mealKitModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="mealKitModalLabel">Add Meal Kit</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <button type="button" class="btn btn-warning mb-3" id="fillDebugDataBtn">Fill With Random Data (Debug)</button>
+            <form id="mealKitForm" autocomplete="off">
+              <input type="hidden" id="mealKitId" name="mealKitId">
+              <div class="form-grid">
+                <div class="mb-3">
+                  <label for="mealKitName" class="form-label">Name</label>
+                  <input type="text" class="form-control" id="mealKitName" name="mealKitName" required>
+                </div>
+                <div class="mb-3">
+                  <label for="categoryId" class="form-label">Category</label>
+                  <select class="form-select" id="categoryId" name="categoryId" required>
+                    <option value="" selected disabled>Select category</option>
+                    <?php foreach ($categories as $category): ?>
+                      <option value="<?php echo $category['category_id']; ?>"><?php echo htmlspecialchars($category['name']); ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="preparationPrice" class="form-label">Preparation Price ($)</label>
+                  <input type="number" class="form-control" id="preparationPrice" name="preparationPrice" step="0.01" min="0" required>
+                </div>
+                <div class="mb-3">
+                  <label for="cookingTime" class="form-label">Cooking Time (minutes)</label>
+                  <input type="number" class="form-control" id="cookingTime" name="cookingTime" min="1" required>
+                </div>
+                <div class="mb-3">
+                  <label for="servings" class="form-label">Servings</label>
+                  <input type="number" class="form-control" id="servings" name="servings" min="1" required>
+                </div>
+                <div class="mb-3">
+                  <label for="baseCalories" class="form-label">Base Calories (auto)</label>
+                  <input type="number" class="form-control" id="baseCalories" name="baseCalories" readonly>
+                </div>
+                <div class="mb-3" style="grid-column: 1 / -1;">
+                  <label class="form-label">Image</label>
+                  <div class="d-flex flex-column gap-2">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="toggleImageInput">
+                        <label class="form-check-label" for="toggleImageInput">Upload (Click to change)</label>
+                      </div>
+                    </div>
+                    <div id="imageUrlInputWrapper" class="flex-grow-1">
+                      <input type="url" class="form-control" id="imageUrl" name="imageUrl" placeholder="Paste image URL or upload" autocomplete="off">
+                    </div>
+                    <div id="imageFileInputWrapper" class="flex-grow-1 d-none">
+                      <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*">
+                    </div>
+                    <div id="imagePreviewWrapper" class="mt-2" style="display:none;">
+                      <label class="form-label">Preview:</label>
+                      <div>
+                        <img id="imagePreview" src="#" alt="Image preview" class="img-thumbnail" style="max-width: 240px; max-height: 180px;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-3" style="grid-column: 1 / -1;">
+                  <label for="mealKitDescription" class="form-label">Description</label>
+                  <textarea class="form-control" id="mealKitDescription" name="mealKitDescription" rows="2" required></textarea>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Ingredients</label>
+                <div id="ingredientsList"></div>
+                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addIngredientBtn"><i class="bi bi-plus-lg"></i> Add Ingredient</button>
+              </div>
+              <div class="modal-footer px-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="mealKitSubmitBtn">Add Meal Kit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="overlay"></div>
     <div class="admin-container">
         <?php include 'includes/sidebar.php'; ?>
@@ -163,8 +315,7 @@ if ($ing_result) {
                 <div class="row mb-4">
                     <div class="col-12 d-flex justify-content-between align-items-center">
                         <h3 class="page-title">Meal Kits Management</h3>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#addMealKitModal">
+                        <button type="button" class="btn btn-primary" onclick="openMealKitModal('add')">
                             <i class="bi bi-plus-lg"></i> Add New Meal Kit
                         </button>
                     </div>
@@ -194,20 +345,8 @@ if ($ing_result) {
                                             <tr <?php if (!$meal_kit['is_active']) echo 'class="text-muted"' ?> data-meal-kit-id="<?php echo $meal_kit['meal_kit_id']; ?>">
                                                 <td>#<?php echo $meal_kit['meal_kit_id']; ?></td>
                                                 <td>
-                                                    <?php if (strpos($meal_kit['image_url'], 'http') === 0): ?>
-                                                    <img src="<?php echo htmlspecialchars($meal_kit['image_url']); ?>"
-                                                        alt="<?php echo htmlspecialchars($meal_kit['name']); ?>"
-                                                        class="meal-kit-thumbnail">
-                                                    <?php elseif ($meal_kit['image_url']): ?>
-                                                        <img src="<?php echo htmlspecialchars('..' .$meal_kit['image_url']); ?>"
-                                                        alt="<?php echo htmlspecialchars($meal_kit['name']); ?>"
-                                                        class="meal-kit-thumbnail">
-                                                    <?php else: ?>
-                                                    <div
-                                                        class="meal-kit-thumbnail bg-light d-flex align-items-center justify-content-center w-100 h-100 rounded">
-                                                        <i class="bi bi-image text-muted h1"></i>
-                                                    </div>
-                                                    <?php endif; ?>
+                                                    <?php $img_url = get_meal_kit_image_url($meal_kit['image_url']); ?>
+                                                    <img src="<?php echo htmlspecialchars($img_url); ?>" style="max-width:120px; max-height:90px;" class="img-thumbnail" alt="Meal Kit Image">
                                                 </td>
                                                 <td>
                                                     <div class="fw-bold">
@@ -246,7 +385,7 @@ if ($ing_result) {
                                                             <i class="bi bi-eye"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-sm btn-outline-warning"
-                                                            onclick="editMealKit(<?php echo $meal_kit['meal_kit_id']; ?>)">
+                                                            data-action="edit-meal-kit" data-id="<?php echo $meal_kit['meal_kit_id']; ?>">
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
                                                         <?php if ($meal_kit['is_active']): ?>
@@ -283,6 +422,71 @@ if ($ing_result) {
         </main>
     </div>
 
+    <!-- New Ingredient Modal -->
+    <div class="modal fade" id="newIngredientModal" tabindex="-1" aria-labelledby="newIngredientModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="newIngredientModalLabel">Add New Ingredient</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="newIngredientForm">
+              <div class="mb-3">
+                <label for="newIngredientName" class="form-label">Ingredient Name</label>
+                <input type="text" class="form-control" id="newIngredientName" name="newIngredientName" required>
+              </div>
+              <div class="mb-3">
+                <label for="newIngredientCalories" class="form-label">Calories per 100g</label>
+                <input type="number" class="form-control" id="newIngredientCalories" name="newIngredientCalories" step="0.01" min="0" required>
+              </div>
+              <div class="mb-3">
+                <label for="newIngredientProtein" class="form-label">Protein per 100g</label>
+                <input type="number" class="form-control" id="newIngredientProtein" name="newIngredientProtein" step="0.01" min="0" required>
+              </div>
+              <div class="mb-3">
+                <label for="newIngredientCarbs" class="form-label">Carbs per 100g</label>
+                <input type="number" class="form-control" id="newIngredientCarbs" name="newIngredientCarbs" step="0.01" min="0" required>
+              </div>
+              <div class="mb-3">
+                <label for="newIngredientFat" class="form-label">Fat per 100g</label>
+                <input type="number" class="form-control" id="newIngredientFat" name="newIngredientFat" step="0.01" min="0" required>
+              </div>
+              <div class="mb-3">
+                <label for="newIngredientPrice" class="form-label">Price per 100g</label>
+                <input type="number" class="form-control" id="newIngredientPrice" name="newIngredientPrice" step="0.01" min="0" required>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="newIngredientIsMeat" name="newIngredientIsMeat">
+                <label class="form-check-label" for="newIngredientIsMeat">Is Meat</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="newIngredientIsVegetarian" name="newIngredientIsVegetarian">
+                <label class="form-check-label" for="newIngredientIsVegetarian">Is Vegetarian</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="newIngredientIsVegan" name="newIngredientIsVegan">
+                <label class="form-check-label" for="newIngredientIsVegan">Is Vegan</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="newIngredientIsHalal" name="newIngredientIsHalal">
+                <label class="form-check-label" for="newIngredientIsHalal">Is Halal</label>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" form="newIngredientForm" class="btn btn-primary">Add Ingredient</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ingredient data for JS -->
+    <script>
+      window.ingredientsList = <?php echo json_encode($ingredients); ?>;
+      window.categoriesList = <?php echo json_encode($categories); ?>;
+    </script>
     <!-- Scripts -->
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -459,6 +663,74 @@ if ($ing_result) {
             alert.remove();
         }, 3000);
     }
+
+    // Ingredient data from PHP
+    const allIngredients = <?php echo json_encode($ingredients); ?>;
+
+    // Dynamic ingredient row rendering, duplicate prevention, calorie calculation, and new ingredient handling will be implemented here.
+    // For now, placeholder for UX improvement JS.
+
+    // Toggle between image URL and file upload, and handle preview
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggle = document.getElementById('toggleImageInput');
+        const urlWrapper = document.getElementById('imageUrlInputWrapper');
+        const fileWrapper = document.getElementById('imageFileInputWrapper');
+        const urlInput = document.getElementById('imageUrl');
+        const fileInput = document.getElementById('imageFile');
+        const previewWrapper = document.getElementById('imagePreviewWrapper');
+        const previewImg = document.getElementById('imagePreview');
+
+        function showPreview(src) {
+          if (src) {
+            previewImg.src = src;
+            previewWrapper.style.display = '';
+          } else {
+            previewImg.src = '#';
+            previewWrapper.style.display = 'none';
+          }
+        }
+
+        // Toggle logic
+        if (toggle && urlWrapper && fileWrapper) {
+          toggle.addEventListener('change', function() {
+            if (toggle.checked) {
+              urlWrapper.classList.add('d-none');
+              fileWrapper.classList.remove('d-none');
+              showPreview('');
+            } else {
+              fileWrapper.classList.add('d-none');
+              urlWrapper.classList.remove('d-none');
+              showPreview(urlInput.value);
+            }
+          });
+        }
+
+        // Preview for URL
+        if (urlInput) {
+          urlInput.addEventListener('input', function() {
+            if (urlInput.value && !toggle.checked) {
+              showPreview(urlInput.value);
+            } else {
+              showPreview('');
+            }
+          });
+        }
+
+        // Preview for file upload
+        if (fileInput) {
+          fileInput.addEventListener('change', function() {
+            if (fileInput.files && fileInput.files[0]) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                showPreview(e.target.result);
+              };
+              reader.readAsDataURL(fileInput.files[0]);
+            } else {
+              showPreview('');
+            }
+          });
+        }
+    });
     </script>
 </body>
 
