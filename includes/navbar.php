@@ -196,3 +196,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
     </div>
 </nav>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/hm/api/cart/get_cart_count.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('cartCount').textContent = data.count;
+            }
+        });
+});
+</script>

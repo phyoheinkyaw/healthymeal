@@ -44,37 +44,78 @@ $stmt->bind_param("i", $order_id);
 $stmt->execute();
 $items = $stmt->get_result();
 
-// Build HTML for order details
+// Fetch customizations for each order item
+$order_items = [];
+while ($item = $items->fetch_assoc()) {
+    // Get ingredient customizations
+    $ing_stmt = $mysqli->prepare("
+        SELECT oii.*, ing.name as ingredient_name
+        FROM order_item_ingredients oii
+        LEFT JOIN ingredients ing ON oii.ingredient_id = ing.ingredient_id
+        WHERE oii.order_item_id = ?
+    ");
+    $ing_stmt->bind_param("i", $item['order_item_id']);
+    $ing_stmt->execute();
+    $customizations = $ing_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $item['customizations'] = $customizations;
+    $order_items[] = $item;
+}
+
+// Use the same image logic as meal-kits.php
+function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
+    if (!$image_url_db) return 'https://placehold.co/600x400/FFF3E6/FF6B35?text=' . urlencode($meal_kit_name);
+    if (preg_match('/^https?:\/\//i', $image_url_db)) {
+        return $image_url_db;
+    }
+    $parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+    $projectBase = '/' . $parts[0];
+    return $projectBase . '/uploads/meal-kits/' . $image_url_db;
+}
+
+// --- Enhanced, more visually appealing UI for order details modal ---
 $html = '
-<div class="order-details">
-    <div class="row mb-4">
+<div class="order-details p-4 rounded shadow-lg bg-white">
+    <div class="row mb-4 g-3 align-items-stretch">
         <div class="col-md-6">
-            <h6>Order Information</h6>
-            <p class="mb-1">Order Date: ' . date('F d, Y', strtotime($order['created_at'])) . '</p>
-            <p class="mb-1">Status: <span class="badge bg-' . 
-                match($order['status_name']) {
-                    'Pending' => 'warning',
-                    'Processing' => 'info',
-                    'Shipped' => 'primary',
-                    'Delivered' => 'success',
-                    'Cancelled' => 'danger',
-                    default => 'secondary'
-                } . '">' . 
-                htmlspecialchars($order['status_name']) . '</span></p>
-            <p class="mb-1">Payment Method: ' . htmlspecialchars($order['payment_method']) . '</p>
+            <div class="p-3 h-100 border rounded bg-light-subtle">
+                <h6 class="fw-bold mb-2 text-primary"><i class="bi bi-receipt-cutoff me-1"></i>Order Information</h6>
+                <p class="mb-1"><span class="fw-semibold">Order Date:</span> <span class="text-body">' . date('F d, Y', strtotime($order['created_at'])) . '</span></p>
+                <p class="mb-1"><span class="fw-semibold">Status:</span> <span class="badge bg-' .
+                    match($order['status_name']) {
+                        'Pending' => 'warning',
+                        'Processing' => 'info',
+                        'Shipped' => 'primary',
+                        'Delivered' => 'success',
+                        'Cancelled' => 'danger',
+                        default => 'secondary'
+                    } . '">' . htmlspecialchars($order['status_name']) . '</span></p>
+                <p class="mb-1"><span class="fw-semibold">Payment:</span> ' . htmlspecialchars($order['payment_method']) . '</p>
+                ' .
+                ($order['payment_method'] !== 'Cash on Delivery' ?
+                    (!empty($order['transfer_slip'])
+                        ? '<div class="mb-2"><span class="fw-semibold">Transfer Slip:</span><br><img src="' . htmlspecialchars($order['transfer_slip']) . '" alt="Transfer Slip" class="img-fluid rounded shadow border mt-2" style="max-width:320px;max-height:180px;">'
+                        . '<br><a href="' . htmlspecialchars($order['transfer_slip']) . '" class="btn btn-outline-primary btn-sm mt-2" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i>View Slip in New Tab</a></div>'
+                        : '<div class="mb-2"><span class="fw-semibold">Transfer Slip:</span> N/A</div>')
+                :
+                    ''
+                ) .
+                '
+            </div>
         </div>
         <div class="col-md-6">
-            <h6>Delivery Information</h6>
-            <p class="mb-1">Address: ' . htmlspecialchars($order['delivery_address']) . '</p>
-            <p class="mb-1">Contact: ' . htmlspecialchars($order['contact_number']) . '</p>
-            <p class="mb-1">Notes: ' . htmlspecialchars($order['delivery_notes'] ?? 'None') . '</p>
+            <div class="p-3 h-100 border rounded bg-light-subtle">
+                <h6 class="fw-bold mb-2 text-success"><i class="bi bi-truck me-1"></i>Delivery Information</h6>
+                <p class="mb-1"><span class="fw-semibold">Address:</span> ' . htmlspecialchars($order['delivery_address']) . '</p>
+                <p class="mb-1"><span class="fw-semibold">Contact:</span> ' . htmlspecialchars($order['contact_number']) . '</p>
+                <p class="mb-1"><span class="fw-semibold">Notes:</span> ' . htmlspecialchars($order['delivery_notes'] ?? 'None') . '</p>
+            </div>
         </div>
     </div>
 
-    <h6>Order Items</h6>
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-basket2 me-1"></i>Order Items</h6>
     <div class="table-responsive">
-        <table class="table">
-            <thead>
+        <table class="table align-middle table-hover border rounded shadow-sm bg-white">
+            <thead class="table-primary">
                 <tr>
                     <th>Item</th>
                     <th>Quantity</th>
@@ -85,26 +126,31 @@ $html = '
             <tbody>';
 
 $total = 0;
-while ($item = $items->fetch_assoc()) {
+foreach ($order_items as $item) {
     $itemTotal = $item['quantity'] * $item['price_per_unit'];
     $total += $itemTotal;
-    
+    $image_url = get_meal_kit_image_url($item['image_url'], $item['meal_kit_name']);
     $html .= '
         <tr>
             <td>
                 <div class="d-flex align-items-center">
-                    <img src="' . ($item['image_url'] ?? 'assets/images/placeholder.jpg') . '" 
+                    <img src="' . $image_url . '" 
                          alt="' . htmlspecialchars($item['meal_kit_name']) . '"
-                         class="me-2"
-                         style="width: 50px; height: 50px; object-fit: cover;">
+                         class="me-2 rounded meal-kit-thumb"
+                         style="width: 70px; height: 70px; object-fit: cover; border: 2px solid #eee; background: #fff;">
                     <div>
                         <h6 class="mb-0">' . htmlspecialchars($item['meal_kit_name']) . '</h6>';
-                        
                         if (!empty($item['customization_notes'])) {
                             $html .= '<small class="text-muted"><strong>Special Instructions:</strong> ' . 
-                            htmlspecialchars($item['customization_notes']) . '</small>';
+                                htmlspecialchars($item['customization_notes']) . '</small><br>';
                         }
-                        
+                        if (!empty($item['customizations'])) {
+                            $html .= '<small class="text-muted"><strong>Ingredient Customizations:</strong><ul class="mb-0">';
+                            foreach ($item['customizations'] as $custom) {
+                                $html .= '<li>' . htmlspecialchars($custom['ingredient_name']) . ': ' . htmlspecialchars($custom['custom_grams']) . 'g</li>';
+                            }
+                            $html .= '</ul></small>';
+                        }
                     $html .= '</div>
                 </div>
             </td>
@@ -132,25 +178,13 @@ $html .= '
             </tfoot>
         </table>
     </div>
-    
     <div class="d-flex justify-content-end mt-3">
-        <div class="btn-group">
-            <button type="button" class="btn btn-primary" onclick="reorderItems(' . $order_id . ')">
-                <i class="bi bi-cart-plus"></i> Reorder
-            </button>';
-            
-            // Only show cancel button for pending orders
-            if ($order['status_id'] == 1) {
-                $html .= '
-                <button type="button" class="btn btn-danger ms-2" onclick="cancelOrder(' . $order_id . ')">
-                    <i class="bi bi-x-circle"></i> Cancel Order
-                </button>';
-            }
-            
-        $html .= '
-        </div>
-    </div>
-</div>';
+        <div class="btn-group">';
+$html .= '<button type="button" class="btn btn-primary" onclick="reorderItems(' . $order_id . ')"><i class="bi bi-cart-plus"></i> Reorder</button>';
+if ($order['status_id'] == 1) {
+    $html .= '<button type="button" class="btn btn-danger ms-2" onclick="cancelOrder(' . $order_id . ')"><i class="bi bi-x-circle"></i> Cancel Order</button>';
+}
+$html .= '</div></div></div>';
 
 echo json_encode([
     'success' => true,

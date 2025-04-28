@@ -66,6 +66,8 @@ if ($result) {
     </div>
     
     <main class="main-content">
+        <!-- ALERT CONTAINER FOR JS ALERTS -->
+        <div id="alertsContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 2000; min-width: 350px; max-width: 400px;"></div>
         <div class="container-fluid">
             <div class="row mb-4">
                 <div class="col-12 d-flex justify-content-between align-items-center">
@@ -99,7 +101,7 @@ if ($result) {
                                                 <td>#<?php echo $user['user_id']; ?></td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
-                                                        <div class="avatar-circle">
+                                                        <div class="avatar-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; border-radius: 50%; font-size: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
                                                             <?php echo strtoupper(substr($user['full_name'], 0, 1)); ?>
                                                         </div>
                                                         <div class="ms-2">
@@ -123,10 +125,6 @@ if ($result) {
                                                         <button type="button" class="btn btn-sm btn-outline-info" 
                                                                 onclick="viewUserDetails(<?php echo $user['user_id']; ?>)">
                                                             <i class="bi bi-eye"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-warning"
-                                                                onclick="editUser(<?php echo $user['user_id']; ?>)">
-                                                            <i class="bi bi-pencil"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-sm btn-outline-danger"
                                                                 onclick="deleteUser(<?php echo $user['user_id']; ?>)">
@@ -283,4 +281,4 @@ if ($result) {
 <script src="assets/js/users.js"></script>
 
 </body>
-</html> 
+</html>

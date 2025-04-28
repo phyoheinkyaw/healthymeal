@@ -198,13 +198,9 @@ if ($result) {
                                             <a href="health-tips.php?edit=<?php echo $tip['tip_id']; ?>" class="btn btn-warning btn-sm me-2">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this health tip?')">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="tip_id" value="<?php echo $tip['tip_id']; ?>">
-                                                <button type="submit" class="btn btn-danger btn-sm">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal" data-tip-id="<?php echo $tip['tip_id']; ?>">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -215,6 +211,29 @@ if ($result) {
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Modal for delete confirmation (shared) -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalTitle">Delete Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="deleteModalMessage">Are you sure you want to delete this item?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" id="deleteForm">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="tip_id" id="deleteTipId">
+                        <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -262,6 +281,19 @@ if ($result) {
                     bsAlert.close();
                 }, 5000);
             }
+
+            // Delete confirmation modal
+            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+            const deleteModalTitle = document.getElementById('deleteModalTitle');
+            const deleteModalMessage = document.getElementById('deleteModalMessage');
+            const deleteTipId = document.getElementById('deleteTipId');
+            const deleteForm = document.getElementById('deleteForm');
+
+            deleteConfirmModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const tipId = button.getAttribute('data-tip-id');
+                deleteTipId.value = tipId;
+            });
         });
     </script>
 </body>

@@ -88,7 +88,7 @@ try {
         
         // Get order item ingredients
         $ing_stmt = $mysqli->prepare("
-            SELECT oii.ingredient_id, oii.quantity, oii.price
+            SELECT oii.ingredient_id, oii.custom_grams
             FROM order_item_ingredients oii
             WHERE oii.order_item_id = ?
         ");
@@ -102,11 +102,11 @@ try {
             if ($ingredients->num_rows > 0) {
                 $ing_insert_stmt = $mysqli->prepare("
                     INSERT INTO cart_item_ingredients (cart_item_id, ingredient_id, quantity, price)
-                    VALUES (?, ?, ?, ?)
+                    VALUES (?, ?, ?, 0)
                 ");
                 
                 while ($ingredient = $ingredients->fetch_assoc()) {
-                    $ing_insert_stmt->bind_param("iidd", $cart_item_id, $ingredient['ingredient_id'], $ingredient['quantity'], $ingredient['price']);
+                    $ing_insert_stmt->bind_param("iid", $cart_item_id, $ingredient['ingredient_id'], $ingredient['custom_grams']);
                     $ing_insert_stmt->execute();
                 }
             } else {
@@ -179,7 +179,11 @@ try {
     }
     
     error_log("Error adding items to cart: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'An error occurred while adding items to cart']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'An error occurred while adding items to cart',
+        'debug' => $e->getMessage()
+    ]);
 }
 
 // Close the database connection

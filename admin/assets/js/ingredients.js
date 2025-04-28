@@ -144,14 +144,49 @@ function updateIngredient() {
     });
 }
 
-// Delete Ingredient
+// Custom confirm modal for delete (dynamic, orders style)
+function showDeleteConfirmModal(onConfirm, options = {}) {
+    // Remove any existing modal
+    $('#deleteConfirmModal').remove();
+    const title = options.title || 'Delete Confirmation';
+    const message = options.message || 'Are you sure you want to delete this item?';
+    const icon = options.icon || '<i class="bi bi-trash-fill text-danger me-2"></i>';
+    const modalHtml = `
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger-subtle">
+            <h5 class="modal-title" id="deleteConfirmLabel">${icon}${title}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">${message}</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" id="deleteConfirmBtn">Yes, Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    $('body').append(modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+    $('#deleteConfirmBtn').on('click', function() {
+        modal.hide();
+        if (onConfirm) onConfirm();
+    });
+    $('#deleteConfirmModal').on('hidden.bs.modal', function() {
+        $('#deleteConfirmModal').remove();
+    });
+}
+
 function deleteIngredient(id) {
     if (!id) {
         showAlert('danger', 'Please select an ingredient to delete');
         return;
     }
-
-    if (confirm('Are you sure you want to delete this ingredient?')) {
+    showDeleteConfirmModal(function() {
         fetch('api/ingredients/delete.php', {
             method: 'POST',
             headers: {
@@ -176,7 +211,11 @@ function deleteIngredient(id) {
             console.error('Error:', error);
             handleFormError('An error occurred while deleting the ingredient');
         });
-    }
+    }, {
+        title: 'Delete Ingredient',
+        message: 'Are you sure you want to delete this ingredient?',
+        icon: '<i class="bi bi-trash-fill text-danger me-2"></i>'
+    });
 }
 
 // Show success alert after page load if there's a success message in the URL

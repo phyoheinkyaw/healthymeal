@@ -409,6 +409,26 @@ $user = $userStmt->get_result()->fetch_assoc();
     </div>
 </div>
 
+<!-- Cancel Order Confirmation Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="cancelOrderModalLabel"><i class="bi bi-exclamation-triangle me-2"></i>Cancel Order?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <i class="bi bi-x-circle display-3 text-warning mb-3"></i>
+        <p class="fs-5">Are you sure you want to cancel this order? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Order</button>
+        <button type="button" class="btn btn-warning text-dark fw-bold" id="confirmCancelOrderBtn"><i class="bi bi-x-lg me-1"></i>Cancel Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Order Details Modal -->
 <div class="modal fade" id="orderDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -427,7 +447,6 @@ $user = $userStmt->get_result()->fetch_assoc();
     </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
 <?php include 'includes/toast-notifications.php'; ?>
 
 <!-- Bootstrap & jQuery JS -->
@@ -541,63 +560,72 @@ function viewOrderDetails(orderId) {
         });
 }
 
-// Cancel Order
+let cancelOrderId = null;
+let reopenOrderDetails = false;
 function cancelOrder(orderId) {
-    if (confirm('Are you sure you want to cancel this order?')) {
-        fetch('api/orders/cancel_order.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ order_id: orderId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload(); // Reload the page to update order status
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while cancelling the order');
-        });
+    cancelOrderId = orderId;
+    // If order details modal is open, hide it and remember to reopen
+    const orderDetailsModalEl = document.getElementById('orderDetailsModal');
+    const orderDetailsModal = bootstrap.Modal.getInstance(orderDetailsModalEl);
+    if (orderDetailsModal && orderDetailsModalEl.classList.contains('show')) {
+        orderDetailsModal.hide();
+        reopenOrderDetails = true;
+    } else {
+        reopenOrderDetails = false;
     }
+    const modal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+    modal.show();
 }
-
-// Reorder Items
-function reorderItems(orderId) {
-    fetch(`api/orders/reorder.php?id=${orderId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update cart count in both DOM and localStorage
-                const cartCount = data.total_items || 0;
-                const cartCountElement = document.getElementById('cartCount');
-                if (cartCountElement) {
-                    cartCountElement.textContent = cartCount;
-                }
-                localStorage.setItem('cartCount', cartCount);
-                
-                // Show message
-                alert(data.message);
-                
-                // Only redirect to cart page if items were actually added
-                if (cartCount > 0) {
-                    window.location.href = 'cart.php';
-                }
-            } else {
-                alert(data.message);
+document.addEventListener('DOMContentLoaded', function() {
+    // Restore order details modal if needed after cancel modal closes
+    const cancelOrderModal = document.getElementById('cancelOrderModal');
+    cancelOrderModal.addEventListener('hidden.bs.modal', function () {
+        // Remove all but the last modal-backdrop
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        if (backdrops.length > 1) {
+            for (let i = 0; i < backdrops.length - 1; i++) {
+                backdrops[i].parentNode.removeChild(backdrops[i]);
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while adding items to cart');
-        });
-}
+        }
+        if (reopenOrderDetails) {
+            const orderDetailsModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+            orderDetailsModal.show();
+            reopenOrderDetails = false;
+        }
+    });
+    const confirmBtn = document.getElementById('confirmCancelOrderBtn');
+    if (confirmBtn) {
+        confirmBtn.onclick = function() {
+            if (!cancelOrderId) return;
+            fetch('api/orders/cancel_order.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: cancelOrderId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    document.getElementById('errorToastMessage').textContent = data.message || 'Error cancelling order';
+                    const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                    toast.show();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('errorToastMessage').textContent = 'Error cancelling order. Please try again.';
+                const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                toast.show();
+            });
+            cancelOrderId = null;
+        }
+    }
+});
+
 </script>
+
+<script src="assets/js/main.js"></script>
 
 </body>
 </html>

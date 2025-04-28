@@ -1,4 +1,8 @@
 <?php
+// NOTE: This endpoint is for adding items to the cart for logged-in users only.
+// Cart data is stored in the database (cart_items, cart_item_ingredients), not in the session.
+// The session is used only for user_id and cart count display.
+
 session_start();
 require_once '../../config/connection.php';
 
@@ -108,20 +112,9 @@ try {
     // Commit transaction
     $mysqli->commit();
     
-    // Get total items in cart
-    $stmt = $mysqli->prepare("SELECT SUM(quantity) as total_items FROM cart_items WHERE user_id = ?");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $total_items = $result->fetch_assoc()['total_items'] ?? 0;
-    
-    // Update session cart count for consistency
-    $_SESSION['cart_count'] = $total_items;
-    
     echo json_encode([
         'success' => true,
-        'message' => 'Item added to cart successfully',
-        'total_items' => $total_items
+        'message' => 'Item added to cart successfully'
     ]);
     
 } catch (Exception $e) {

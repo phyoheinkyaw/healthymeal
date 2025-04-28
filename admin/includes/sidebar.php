@@ -53,6 +53,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         Health Tips
                     </a>
                 </li>
+                <li>
+                    <a href="/hm/admin/payment-settings.php" class="nav-link text-white <?php echo $current_page === 'payment-settings.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-credit-card-2-front me-2"></i>
+                        Payment Settings
+                    </a>
+                </li>
             </ul>
         </div>
         <hr>

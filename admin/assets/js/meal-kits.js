@@ -856,7 +856,7 @@ function editMealKit(id) {
 function deleteMealKit(id) {
     console.log('deleteMealKit called with id:', id);
     try {
-        if (confirm('Are you sure you want to delete this meal kit?')) {
+        showDeleteConfirmModal(function() {
             fetch(`api/meal-kits/delete.php?id=${id}`, {
                 method: 'DELETE'
             })
@@ -875,11 +875,51 @@ function deleteMealKit(id) {
                 console.error('Error:', error);
                 showAlert('danger', 'An error occurred while deleting meal kit');
             });
-        }
+        }, {
+            title: 'Delete Meal Kit',
+            message: 'Are you sure you want to delete this meal kit?',
+            icon: '<i class="bi bi-trash-fill text-danger me-2"></i>'
+        });
     } catch (e) {
         console.error('deleteMealKit exception:', e);
         showAlert('danger', 'An error occurred while deleting meal kit');
     }
+}
+
+// Custom confirm modal for delete (dynamic, orders style)
+function showDeleteConfirmModal(onConfirm, options = {}) {
+    $('#deleteConfirmModal').remove();
+    const title = options.title || 'Delete Confirmation';
+    const message = options.message || 'Are you sure you want to delete this item?';
+    const icon = options.icon || '<i class="bi bi-trash-fill text-danger me-2"></i>';
+    const modalHtml = `
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger-subtle">
+            <h5 class="modal-title" id="deleteConfirmLabel">${icon}${title}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">${message}</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" id="deleteConfirmBtn">Yes, Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    $('body').append(modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+    $('#deleteConfirmBtn').on('click', function() {
+        modal.hide();
+        if (onConfirm) onConfirm();
+    });
+    $('#deleteConfirmModal').on('hidden.bs.modal', function() {
+        $('#deleteConfirmModal').remove();
+    });
 }
 
 // Toggle Meal Kit Status

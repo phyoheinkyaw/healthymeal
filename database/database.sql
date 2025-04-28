@@ -98,9 +98,6 @@ INSERT INTO order_status (status_name) VALUES
 CREATE TABLE orders (
     order_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    meal_kit_id INT NOT NULL,
-    quantity INT NOT NULL,
-    total_price DECIMAL(10,2) NOT NULL,
     status_id INT DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -108,9 +105,11 @@ CREATE TABLE orders (
     contact_number VARCHAR(20) NOT NULL,
     delivery_notes TEXT,
     payment_method VARCHAR(50) NOT NULL,
+    transfer_slip VARCHAR(255) NULL,
+    payment_verified BOOLEAN DEFAULT FALSE,
+    payment_verified_at DATETIME NULL,
     delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     FOREIGN KEY (user_id) REFERENCES users(user_id),
-    FOREIGN KEY (meal_kit_id) REFERENCES meal_kits(meal_kit_id),
     FOREIGN KEY (status_id) REFERENCES order_status(status_id)
 );
 
@@ -135,6 +134,19 @@ CREATE TABLE order_item_ingredients (
     FOREIGN KEY (order_item_id) REFERENCES order_items(order_item_id),
     FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
 );
+
+-- Payment Settings table for KBZPay
+CREATE TABLE payment_settings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    payment_method VARCHAR(50) NOT NULL, -- e.g., 'KBZPay'
+    qr_code VARCHAR(255) NULL,           -- Path to QR code image
+    account_phone VARCHAR(50) NULL,      -- Phone number for payment
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Insert default KBZPay row (editable from admin panel)
+INSERT INTO payment_settings (payment_method, qr_code, account_phone)
+VALUES ('KBZPay', NULL, NULL);
 
 -- Blog Posts table
 CREATE TABLE blog_posts (
@@ -280,12 +292,12 @@ INSERT INTO health_tips (content) VALUES
 ('Practice mindful eating for better digestion and portion control.');
 
 -- Insert Sample Orders (assuming user_id 2 exists)
-INSERT INTO orders (user_id, meal_kit_id, quantity, total_price, status_id, created_at, delivery_address, contact_number, delivery_notes, payment_method, delivery_fee) VALUES
-(2, 1, 1, 24.99, 4, '2024-02-01 10:00:00', '123 Main St, City, State 12345', '555-0123', 'Please leave at front door', 'Credit Card', 5.00),
-(2, 2, 1, 19.99, 2, '2024-02-15 14:30:00', '123 Main St, City, State 12345', '555-0123', NULL, 'PayPal', 5.00),
-(2, 3, 1, 22.99, 2, '2024-02-28 09:15:00', '123 Main St, City, State 12345', '555-0123', 'Ring doorbell', 'Credit Card', 5.00),
-(2, 2, 1, 19.99, 1, '2024-03-01 16:45:00', '123 Main St, City, State 12345', '555-0123', NULL, 'Credit Card', 5.00),
-(2, 1, 1, 24.99, 3, '2024-02-10 11:20:00', '123 Main St, City, State 12345', '555-0123', 'Cancelled due to out of stock', 'Credit Card', 5.00);
+INSERT INTO orders (user_id, status_id, created_at, delivery_address, contact_number, delivery_notes, payment_method, transfer_slip, payment_verified, payment_verified_at, delivery_fee) VALUES
+(2, 4, '2024-02-01 10:00:00', '123 Main St, City, State 12345', '555-0123', 'Please leave at front door', 'Credit Card', NULL, FALSE, NULL, 5.00),
+(2, 2, '2024-02-15 14:30:00', '123 Main St, City, State 12345', '555-0123', NULL, 'PayPal', NULL, FALSE, NULL, 5.00),
+(2, 2, '2024-02-28 09:15:00', '123 Main St, City, State 12345', '555-0123', 'Ring doorbell', 'Credit Card', NULL, FALSE, NULL, 5.00),
+(2, 1, '2024-03-01 16:45:00', '123 Main St, City, State 12345', '555-0123', NULL, 'Credit Card', NULL, FALSE, NULL, 5.00),
+(2, 3, '2024-02-10 11:20:00', '123 Main St, City, State 12345', '555-0123', 'Cancelled due to out of stock', 'Credit Card', NULL, FALSE, NULL, 5.00);
 
 -- Insert Sample Order Items (assuming meal_kit_id 1-3 exist)
 INSERT INTO order_items (order_id, meal_kit_id, quantity, price_per_unit, customization_notes) VALUES

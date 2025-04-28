@@ -172,4 +172,4 @@ while ($row = $result->fetch_assoc()) {
 <script src="assets/js/categories.js"></script>
 
 </body>
-</html> 
+</html>

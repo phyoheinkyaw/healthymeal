@@ -267,6 +267,26 @@ $_SESSION['cart_count'] = $total_items;
         </div>
     </div>
 
+    <!-- Remove Cart Item Confirmation Modal -->
+    <div class="modal fade" id="removeCartItemModal" tabindex="-1" aria-labelledby="removeCartItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="removeCartItemModalLabel"><i class="bi bi-exclamation-triangle me-2"></i>Remove Item?</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <i class="bi bi-cart-x display-3 text-danger mb-3"></i>
+                    <p class="fs-5">Are you sure you want to remove this item from your cart?</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmRemoveCartItemBtn"><i class="bi bi-trash me-1"></i>Remove</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
     // Function to update cart item quantity
     function updateCartItemQuantity(cartItemId, quantity) {
@@ -308,41 +328,43 @@ $_SESSION['cart_count'] = $total_items;
         });
     }
     
-    // Function to remove cart item
+    let removeCartItemId = null;
     function removeCartItem(cartItemId) {
-        if (confirm('Are you sure you want to remove this item from your cart?')) {
-            fetch('api/cart/db_update_cart.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'remove',
-                    cart_item_id: cartItemId
+        removeCartItemId = cartItemId;
+        const modal = new bootstrap.Modal(document.getElementById('removeCartItemModal'));
+        modal.show();
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmBtn = document.getElementById('confirmRemoveCartItemBtn');
+        if (confirmBtn) {
+            confirmBtn.onclick = function() {
+                if (!removeCartItemId) return;
+                fetch('api/cart/db_update_cart.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'remove', cart_item_id: removeCartItemId })
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update cart count
-                    updateCartCount(data.total_items);
-                    
-                    // Reload page to reflect changes
-                    window.location.reload();
-                } else {
-                    document.getElementById('errorToastMessage').textContent = data.message || 'Error removing item';
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateCartCount(data.total_items);
+                        window.location.reload();
+                    } else {
+                        document.getElementById('errorToastMessage').textContent = data.message || 'Error removing item';
+                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                        toast.show();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('errorToastMessage').textContent = 'Error removing item. Please try again.';
                     const toast = new bootstrap.Toast(document.getElementById('errorToast'));
                     toast.show();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('errorToastMessage').textContent = 'Error removing item. Please try again.';
-                const toast = new bootstrap.Toast(document.getElementById('errorToast'));
-                toast.show();
-            });
+                });
+                removeCartItemId = null;
+            }
         }
-    }
+    });
     
     // Function to update cart count
     function updateCartCount(count) {
