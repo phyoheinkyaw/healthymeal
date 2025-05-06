@@ -113,6 +113,15 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                                 </select>
                             </div>
                             <div class="col-md-3">
+                                <label class="form-label">Price Range</label>
+                                <select class="form-select" id="priceFilter">
+                                    <option value="">All Prices</option>
+                                    <option value="under10">Under $10</option>
+                                    <option value="10-20">$10 - $20</option>
+                                    <option value="over20">Over $20</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
                                 <label class="form-label">Sort By</label>
                                 <select class="form-select" id="sortBy">
                                     <option value="name">Name</option>
@@ -131,8 +140,10 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
         <!-- Meal Kits Grid -->
         <div class="row g-4" id="mealKitsGrid">
             <?php while ($mealKit = $mealKits->fetch_assoc()): ?>
-            <div class="col-md-6 col-lg-4 meal-kit-card" data-category="<?php echo $mealKit['category_id']; ?>"
-                data-calories="<?php echo $mealKit['base_calories']; ?>">
+            <div class="col-md-6 col-lg-4 meal-kit-card" 
+                data-category="<?php echo $mealKit['category_id']; ?>"
+                data-calories="<?php echo $mealKit['base_calories']; ?>"
+                data-price="<?php echo $mealKit['preparation_price']+$mealKit['ingredients_price']; ?>">
                 <div class="card h-100">
                     <?php $img_url = get_meal_kit_image_url($mealKit['image_url'], $mealKit['name']); ?>
                     <img src="<?php echo htmlspecialchars($img_url); ?>" class="card-img-top" alt="Meal Kit Image">
@@ -301,7 +312,30 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
         const category = document.getElementById('categoryFilter').value;
         const dietary = document.getElementById('dietaryFilter').value;
         const calories = document.getElementById('calorieFilter').value;
+        const price = document.getElementById('priceFilter').value;
         const sort = document.getElementById('sortBy').value;
+
+        // Client-side filtering for price
+        const mealKitCards = document.querySelectorAll('.meal-kit-card');
+        mealKitCards.forEach(card => {
+            const price = parseFloat(card.dataset.price);
+            const priceFilter = document.getElementById('priceFilter').value;
+            let showCard = true;
+
+            switch(priceFilter) {
+                case 'under10':
+                    showCard = price < 10;
+                    break;
+                case '10-20':
+                    showCard = price >= 10 && price <= 20;
+                    break;
+                case 'over20':
+                    showCard = price > 20;
+                    break;
+            }
+
+            card.style.display = showCard ? '' : 'none';
+        });
 
         fetch('api/meal-kits/filter.php', {
                 method: 'POST',
@@ -312,13 +346,15 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                     category: category,
                     dietary: dietary,
                     calories: calories,
+                    price: price,
                     sort: sort
                 })
             })
             .then(response => response.json())
             .then(data => {
-                const grid = document.getElementById('mealKitsGrid');
-                grid.innerHTML = data.html;
+                // Optionally update the grid if server-side filtering is implemented
+                // const grid = document.getElementById('mealKitsGrid');
+                // grid.innerHTML = data.html;
 
                 // Reinitialize dropdowns after content update
                 var newDropdownTriggerList = [].slice.call(document.querySelectorAll(
@@ -334,6 +370,7 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
     document.getElementById('categoryFilter').addEventListener('change', applyFilters);
     document.getElementById('dietaryFilter').addEventListener('change', applyFilters);
     document.getElementById('calorieFilter').addEventListener('change', applyFilters);
+    document.getElementById('priceFilter').addEventListener('change', applyFilters);
     document.getElementById('sortBy').addEventListener('change', applyFilters);
     </script>
 
