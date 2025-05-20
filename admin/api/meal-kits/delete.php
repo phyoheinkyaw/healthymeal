@@ -35,7 +35,7 @@ try {
 
 // Check for admin role
 $role = checkRememberToken();
-if (!$role || $role !== 'admin') {
+if (!$role || $role != 1) {
     handle_error('Unauthorized access');
 }
 

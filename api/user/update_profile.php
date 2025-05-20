@@ -20,7 +20,23 @@ $firstName = htmlspecialchars(trim($_POST['firstName']));
 $lastName = htmlspecialchars(trim($_POST['lastName']));
 $dietaryRestrictions = htmlspecialchars(trim($_POST['dietary_restrictions']));
 $allergies = htmlspecialchars(trim($_POST['allergies']));
-$cookingExperience = htmlspecialchars(trim($_POST['cooking_experience']));
+
+// Convert cooking experience to numeric value
+$cookingExperience = 0; // Default to beginner
+if (isset($_POST['cooking_experience'])) {
+    if ($_POST['cooking_experience'] === 'intermediate') {
+        $cookingExperience = 1;
+    } elseif ($_POST['cooking_experience'] === 'advanced') {
+        $cookingExperience = 2;
+    } elseif (is_numeric($_POST['cooking_experience'])) {
+        $cookingExperience = intval($_POST['cooking_experience']);
+        // Ensure value is within valid range
+        if ($cookingExperience < 0 || $cookingExperience > 2) {
+            $cookingExperience = 0; // Reset to beginner if out of range
+        }
+    }
+}
+
 $householdSize = filter_var($_POST['household_size'], FILTER_VALIDATE_INT);
 $calorieGoal = filter_var($_POST['calorie_goal'], FILTER_VALIDATE_INT);
 

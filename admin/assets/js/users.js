@@ -1,16 +1,5 @@
-// Initialize DataTable
+// Document ready function
 $(document).ready(function() {
-    $('#usersTable').DataTable({
-        responsive: true,
-        order: [[4, 'desc']], // Sort by joined date by default
-        language: {
-            search: "Search users:",
-            lengthMenu: "Show _MENU_ users per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ users",
-            emptyTable: "No users available"
-        }
-    });
-
     // Show alert from localStorage if present (after reload)
     const storedMsg = localStorage.getItem('userMessage');
     const storedType = localStorage.getItem('userMessageType');
@@ -36,6 +25,20 @@ function viewUserDetails(userId) {
                     day: '2-digit', 
                     year: 'numeric'
                 });
+                
+                // Convert numeric cooking experience to display text
+                let cookingExperience = 'Not specified';
+                switch(parseInt(user.cooking_experience)) {
+                    case 0:
+                        cookingExperience = 'Beginner';
+                        break;
+                    case 1:
+                        cookingExperience = 'Intermediate';
+                        break;
+                    case 2:
+                        cookingExperience = 'Advanced';
+                        break;
+                }
 
                 let html = `
                     <div class="user-profile-card p-4 rounded-4 shadow-lg bg-gradient" style="background: linear-gradient(135deg, #f8fafc 65%, #cfe2ff 100%);">
@@ -45,7 +48,7 @@ function viewUserDetails(userId) {
                             </div>
                             <div>
                                 <h4 class="mb-1 fw-bold text-primary-emphasis">${user.full_name}</h4>
-                                <p class="text-muted mb-0">@${user.username} <span class="badge bg-${user.role === 'admin' ? 'danger' : 'info'} ms-2">${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span></p>
+                                <p class="text-muted mb-0">@${user.username} <span class="badge bg-${user.role == 1 ? 'danger' : 'info'} ms-2">${user.role == 1 ? 'Admin' : 'User'}</span></p>
                                 <p class="small text-secondary mb-0"><i class="bi bi-calendar-event me-1"></i> Joined: ${formattedDate}</p>
                             </div>
                         </div>
@@ -55,7 +58,7 @@ function viewUserDetails(userId) {
                                     <div class="card-body">
                                         <h6 class="text-uppercase fw-semibold text-secondary mb-3"><i class="bi bi-person-badge me-2"></i>Account</h6>
                                         <p class="mb-2"><strong>Email:</strong> <span class="text-dark">${user.email}</span></p>
-                                        <p class="mb-2"><strong>Role:</strong> <span class="text-dark">${user.role}</span></p>
+                                        <p class="mb-2"><strong>Role:</strong> <span class="text-dark">${user.role == 1 ? 'Admin' : 'User'}</span></p>
                                         <p class="mb-0"><strong>Household Size:</strong> <span class="text-dark">${user.household_size}</span></p>
                                     </div>
                                 </div>
@@ -66,7 +69,7 @@ function viewUserDetails(userId) {
                                         <h6 class="text-uppercase fw-semibold text-secondary mb-3"><i class="bi bi-heart-pulse me-2"></i>Preferences</h6>
                                         <p class="mb-2"><strong>Dietary Restrictions:</strong> <span class="text-dark">${user.dietary_restrictions}</span></p>
                                         <p class="mb-2"><strong>Allergies:</strong> <span class="text-dark">${user.allergies}</span></p>
-                                        <p class="mb-0"><strong>Cooking Experience:</strong> <span class="text-dark">${user.cooking_experience}</span></p>
+                                        <p class="mb-0"><strong>Cooking Experience:</strong> <span class="text-dark">${cookingExperience}</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -86,34 +89,34 @@ function viewUserDetails(userId) {
 }
 
 // Edit User
-// function editUser(userId) {
-//     $.ajax({
-//         url: 'api/users/get_user.php',
-//         type: 'GET',
-//         data: { user_id: userId },
-//         success: function(response) {
-//             if (response.success) {
-//                 const user = response.data;
-//                 $('#editUserForm input[name="user_id"]').val(user.user_id);
-//                 $('#editUserForm input[name="username"]').val(user.username);
-//                 $('#editUserForm input[name="full_name"]').val(user.full_name);
-//                 $('#editUserForm input[name="email"]').val(user.email);
-//                 $('#editUserForm select[name="role"]').val(user.role);
-//                 $('#editUserForm input[name="dietary_restrictions"]').val(user.dietary_restrictions);
-//                 $('#editUserForm input[name="allergies"]').val(user.allergies);
-//                 $('#editUserForm select[name="cooking_experience"]').val(user.cooking_experience);
-//                 $('#editUserForm input[name="household_size"]').val(user.household_size);
-//                 $('#editUserForm input[name="password"]').val(''); // Clear password field
-//                 $('#editUserModal').modal('show');
-//             } else {
-//                 alert('Error loading user data');
-//             }
-//         },
-//         error: function() {
-//             alert('Error loading user data');
-//         }
-//     });
-// }
+function editUser(userId) {
+    $.ajax({
+        url: 'api/users/get_user.php',
+        type: 'GET',
+        data: { user_id: userId },
+        success: function(response) {
+            if (response.success) {
+                const user = response.data;
+                $('#editUserForm input[name="user_id"]').val(user.user_id);
+                $('#editUserForm input[name="username"]').val(user.username);
+                $('#editUserForm input[name="full_name"]').val(user.full_name);
+                $('#editUserForm input[name="email"]').val(user.email);
+                $('#editUserForm select[name="role"]').val(user.role);
+                $('#editUserForm input[name="dietary_restrictions"]').val(user.dietary_restrictions);
+                $('#editUserForm input[name="allergies"]').val(user.allergies);
+                $('#editUserForm select[name="cooking_experience"]').val(user.cooking_experience);
+                $('#editUserForm input[name="household_size"]').val(user.household_size);
+                $('#editUserForm input[name="password"]').val(''); // Clear password field
+                $('#editUserModal').modal('show');
+            } else {
+                alert('Error loading user data');
+            }
+        },
+        error: function() {
+            alert('Error loading user data');
+        }
+    });
+}
 
 // Save New User
 function saveUser() {

@@ -305,7 +305,7 @@ $user = $result->fetch_assoc();
                                     <strong>Account Type:</strong>
                                 </div>
                                 <div class="col-sm-6">
-                                    <?php echo ucfirst(htmlspecialchars($user['role'])); ?>
+                                    <?php echo ($user['role'] == 1) ? 'Admin' : 'User'; ?>
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -340,7 +340,21 @@ $user = $result->fetch_assoc();
                                     <strong>Cooking Level:</strong>
                                 </div>
                                 <div class="col-sm-6">
-                                    <?php echo $user['cooking_experience'] ? ucfirst($user['cooking_experience']) : 'Not set'; ?>
+                                    <?php 
+                                    $cooking_level = 'Not set';
+                                    switch($user['cooking_experience']) {
+                                        case 0:
+                                            $cooking_level = 'Beginner';
+                                            break;
+                                        case 1:
+                                            $cooking_level = 'Intermediate';
+                                            break;
+                                        case 2:
+                                            $cooking_level = 'Advanced';
+                                            break;
+                                    }
+                                    echo $cooking_level;
+                                    ?>
                                 </div>
                             </div>
                         </div>
@@ -385,14 +399,14 @@ $user = $result->fetch_assoc();
                                     <div class="col-md-6">
                                         <label for="cooking_experience" class="form-label">Cooking Experience</label>
                                         <select class="form-select" id="cooking_experience" name="cooking_experience">
-                                            <option value="beginner"
-                                                <?php echo ($user['cooking_experience'] == 'beginner') ? 'selected' : ''; ?>>
+                                            <option value="0"
+                                                <?php echo ($user['cooking_experience'] == 0) ? 'selected' : ''; ?>>
                                                 Beginner</option>
-                                            <option value="intermediate"
-                                                <?php echo ($user['cooking_experience'] == 'intermediate') ? 'selected' : ''; ?>>
+                                            <option value="1"
+                                                <?php echo ($user['cooking_experience'] == 1) ? 'selected' : ''; ?>>
                                                 Intermediate</option>
-                                            <option value="advanced"
-                                                <?php echo ($user['cooking_experience'] == 'advanced') ? 'selected' : ''; ?>>
+                                            <option value="2"
+                                                <?php echo ($user['cooking_experience'] == 2) ? 'selected' : ''; ?>>
                                                 Advanced</option>
                                         </select>
                                     </div>

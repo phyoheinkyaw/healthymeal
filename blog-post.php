@@ -86,7 +86,7 @@ $comments = $stmt->get_result();
                 </div>
 
                 <div class="blog-content mb-5">
-                    <?php echo nl2br(htmlspecialchars($post['content'])); ?>
+                    <?php echo $post['content']; ?>
                 </div>
             </article>
 
@@ -116,21 +116,27 @@ $comments = $stmt->get_result();
 
                 <!-- Comments List -->
                 <div id="commentsList">
-                    <?php while ($comment = $comments->fetch_assoc()): ?>
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="card-subtitle text-muted">
-                                        <?php echo htmlspecialchars($comment['commenter_name']); ?>
-                                    </h6>
-                                    <small class="text-muted">
-                                        <?php echo date('M d, Y H:i', strtotime($comment['created_at'])); ?>
-                                    </small>
+                    <?php if ($comments->num_rows > 0): ?>
+                        <?php while ($comment = $comments->fetch_assoc()): ?>
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-subtitle text-muted">
+                                            <?php echo htmlspecialchars($comment['commenter_name']); ?>
+                                        </h6>
+                                        <small class="text-muted">
+                                            <?php echo date('M d, Y H:i', strtotime($comment['created_at'])); ?>
+                                        </small>
+                                    </div>
+                                    <p class="card-text"><?php echo nl2br(htmlspecialchars($comment['content'])); ?></p>
                                 </div>
-                                <p class="card-text"><?php echo nl2br(htmlspecialchars($comment['content'])); ?></p>
                             </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="alert alert-light text-center">
+                            No comments yet. Be the first to comment!
                         </div>
-                    <?php endwhile; ?>
+                    <?php endif; ?>
                 </div>
             </section>
         </div>
@@ -146,6 +152,8 @@ $comments = $stmt->get_result();
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const commentForm = document.getElementById('commentForm');
+    const commentsList = document.getElementById('commentsList');
+    
     if (commentForm) {
         commentForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -157,8 +165,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Reload page to show new comment
-                    location.reload();
+                    // Clear the comment field
+                    document.getElementById('comment').value = '';
+                    
+                    // Refresh comments without full page reload
+                    refreshComments();
                 } else {
                     alert(data.message || 'Failed to post comment');
                 }
@@ -167,6 +178,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error);
                 alert('An error occurred. Please try again.');
             });
+        });
+    }
+    
+    // Function to refresh comments
+    function refreshComments() {
+        fetch(`api/blog/get_comments.php?post_id=<?php echo $post_id; ?>`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Build new comments HTML
+                let commentsHTML = '';
+                
+                if (data.comments.length > 0) {
+                    data.comments.forEach(comment => {
+                        commentsHTML += `
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-subtitle text-muted">
+                                            ${comment.commenter_name}
+                                        </h6>
+                                        <small class="text-muted">
+                                            ${comment.created_at}
+                                        </small>
+                                    </div>
+                                    <p class="card-text">${comment.content.replace(/\n/g, '<br>')}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    commentsHTML = `
+                        <div class="alert alert-light text-center">
+                            No comments yet. Be the first to comment!
+                        </div>
+                    `;
+                }
+                
+                // Update the comments list
+                commentsList.innerHTML = commentsHTML;
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing comments:', error);
         });
     }
 });

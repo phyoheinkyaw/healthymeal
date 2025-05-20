@@ -1,16 +1,17 @@
 <?php
+require_once 'config/connection.php';
 require_once 'includes/auth_check.php';
 
-// Check for remember me token and get user role
-$role = checkRememberToken();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// If user is logged in, set session variables
-if ($role) {
-    // Set session variables if not already set
-    if (!isset($_SESSION['user_id'])) {
-        $_SESSION['user_id'] = $role === 'admin' ? 1 : $role;
-        $_SESSION['role'] = $role;
-    }
+// Check for remember me token and get user role
+$role = false;
+if (isset($_SESSION['user_id'])) {
+    $role = $_SESSION['role'];
+} else {
+    $role = checkRememberToken();
 }
 
 // Fetch featured meal kits
@@ -63,13 +64,16 @@ $health_tip = $tip_result->fetch_assoc();
                     <p class="lead mb-4">Discover personalized meal kits that match your calorie goals and dietary
                         preferences. Fresh ingredients, delicious recipes, delivered to your door.</p>
                     <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
-                        <a href="meal-kits.php" class="btn btn-secondary btn-lg px-5">View Menu</a>
-                        <?php if(!$role){
-                        echo '<a href="register.php" class="btn btn-outline-light btn-lg px-5">Join Now</a>';
-                    }else{
-                        echo '<a href="nutrition.php" class="btn btn-outline-light btn-lg px-5">View Nutrition Information</a>';
-                    }
-                    ?>
+                        <a href="meal-kits.php" class="btn btn-light btn-lg px-5">View Menu</a>
+                        <?php 
+                        if(!isset($_SESSION['user_id'])) {
+                            echo '<a href="register.php" class="btn btn-outline-light btn-lg px-5">Join Now</a>';
+                        } else if($_SESSION['role'] == 1) {
+                            echo '<a href="admin/index.php" class="btn btn-outline-light btn-lg px-5">Admin Dashboard</a>';
+                        } else {
+                            echo '<a href="nutrition.php" class="btn btn-outline-light btn-lg px-5">View Nutrition Information</a>';
+                        }
+                        ?>
                     </div>
                 </div>
             </div>
@@ -92,7 +96,7 @@ $health_tip = $tip_result->fetch_assoc();
                             <p class="card-text"><?php echo htmlspecialchars($meal['description']); ?></p>
                             <div class="d-flex justify-content-between align-items-center">
                                 <span
-                                    class="h5 mb-0">$<?php echo number_format($meal['preparation_price']+$meal['ingredients_price'], 2); ?></span>
+                                    class="h5 mb-0"><?php echo number_format($meal['preparation_price']+$meal['ingredients_price'], 0); ?> MMK</span>
                                 <a href="meal-details.php?id=<?php echo $meal['meal_kit_id']; ?>"
                                     class="btn btn-primary">View Details</a>
                             </div>

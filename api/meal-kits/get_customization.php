@@ -147,7 +147,7 @@ foreach ($ingredients as $ingredient) {
             <td class="text-end protein-cell">' . number_format($ingredient['protein_per_100g'] * $ingredient['default_quantity'] / 100, 1) . 'g</td>
             <td class="text-end carbs-cell">' . number_format($ingredient['carbs_per_100g'] * $ingredient['default_quantity'] / 100, 1) . 'g</td>
             <td class="text-end fat-cell">' . number_format($ingredient['fat_per_100g'] * $ingredient['default_quantity'] / 100, 1) . 'g</td>
-            <td class="text-end price-cell">$' . number_format($ingredient['ingredient_price'], 2) . '</td>
+            <td class="text-end price-cell">' . number_format(round($ingredient['ingredient_price'])) . ' MMK</td>
         </tr>';
 }
 
@@ -161,29 +161,29 @@ $html .= '
                     <td class="text-end"><strong><span id="totalProtein">' . number_format($total_protein, 1) . '</span>g</strong></td>
                     <td class="text-end"><strong><span id="totalCarbs">' . number_format($total_carbs, 1) . '</span>g</strong></td>
                     <td class="text-end"><strong><span id="totalFat">' . number_format($total_fat, 1) . '</span>g</strong></td>
-                    <td class="text-end"><strong>$<span id="ingredientsPrice">' . number_format($ingredients_price, 2) . '</span></strong></td>
+                    <td class="text-end"><strong><span id="ingredientsPrice">' . number_format(round($ingredients_price)) . '</span> MMK</strong></td>
                 </tr>
                 <tr>
                     <td><strong>Preparation Price</strong></td>
                     <td colspan="5"></td>
-                    <td class="text-end"><strong>$<span id="basePrice">' . number_format($preparation_price, 2) . '</span></strong></td>
+                    <td class="text-end"><strong><span id="basePrice">' . number_format(round($preparation_price)) . '</span> MMK</strong></td>
                 </tr>
                 <tr>
                     <td><strong>Single Meal Price</strong></td>
                     <td colspan="5"></td>
-                    <td class="text-end"><strong>$<span id="singleMealPrice">' . number_format($total_price, 2) . '</span></strong></td>
+                    <td class="text-end single-meal-price-cell"><strong><span id="singleMealPrice">' . number_format(round($total_price)) . '</span> MMK</strong></td>
                 </tr>
                 <tr class="table-info">
                     <td><strong>Total Price</strong></td>
                     <td colspan="5"></td>
-                    <td class="text-end"><strong>$<span id="totalPrice">' . number_format($total_price, 2) . '</span></strong></td>
+                    <td class="text-end total-price-cell"><strong><span id="totalPrice">' . number_format(round($total_price)) . '</span> MMK</strong></td>
                 </tr>
             </tfoot>
         </table>
     </div>
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="alert alert-info">
                 <i class="bi bi-info-circle"></i> 
                 Adjust ingredient quantities to match your preferences and dietary needs.
@@ -191,7 +191,9 @@ $html .= '
                 Total price is the sum of preparation price and ingredients price.
             </div>
         </div>
-        <div class="col-md-6 text-end">
+    </div>
+    <div class="row">
+        <div class="col-md-12 text-end">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="button" class="btn btn-primary" onclick="standardAddToCart(' . $meal_kit_id . ', document.getElementById(\'meal_quantity\').value)">Add to Cart</button>
         </div>
@@ -202,15 +204,6 @@ $html .= '
 // Initialize listeners after content is loaded
 initializeQuantityListeners();
 </script>';
-
-// Remove special instructions textarea from customization modal
-$html = str_replace('<div class="row mb-3">
-        <div class="col-12">
-            <label for="customization_notes" class="form-label">Special Instructions</label>
-            <textarea class="form-control" id="customization_notes" name="customization_notes" rows="2" placeholder="Any special instructions or requests for this meal kit..."></textarea>
-        </div>
-    </div>
-', '', $html);
 
 // Return the HTML content
 echo json_encode([

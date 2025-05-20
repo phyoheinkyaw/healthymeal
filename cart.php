@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config/connection.php';
+require_once 'api/orders/utils/tax_calculator.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -9,6 +10,34 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
+
+// Fetch delivery options for tooltip
+$delivery_options = [];
+$delivery_fee_min = 0;
+$delivery_fee_max = 0;
+$delivery_tooltip = "Delivery fees vary based on your selected delivery time slot.";
+
+$delivery_stmt = $mysqli->prepare("SELECT name, fee FROM delivery_options ORDER BY fee ASC");
+$delivery_stmt->execute();
+$delivery_result = $delivery_stmt->get_result();
+
+if ($delivery_result->num_rows > 0) {
+    while ($option = $delivery_result->fetch_assoc()) {
+        $delivery_options[] = $option;
+    }
+    
+    // Get min and max fees
+    $delivery_fee_min = $delivery_options[0]['fee'];
+    $delivery_fee_max = $delivery_options[count($delivery_options) - 1]['fee'];
+    
+    // Build tooltip text
+    $delivery_tooltip = "Delivery fees vary based on your selected delivery time slot. ";
+    foreach ($delivery_options as $option) {
+        $delivery_tooltip .= $option['name'] . ": $" . number_format($option['fee'], 2) . ", ";
+    }
+    $delivery_tooltip = rtrim($delivery_tooltip, ", ");
+    $delivery_tooltip .= ". Final fee will be calculated at checkout.";
+}
 
 // Helper function to get meal kit image URL
 function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
@@ -150,13 +179,13 @@ $_SESSION['cart_count'] = $total_items;
                                         </p>
                                         <?php if (!empty($item['customization_notes'])): ?>
                                         <p class="small mb-2">
-                                            <span class="badge bg-secondary"><i class="bi bi-pencil-fill me-1"></i>Special Instructions</span>
+                                            <span class="badge" style="background-color: var(--secondary);"><i class="bi bi-pencil-fill me-1"></i>Special Instructions</span>
                                             <button type="button" class="btn btn-sm btn-outline-secondary ms-2" 
                                                 onclick="editNotes(<?php echo $item['cart_item_id']; ?>, '<?php echo addslashes($item['customization_notes']); ?>')">
                                                 <i class="bi bi-pencil-square"></i> Edit
                                             </button>
-                                            <div class="mt-1 p-2 border-start" style="border-width: 3px !important; border-color: var(--primary) !important;">
-                                                <?php echo htmlspecialchars($item['customization_notes']); ?>
+                                            <div class="mt-1 p-2 border-start" style="border-width: 2px !important; border-color: var(--primary) !important;">
+                                                <?php echo nl2br(htmlspecialchars($item['customization_notes'])); ?>
                                             </div>
                                         </p>
                                         <?php else: ?>
@@ -185,7 +214,7 @@ $_SESSION['cart_count'] = $total_items;
                                     </div>
                                     <div class="text-end">
                                         <h6 class="mb-2">
-                                            $<?php echo number_format($item['total_price'], 2); ?>
+                                            <?php echo number_format($item['total_price'], 0); ?> MMK
                                         </h6>
                                         <button type="button" class="btn btn-sm btn-outline-danger"
                                             onclick="removeCartItem(<?php echo $item['cart_item_id']; ?>)">
@@ -220,21 +249,27 @@ $_SESSION['cart_count'] = $total_items;
                 <div class="card">
                     <div class="card-header" style="background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
             color: white;">
-                        <h5 class="mb-0">Order Summary</h5>
+                        <h5 class="mb-0"><i class="bi bi-receipt me-1"></i> Order Summary</h5>
                     </div>
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-3">
                             <span>Subtotal:</span>
-                            <span>$<?php echo number_format($total_amount, 2); ?></span>
+                            <span><?php echo number_format($total_amount, 0); ?> MMK</span>
                         </div>
                         <div class="d-flex justify-content-between mb-3">
-                            <span>Delivery Fee:</span>
-                            <span>$5.00</span>
+                            <span>Tax (5%):</span>
+                            <span><?php echo number_format(calculateTax($total_amount), 0); ?> MMK</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Estimated Delivery Fee:</span>
+                            <span><i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" 
+                                title="<?php echo htmlspecialchars($delivery_tooltip); ?>"></i> 
+                                <?php echo number_format($delivery_fee_min, 0); ?> - <?php echo number_format($delivery_fee_max, 0); ?> MMK</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-3">
-                            <strong>Total:</strong>
-                            <strong>$<?php echo number_format($total_amount + 5, 2); ?></strong>
+                            <strong>Estimated Total:</strong>
+                            <strong><?php echo number_format(calculateTotal($total_amount, $delivery_fee_min), 0); ?>+ MMK</strong>
                         </div>
                         <div class="d-grid">
                             <a href="checkout.php" class="btn btn-primary">Proceed to Checkout</a>
@@ -364,6 +399,12 @@ $_SESSION['cart_count'] = $total_items;
                 removeCartItemId = null;
             }
         }
+        
+        // Initialize tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     });
     
     // Function to update cart count

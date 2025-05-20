@@ -5,7 +5,7 @@ require_once '../includes/auth_check.php';
 $role = checkRememberToken();
 
 // Redirect non-admin users
-if (!$role || $role !== 'admin') {
+if (!$role || $role != 1) {
     header("Location: /hm/login.php");
     exit();
 }
@@ -121,6 +121,40 @@ if ($ing_result) {
             transform: translateX(100%);
             opacity: 0;
         }
+    }
+    
+    /* Inactive meal kit styling */
+    .inactive-indicator {
+        position: relative;
+    }
+    
+    .inactive-indicator::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+        z-index: 1;
+    }
+    
+    .inactive-indicator::after {
+        content: '\F62A';
+        font-family: "bootstrap-icons";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #dc3545;
+        font-size: 6rem;
+        z-index: 2;
+        text-shadow: 0 0 3px rgba(255, 255, 255, 0.7);
+    }
+    
+    tr.inactive-row {
+        background-color: rgba(0, 0, 0, 0.03);
     }
     </style>
     <style>
@@ -242,8 +276,8 @@ if ($ing_result) {
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label for="preparationPrice" class="form-label">Preparation Price ($)</label>
-                  <input type="number" class="form-control" id="preparationPrice" name="preparationPrice" step="0.01" min="0" required>
+                  <label for="preparationPrice" class="form-label">Preparation Price (MMK)</label>
+                  <input type="number" class="form-control" id="preparationPrice" name="preparationPrice" step="1" min="0" required>
                 </div>
                 <div class="mb-3">
                   <label for="cookingTime" class="form-label">Cooking Time (minutes)</label>
@@ -342,11 +376,13 @@ if ($ing_result) {
                                         </thead>
                                         <tbody>
                                             <?php foreach ($meal_kits as $meal_kit): ?>
-                                            <tr <?php if (!$meal_kit['is_active']) echo 'class="text-muted"' ?> data-meal-kit-id="<?php echo $meal_kit['meal_kit_id']; ?>">
+                                            <tr <?php if (!$meal_kit['is_active']) echo 'class="text-muted inactive-row"' ?> data-meal-kit-id="<?php echo $meal_kit['meal_kit_id']; ?>">
                                                 <td>#<?php echo $meal_kit['meal_kit_id']; ?></td>
                                                 <td>
                                                     <?php $img_url = get_meal_kit_image_url($meal_kit['image_url']); ?>
-                                                    <img src="<?php echo htmlspecialchars($img_url); ?>" style="max-width:120px; max-height:90px;" class="img-thumbnail" alt="Meal Kit Image">
+                                                    <div class="<?php echo !$meal_kit['is_active'] ? 'inactive-indicator' : ''; ?>">
+                                                        <img src="<?php echo htmlspecialchars($img_url); ?>" style="max-width:120px; max-height:90px;" class="img-thumbnail" alt="Meal Kit Image">
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <div class="fw-bold">
@@ -360,7 +396,7 @@ if ($ing_result) {
                                                         <?php echo htmlspecialchars($meal_kit['category_name']); ?>
                                                     </span>
                                                 </td>
-                                                <td>$<?php echo number_format($meal_kit['preparation_price'], 2); ?>
+                                                <td><?php echo number_format($meal_kit['preparation_price'], 0); ?> MMK
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-warning text-dark">
@@ -513,17 +549,19 @@ if ($ing_result) {
             }, 3000);
         }
 
-        // Initialize DataTable
-        const table = $('#mealKitsTable').DataTable({
-            order: [[0, 'desc']],
-            responsive: true,
-            language: {
-                search: "Search meal kits:",
-                lengthMenu: "Show _MENU_ meal kits per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ meal kits",
-                emptyTable: "No meal kits available"
-            }
-        });
+        // Initialize DataTable only if it hasn't been initialized already
+        if (!$.fn.DataTable.isDataTable('#mealKitsTable')) {
+            const table = $('#mealKitsTable').DataTable({
+                order: [[0, 'desc']],
+                responsive: true,
+                language: {
+                    search: "Search meal kits:",
+                    lengthMenu: "Show _MENU_ meal kits per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ meal kits",
+                    emptyTable: "No meal kits available"
+                }
+            });
+        }
     });
 
     // Toggle meal kit status

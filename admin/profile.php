@@ -5,7 +5,7 @@ require_once '../includes/auth_check.php';
 $role = checkRememberToken();
 
 // Redirect non-admin users
-if (!$role || $role !== 'admin') {
+if (!$role || $role != 1) {
     header("Location: /hm/login.php");
     exit();
 }

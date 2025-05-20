@@ -1,5 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
 session_start();
+}
 require_once '../../config/connection.php';
 
 header('Content-Type: application/json');
@@ -19,7 +21,12 @@ try {
     }
 
     // Get user from database
-    $stmt = $mysqli->prepare("SELECT user_id, username, email, password, full_name, role FROM users WHERE email = ?");
+    $stmt = $mysqli->prepare("
+        SELECT user_id, username, email, password, full_name, role, is_active 
+        FROM users 
+        WHERE email = ?
+    ");
+    
     if (!$stmt) {
         throw new Exception('Database error: ' . $mysqli->error);
     }
@@ -36,12 +43,32 @@ try {
     if (!$user || !password_verify($password, $user['password'])) {
         throw new Exception('Invalid email or password');
     }
+    
+    // Check if user is active
+    if ($user['is_active'] == 0) {
+        // User is inactive, redirect to reactivation page
+        $_SESSION['inactive_user_id'] = $user['user_id'];
+        echo json_encode([
+            'success' => false,
+            'message' => 'account_inactive',
+            'redirect_url' => '/hm/account_reactivation.php'
+        ]);
+        exit;
+    }
 
     // Set session variables
     $_SESSION['user_id'] = $user['user_id'];
     $_SESSION['username'] = $user['username'];
     $_SESSION['full_name'] = $user['full_name'];
     $_SESSION['role'] = $user['role'];
+
+    // Update last login time
+    $updateStmt = $mysqli->prepare("UPDATE users SET last_login_at = NOW() WHERE user_id = ?");
+    if ($updateStmt) {
+        $updateStmt->bind_param("i", $user['user_id']);
+        $updateStmt->execute();
+        $updateStmt->close();
+    }
 
     // Handle remember me
     if ($remember) {
@@ -97,7 +124,7 @@ try {
     }
 
     // Set redirect URL based on role
-    $redirect_url = $user['role'] === 'admin' ? '/hm/admin' : '/hm/index.php';
+    $redirect_url = $user['role'] == 1 ? '/hm/admin' : '/hm/index.php';
 
     echo json_encode([
         'success' => true,
@@ -106,7 +133,7 @@ try {
         'user' => [
             'username' => $user['username'],
             'name' => $user['full_name'],
-            'role' => $user['role']
+            'role' => $user['role'] == 1 ? 'admin' : 'user'
         ]
     ]);
 

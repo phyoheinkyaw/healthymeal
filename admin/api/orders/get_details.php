@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 
 // Check for admin role
 $role = checkRememberToken();
-if (!$role || $role !== 'admin') {
+if (!$role || $role != 1) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit();
@@ -32,17 +32,62 @@ function get_meal_kit_image_url($image_url_db) {
     return $projectBase . '/uploads/meal-kits/' . $image_url_db;
 }
 
+// Helper function to get absolute path for any uploaded file
+function get_absolute_file_path($relative_path) {
+    if (!$relative_path) return '';
+    if (preg_match('/^https?:\/\//i', $relative_path)) {
+        return $relative_path;
+    }
+    
+    // Get the base URL up to the project root (e.g. /hm)
+    $parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+    $projectBase = '/' . $parts[0]; // e.g. '/hm'
+    
+    // If the path already starts with the project base, don't add it again
+    if (strpos($relative_path, $projectBase) === 0) {
+        return $relative_path;
+    }
+    
+    // If the path already contains the full path (e.g. /uploads/...), just add project base
+    if (strpos($relative_path, '/uploads/') === 0) {
+        return $projectBase . $relative_path;
+    }
+    
+    // Otherwise, handle it as a path relative to project root
+    return $projectBase . '/' . ltrim($relative_path, '/');
+}
+
 try {
-    // Get order details with customer information
+    // Get order details
     $stmt = $mysqli->prepare("
         SELECT 
             o.*,
             os.status_name,
             u.full_name as customer_name,
-            u.email as customer_email
+            u.email as customer_email,
+            ps.payment_method,
+            ps.account_phone as company_account,
+            ph.payment_id,
+            ph.transaction_id,
+            ph.amount as payment_amount,
+            COALESCE(pv.payment_status, 0) as payment_status,
+            COALESCE(pv.payment_verified, 0) as payment_verified,
+            COALESCE(pv.verification_attempt, 0) as verification_attempt,
+            pv.verification_notes,
+            pv.amount_verified,
+            pv.created_at as verification_date,
+            (SELECT transfer_slip FROM payment_verifications WHERE order_id = o.order_id ORDER BY created_at DESC LIMIT 1) as transfer_slip
         FROM orders o
         JOIN users u ON o.user_id = u.user_id
         JOIN order_status os ON o.status_id = os.status_id
+        LEFT JOIN payment_settings ps ON o.payment_method_id = ps.id
+        LEFT JOIN (
+            SELECT ph1.* 
+            FROM payment_history ph1
+            LEFT JOIN payment_history ph2 ON ph1.order_id = ph2.order_id AND ph1.payment_id < ph2.payment_id
+            WHERE ph2.payment_id IS NULL
+        ) ph ON o.order_id = ph.order_id
+        LEFT JOIN payment_verifications pv ON ph.payment_id = pv.payment_id
         WHERE o.order_id = ?
     ");
 
@@ -55,11 +100,37 @@ try {
         throw new Exception('Failed to execute statement: ' . $stmt->error);
     }
 
-    $order = $stmt->get_result()->fetch_assoc();
+    $result = $stmt->get_result();
+    $order = $result->fetch_assoc();
     if (!$order) {
         throw new Exception('Order not found');
     }
     $stmt->close();
+
+    // Get verification details
+    $verification = null;
+    if ($order['payment_id']) {
+        $verificationStmt = $mysqli->prepare("
+            SELECT 
+                pv.*,
+                u.full_name as admin_name
+            FROM payment_verifications pv
+            LEFT JOIN users u ON pv.verified_by_id = u.user_id
+            WHERE pv.payment_id = ?
+            ORDER BY pv.created_at DESC
+            LIMIT 1
+        ");
+        
+        if ($verificationStmt) {
+            $verificationStmt->bind_param("i", $order['payment_id']);
+            $verificationStmt->execute();
+            $verificationResult = $verificationStmt->get_result();
+            if ($verificationResult->num_rows > 0) {
+                $verification = $verificationResult->fetch_assoc();
+            }
+            $verificationStmt->close();
+        }
+    }
 
     // Get order items with meal kit details
     $stmt = $mysqli->prepare("
@@ -117,6 +188,31 @@ try {
     ];
     $statusClass = $statusMap[$statusRaw] ?? 'secondary';
 
+    // Get payment status display name and Bootstrap class
+    $paymentStatusText = "Not Available";
+    $paymentStatusClass = "secondary";
+    
+    if (isset($order['payment_status'])) {
+        switch($order['payment_status']) {
+            case 0:
+                $paymentStatusText = "Pending";
+                $paymentStatusClass = "warning";
+                break;
+            case 1:
+                $paymentStatusText = "Completed";
+                $paymentStatusClass = "success";
+                break;
+            case 2:
+                $paymentStatusText = "Failed";
+                $paymentStatusClass = "danger";
+                break;
+            case 3:
+                $paymentStatusText = "Refunded";
+                $paymentStatusClass = "info";
+                break;
+        }
+    }
+
     // Build HTML for order details
     $html = '
     <div class="order-details">
@@ -130,22 +226,201 @@ try {
                         <strong>Status:</strong> 
                         <span class="badge bg-' . $statusClass . ' fw-bold px-3 py-2 rounded-pill" style="font-size:1em;min-width:110px;letter-spacing:0.5px;">' . htmlspecialchars($order['status_name'] ?? $order['status'] ?? '') . '</span>
                     </p>
-                    <p class="mb-1"><strong>Payment Method:</strong> <span style="color:#388e3c;">' . htmlspecialchars($order['payment_method']) . '</span></p>
-                </div>
+                    <p class="mb-1"><strong>Payment Method:</strong> <span style="color:#388e3c;">' . htmlspecialchars($order['payment_method']) . '</span></p>';
+                    
+    // Add payment status information
+    $html .= '<p class="mb-1">
+                <strong>Payment Status:</strong> 
+                <span class="badge bg-' . $paymentStatusClass . ' fw-bold px-3 py-2 rounded-pill" style="font-size:1em;min-width:110px;letter-spacing:0.5px;">' . $paymentStatusText . '</span>
+            </p>';
+                
+    // Add transaction ID if available
+    if (!empty($order['transaction_id'])) {
+        $html .= '<p class="mb-1"><strong>Transaction ID:</strong> <span style="color:#d81b60;">' . htmlspecialchars($order['transaction_id']) . '</span></p>';
+    }
+                
+    $html .= '</div>
             </div>
             <div class="col-md-6">
                 <div class="p-3 rounded-4 shadow-sm h-100" style="background:linear-gradient(90deg,#fffde7 60%,#ffe082 100%); border-left:6px solid #fbc02d;">
                     <h6 class="fw-bold mb-2" style="color:#fbc02d;"><i class="bi bi-person-circle"></i> Customer Information</h6>
                     <p class="mb-1"><strong>Name:</strong> <span style="color:#7b1fa2;">' . htmlspecialchars($order['customer_name']) . '</span></p>
                     <p class="mb-1"><strong>Email:</strong> <span style="color:#0288d1;">' . htmlspecialchars($order['customer_email']) . '</span></p>
-                    <p class="mb-1"><strong>Contact:</strong> <span style="color:#388e3c;">' . htmlspecialchars($order['contact_number']) . '</span></p>
+                    <p class="mb-1"><strong>Primary Contact:</strong> <span style="color:#388e3c;">' . htmlspecialchars($order['customer_phone']) . '</span></p>
+                    <p class="mb-1"><strong>Alternate Contact:</strong> <span style="color:#388e3c;">' . htmlspecialchars($order['contact_number']) . '</span></p>
                     <p class="mb-1"><strong>Delivery Address:</strong> <span style="color:#6a1b9a;">' . htmlspecialchars($order['delivery_address']) . '</span></p>
                     <p class="mb-1"><strong>Delivery Notes:</strong> <span style="color:#ef6c00;">' . htmlspecialchars($order['delivery_notes'] ?? 'None') . '</span></p>
                 </div>
             </div>
-        </div>
+        </div>';
+        
+    // Add payment verification section if there's a transfer slip
+    if (!empty($order['transfer_slip'])) {
+        $slipUrl = get_absolute_file_path($order['transfer_slip']); // Use helper function for correct path
+        $verifyBtnClass = $order['payment_verified'] == 1 ? 'btn-success disabled' : 'btn-primary';
+        $verifyBtnText = $order['payment_verified'] == 1 ? 'Payment Verified' : 'Verify Payment';
+        $verifiedAtText = $order['payment_verified'] == 1 && !empty($order['verification_date']) 
+            ? '<div class="text-success"><i class="bi bi-check-circle-fill"></i> Verified on ' . date('F d, Y h:i A', strtotime($order['verification_date'])) . '</div>' 
+            : '';
+        
+        // Get verification details if available
+        $verificationDetails = null;
+        $verificationStmt = $mysqli->prepare("
+            SELECT v.*, u.full_name as admin_name 
+            FROM payment_verifications v
+            LEFT JOIN users u ON v.verified_by_id = u.user_id
+            WHERE v.order_id = ? 
+            ORDER BY v.created_at DESC 
+            LIMIT 1
+        ");
+        
+        if ($verificationStmt) {
+            $verificationStmt->bind_param("i", $order_id);
+            $verificationStmt->execute();
+            $verificationResult = $verificationStmt->get_result();
+            if ($verificationResult->num_rows > 0) {
+                $verificationDetails = $verificationResult->fetch_assoc();
+            }
+            $verificationStmt->close();
+        }
+        
+        $html .= '
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="p-3 rounded-4 shadow-sm" style="background:linear-gradient(90deg,#e8f5e9 60%,#c8e6c9 100%); border-left:6px solid #4caf50;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="fw-bold" style="color:#2e7d32;"><i class="bi bi-credit-card-2-back"></i> Payment Verification</h6>
+                        ' . $verifiedAtText . '
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Payment Slip:</strong></p>
+                            <a href="' . htmlspecialchars($slipUrl) . '" target="_blank" class="payment-slip-container">
+                                <img src="' . htmlspecialchars($slipUrl) . '" alt="Payment Slip" class="img-fluid rounded shadow-sm mb-2" style="max-height: 200px; border: 2px solid #c8e6c9;">
+                                <div class="zoom-overlay"><i class="bi bi-zoom-in"></i> Click to enlarge</div>
+                            </a>
+                            <div class="mt-3">
+                                <strong>Customer Provided Info:</strong>
+                                <div class="p-2 rounded bg-white mt-1">
+                                    <p class="mb-1"><i class="bi bi-calendar3"></i> <strong>Date:</strong> ' . date('F d, Y h:i A', strtotime($order['created_at'])) . '</p>
+                                    <p class="mb-1"><i class="bi bi-cash-stack"></i> <strong>Amount:</strong> <span class="text-danger">$' . number_format($order['total_amount'], 2) . '</span></p>';
+        
+        if (!empty($order['company_account'])) {
+            $html .= '<p class="mb-1"><i class="bi bi-phone"></i> <strong>Account:</strong> ' . htmlspecialchars($order['company_account']) . '</p>';
+        }
+        
+        $html .= '
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex flex-column">';
+        
+        // Show verification form or verification details
+        if ($order['payment_verified'] == 1 && $verificationDetails) {
+            // Show verification details
+            $html .= '
+                <div class="bg-white p-3 rounded mb-3 shadow-sm">
+                    <h6 class="fw-bold text-success mb-3"><i class="bi bi-shield-check"></i> Verification Details</h6>
+                    <p class="mb-1"><strong>Admin:</strong> ' . htmlspecialchars($verificationDetails['admin_name']) . '</p>
+                    <p class="mb-1"><strong>Transaction ID:</strong> <span class="text-primary">' . htmlspecialchars($verificationDetails['transaction_id']) . '</span></p>
+                    <p class="mb-1"><strong>Amount Verified:</strong> <span class="text-success">$' . number_format($verificationDetails['amount_verified'], 2) . '</span></p>';
+            
+            if (!empty($verificationDetails['verification_notes'])) {
+                $html .= '
+                    <div class="mt-2">
+                        <strong>Notes:</strong>
+                        <p class="bg-light p-2 rounded small mb-0">' . htmlspecialchars($verificationDetails['verification_notes']) . '</p>
+                    </div>';
+            }
+            
+            $html .= '
+                </div>';
+            
+            if ($verificationDetails['amount_verified'] != $order['total_amount']) {
+                $html .= '
+                <div class="alert alert-warning mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i> <strong>Amount Discrepancy:</strong> 
+                    The verified amount ($' . number_format($verificationDetails['amount_verified'], 2) . ') 
+                    does not match the order total ($' . number_format($order['total_amount'], 2) . ').
+                </div>';
+            }
+            
+            // Show history button only (remove the revoke button)
+            $html .= '
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-info flex-grow-1" 
+                            onclick="showPaymentHistory(' . $order['order_id'] . ')">
+                        <i class="bi bi-clock-history me-1"></i> History
+                    </button>
+                </div>';
+        } else {
+            // Remove verification form and just show payment information and history button
+            $html .= '
+                <div class="bg-white p-3 rounded mb-3 shadow-sm">
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-clipboard-check"></i> Payment Information</h6>
+                    <p class="mb-1"><strong>Total Amount:</strong> <span class="text-success">$' . number_format($order['total_amount'], 2) . '</span></p>';
+                    
+            if (!empty($order['company_account'])) {
+                $html .= '<p class="mb-1"><strong>Account:</strong> ' . htmlspecialchars($order['company_account']) . '</p>';
+            }
+            
+            $html .= '
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle-fill"></i> To verify payment, please use the "Verify" button from the main orders list.
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="button" class="btn btn-outline-info flex-grow-1" 
+                                onclick="showPaymentHistory(' . $order['order_id'] . ')">
+                            <i class="bi bi-clock-history me-1"></i> Payment History
+                        </button>
+                    </div>
+                </div>';
+        }
+        
+        $html .= '
+                            <div class="mt-auto">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-light px-3 py-2 rounded">
+                                        <strong>Payment Status:</strong>
+                                        <span class="badge bg-' . $paymentStatusClass . ' px-3 py-2 ms-2">' . $paymentStatusText . '</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>';
+    } else {
+        // Show payment info even if no transfer slip
+        $html .= '
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="p-3 rounded-4 shadow-sm" style="background:linear-gradient(90deg,#e3f2fd 60%,#bbdefb 100%); border-left:6px solid #1976d2;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="fw-bold" style="color:#1976d2;"><i class="bi bi-credit-card-2-back"></i> Payment Information</h6>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <strong>Payment Status:</strong>
+                                <span class="badge bg-' . $paymentStatusClass . ' px-3 py-2">' . $paymentStatusText . '</span>
+                            </div>
+                            <p class="mb-1"><strong>Payment Method:</strong> <span style="color:#388e3c;">' . htmlspecialchars($order['payment_method']) . '</span></p>';
+        
+        if (!empty($order['transaction_id'])) {
+            $html .= '<p class="mb-1"><strong>Transaction ID:</strong> <span style="color:#1976d2;">' . htmlspecialchars($order['transaction_id']) . '</span></p>';
+        }
+                            
+        $html .= '      <p class="mb-0"><strong>Amount:</strong> <span style="color:#d81b60; font-weight: bold; font-size: 1.2em;">$' . number_format($order['total_amount'], 2) . '</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>';
+    }
 
-        <div class="order-details-list">';
+    $html .= '<div class="order-details-list">';
     foreach ($order_items as $item) {
         $img_url = get_meal_kit_image_url($item['image_url']);
         $html .= '
@@ -211,22 +486,41 @@ try {
     // Order summary
     $html .= '<div class="order-summary-box mt-4 p-3 rounded-4 shadow-sm" style="background:linear-gradient(90deg,#fffde7 60%,#ffe082 100%); border:2.5px solid #fbc02d;">
         <div class="row g-2">
-            <div class="col-12 col-sm-6 col-md-4">
+            <div class="col-12 col-sm-6 col-md-3">
                 <span class="fw-bold text-muted">Subtotal:</span> <span class="fw-bold" style="color:#ef6c00;">$' . number_format($subtotal, 2) . '</span>
             </div>
-            <div class="col-12 col-sm-6 col-md-4">
+            <div class="col-12 col-sm-6 col-md-3">
+                <span class="fw-bold text-muted">Tax:</span> <span class="fw-bold" style="color:#d81b60;">$' . number_format($order['tax'], 2) . '</span>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
                 <span class="fw-bold text-muted">Delivery Fee:</span> <span class="fw-bold" style="color:#0288d1;">$' . number_format($order['delivery_fee'], 2) . '</span>
             </div>
-            <div class="col-12 col-md-4">
-                <span class="fw-bold text-muted">Total:</span> <span class="fw-bold" style="color:#7b1fa2;font-size:1.1em;">$' . number_format($subtotal + $order['delivery_fee'], 2) . '</span>
+            <div class="col-12 col-sm-6 col-md-3">
+                <span class="fw-bold text-muted">Total:</span> <span class="fw-bold" style="color:#7b1fa2;font-size:1.1em;">$' . number_format($order['total_amount'], 2) . '</span>
             </div>
         </div>
     </div>';
 
-    echo json_encode([
+    // Prepare response data
+    $response = [
         'success' => true,
-        'html' => $html
-    ]);
+        'html' => $html,
+        'order' => [
+            'order_id' => $order['order_id'],
+            'total_amount' => number_format($order['total_amount'], 2, '.', ''),
+            'account_phone' => $order['company_account'] ?? '',
+            'payment_method' => $order['payment_method'],
+            'payment_status' => $order['payment_status'],
+            'payment_verified' => $order['payment_verified']
+        ],
+        'payment_setting' => [
+            'account_phone' => $order['company_account']
+        ],
+        'verification' => $verification,
+        'payment_slip' => $order['transfer_slip'] ? get_absolute_file_path($order['transfer_slip']) : null
+    ];
+
+    echo json_encode($response);
 
 } catch (Exception $e) {
     http_response_code(400);

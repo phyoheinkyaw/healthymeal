@@ -1,5 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
 session_start();
+}
 
 // Redirect if already logged in
 if(isset($_SESSION['user_id'])) {
@@ -65,8 +67,22 @@ if(isset($_SESSION['user_id'])) {
                                     <i class="bi bi-eye"></i>
                                 </button>
                             </div>
-                            <div class="form-text">
-                                Password must contain at least 8 characters, including uppercase, lowercase, number and special character.
+                            <div class="mt-2">
+                                <div class="password-strength-meter">
+                                    <div class="progress">
+                                        <div id="password-strength-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div id="password-feedback" class="form-text text-muted mt-1">
+                                    Password must meet these requirements:
+                                </div>
+                                <ul id="password-requirements" class="list-unstyled small mt-1">
+                                    <li id="req-length"><i class="bi bi-x-circle text-danger"></i> At least 8 characters</li>
+                                    <li id="req-lowercase"><i class="bi bi-x-circle text-danger"></i> At least one lowercase letter</li>
+                                    <li id="req-uppercase"><i class="bi bi-x-circle text-danger"></i> At least one uppercase letter</li>
+                                    <li id="req-number"><i class="bi bi-x-circle text-danger"></i> At least one number</li>
+                                    <li id="req-special"><i class="bi bi-x-circle text-danger"></i> At least one special character</li>
+                                </ul>
                             </div>
                         </div>
                         
@@ -124,16 +140,96 @@ document.addEventListener('DOMContentLoaded', function() {
     setupPasswordToggle('#togglePassword', '#password');
     setupPasswordToggle('#toggleConfirmPassword', '#confirmPassword');
 
+    // Password strength checker
+    const passwordField = document.querySelector('#password');
+    const strengthBar = document.querySelector('#password-strength-bar');
+    const reqLength = document.querySelector('#req-length');
+    const reqLowercase = document.querySelector('#req-lowercase');
+    const reqUppercase = document.querySelector('#req-uppercase');
+    const reqNumber = document.querySelector('#req-number');
+    const reqSpecial = document.querySelector('#req-special');
+    
+    function checkPasswordStrength(password) {
+        // Initialize requirements check
+        let meetsLength = password.length >= 8;
+        let meetsLowercase = /[a-z]/.test(password);
+        let meetsUppercase = /[A-Z]/.test(password);
+        let meetsNumber = /[0-9]/.test(password);
+        let meetsSpecial = /[^A-Za-z0-9]/.test(password);
+        
+        // Update requirements list with check or x mark
+        updateRequirement(reqLength, meetsLength);
+        updateRequirement(reqLowercase, meetsLowercase);
+        updateRequirement(reqUppercase, meetsUppercase);
+        updateRequirement(reqNumber, meetsNumber);
+        updateRequirement(reqSpecial, meetsSpecial);
+        
+        // Calculate strength percentage
+        let strength = 0;
+        if (password.length > 0) {
+            if (meetsLength) strength += 20;
+            if (meetsLowercase) strength += 20;
+            if (meetsUppercase) strength += 20;
+            if (meetsNumber) strength += 20;
+            if (meetsSpecial) strength += 20;
+        }
+        
+        // Update strength bar
+        strengthBar.style.width = strength + '%';
+        
+        // Set color based on strength
+        if (strength < 40) {
+            strengthBar.className = 'progress-bar bg-danger';
+        } else if (strength < 80) {
+            strengthBar.className = 'progress-bar bg-warning';
+        } else {
+            strengthBar.className = 'progress-bar bg-success';
+        }
+        
+        return strength === 100;
+    }
+    
+    function updateRequirement(element, isMet) {
+        if (isMet) {
+            element.querySelector('i').className = 'bi bi-check-circle text-success';
+        } else {
+            element.querySelector('i').className = 'bi bi-x-circle text-danger';
+        }
+    }
+    
+    passwordField.addEventListener('input', function() {
+        checkPasswordStrength(this.value);
+    });
+
     // Form validation
     const registerForm = document.querySelector('#registerForm');
     const registerMessage = document.querySelector('#registerMessage');
+    const confirmPasswordField = document.querySelector('#confirmPassword');
+    
+    // Check password match when confirm password changes
+    confirmPasswordField.addEventListener('input', function() {
+        const password = passwordField.value;
+        const confirmPassword = this.value;
+        
+        if (password === confirmPassword) {
+            this.setCustomValidity('');
+        } else {
+            this.setCustomValidity('Passwords do not match');
+        }
+    });
     
     registerForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
+        // Check if password meets strength requirements
+        if (!checkPasswordStrength(passwordField.value)) {
+            registerMessage.innerHTML = '<div class="alert alert-danger">Password does not meet all requirements</div>';
+            return;
+        }
+        
         // Check if passwords match
-        const password = document.querySelector('#password').value;
-        const confirmPassword = document.querySelector('#confirmPassword').value;
+        const password = passwordField.value;
+        const confirmPassword = confirmPasswordField.value;
         
         if (password !== confirmPassword) {
             registerMessage.innerHTML = '<div class="alert alert-danger">Passwords do not match!</div>';

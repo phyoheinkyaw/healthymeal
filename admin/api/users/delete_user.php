@@ -14,7 +14,7 @@ function debug_log($msg) {
 
 debug_log('Delete user called. POST: ' . json_encode($_POST) . ' SESSION: ' . json_encode($_SESSION));
 
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] != 1) {
     debug_log('Unauthorized access');
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);

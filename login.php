@@ -1,16 +1,21 @@
 <?php
-require_once 'includes/auth_check.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once 'config/connection.php';
+require_once 'api/auth/utils/auth_functions.php';
 
 // Check for remember me token and get user role
 $role = checkRememberToken();
 
 // If user is already logged in, redirect based on role
 if ($role) {
-    $redirect_url = ($role === 'admin') ? 'admin' : 'index.php';
+    $redirect_url = ($role == 1) ? 'admin' : 'index.php';
     header("Location: " . $redirect_url);
     exit();
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,11 +41,36 @@ if ($role) {
                     <h2 class="text-center mb-4">Welcome Back</h2>
                     
                     <!-- Alert for errors/messages -->
-                    <div id="loginMessage"></div>
+                    <div id="loginMessage">
+                        <?php if (isset($_SESSION['reactivation_success']) && $_SESSION['reactivation_success'] === true): ?>
+                            <div class="alert alert-success">
+                                Your account has been successfully reactivated. You can now log in.
+                            </div>
+                            <?php unset($_SESSION['reactivation_success']); ?>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($_SESSION['login_error'])): ?>
+                            <div class="alert alert-danger">
+                                <?php 
+                                    switch($_SESSION['login_error']) {
+                                        case 'invalid_password':
+                                            echo 'Invalid password. Please try again.';
+                                            break;
+                                        case 'user_not_found':
+                                            echo 'Username not found. Please check your username or register.';
+                                            break;
+                                        default:
+                                            echo 'An error occurred. Please try again.';
+                                    }
+                                    unset($_SESSION['login_error']);
+                                ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                     
                     <form id="loginForm" action="api/auth/login.php" method="POST">
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email address</label>
+                            <label for="email" class="form-label">Email</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                                 <input type="email" class="form-control" id="email" name="email" required>
@@ -59,7 +89,7 @@ if ($role) {
                         </div>
                         
                         <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember" value="true">
                             <label class="form-check-label" for="remember">Remember me</label>
                         </div>
                         
@@ -97,16 +127,13 @@ document.addEventListener('DOMContentLoaded', function() {
         this.querySelector('i').classList.toggle('bi-eye-slash');
     });
 
-    // Handle form submission
-    const loginForm = document.querySelector('#loginForm');
-    const loginMessage = document.querySelector('#loginMessage');
-    
+    // Handle form submission with AJAX
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
     loginForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
-        // Convert checkbox value to string 'true' or 'false'
-        formData.set('remember', formData.get('remember') === 'on' ? 'true' : 'false');
         
         fetch(this.action, {
             method: 'POST',
@@ -115,32 +142,44 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                loginMessage.innerHTML = `
+                    // Show success message
+                    const messageDiv = document.getElementById('loginMessage');
+                    messageDiv.innerHTML = `
                     <div class="alert alert-success">
                         ${data.message}
                     </div>
                 `;
-                // Redirect based on role
-                setTimeout(() => {
+                    
+                    // Redirect after a short delay
+                    setTimeout(function() {
                     window.location.href = data.redirect_url;
                 }, 1000);
             } else {
-                loginMessage.innerHTML = `
+                    // Handle inactive account
+                    if (data.message === 'account_inactive') {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        // Show error message
+                        const messageDiv = document.getElementById('loginMessage');
+                        messageDiv.innerHTML = `
                     <div class="alert alert-danger">
                         ${data.message}
                     </div>
                 `;
+                    }
             }
         })
         .catch(error => {
-            loginMessage.innerHTML = `
+                console.error('Error:', error);
+                const messageDiv = document.getElementById('loginMessage');
+                messageDiv.innerHTML = `
                 <div class="alert alert-danger">
                     An error occurred. Please try again.
                 </div>
             `;
-            console.error('Login error:', error);
+            });
         });
-    });
+    }
 });
 </script>
 

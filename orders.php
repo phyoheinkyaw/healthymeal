@@ -15,20 +15,45 @@ if (isset($_SESSION['reset_cart_count']) && $_SESSION['reset_cart_count']) {
     $_SESSION['reset_cart_count'] = false; // Reset the flag
 }
 
+// Check if redirected from checkout with success
+$checkout_success = isset($_GET['checkout_success']) && $_GET['checkout_success'] === 'true';
+$new_order_id = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
+
 // Fetch user's orders with their items
 $stmt = $mysqli->prepare("
-    SELECT o.*, 
-           os.status_name,
-           COUNT(oi.order_item_id) as total_items,
-           SUM(oi.quantity * oi.price_per_unit) as total_amount
+    SELECT 
+        o.*,
+        os.status_name,
+        ps.payment_method,
+        COALESCE(pv.payment_status, 0) as payment_status,
+        COALESCE(pv.payment_verified, 0) as payment_verified,
+        COALESCE(pv.transfer_slip, '') as transfer_slip,
+        COUNT(oi.order_item_id) as items_count,
+        SUM(oi.price_per_unit * oi.quantity) as subtotal,
+        (SELECT COUNT(*) FROM order_notifications 
+         WHERE order_id = o.order_id 
+         AND user_id = ? 
+         AND is_read = 0) as unread_notifications
     FROM orders o
-    LEFT JOIN order_status os ON o.status_id = os.status_id
+    JOIN order_status os ON o.status_id = os.status_id
+    LEFT JOIN payment_settings ps ON o.payment_method_id = ps.id
+    LEFT JOIN (
+        SELECT ph1.* 
+        FROM payment_history ph1
+        LEFT JOIN payment_history ph2 ON ph1.order_id = ph2.order_id AND ph1.payment_id < ph2.payment_id
+        WHERE ph2.payment_id IS NULL
+    ) ph ON o.order_id = ph.order_id
+    LEFT JOIN payment_verifications pv ON ph.payment_id = pv.payment_id
     LEFT JOIN order_items oi ON o.order_id = oi.order_id
     WHERE o.user_id = ?
-    GROUP BY o.order_id
+    GROUP BY o.order_id, o.user_id, o.status_id, o.created_at, o.updated_at, os.status_name, ps.payment_method, 
+             o.delivery_address, o.contact_number, o.customer_phone, o.delivery_notes, o.payment_method_id, 
+             o.account_phone, o.delivery_fee, o.delivery_option_id, o.expected_delivery_date, 
+             o.preferred_delivery_time, o.subtotal, o.tax, o.total_amount,
+             pv.payment_status, pv.payment_verified, pv.transfer_slip
     ORDER BY o.created_at DESC
 ");
-$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->bind_param("ii", $_SESSION['user_id'], $_SESSION['user_id']);
 $stmt->execute();
 $orders = $stmt->get_result();
 
@@ -198,6 +223,30 @@ $user = $userStmt->get_result()->fetch_assoc();
                 display: block;
             }
         }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(45deg, #4e73df, #224abe);
+        }
+        .bg-gradient-success {
+            background: linear-gradient(45deg, #1cc88a, #13855c);
+        }
+        .bg-gradient-info {
+            background: linear-gradient(45deg, #36b9cc, #258391);
+        }
+        .icon-circle {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
     </style>
 </head>
 
@@ -262,55 +311,212 @@ $user = $userStmt->get_result()->fetch_assoc();
     <!-- Main Content -->
     <div class="main-content">
         <div class="content-header">
-            <h1>My Orders</h1>
-            <p class="text-muted">View and track your order history</p>
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h1 class="m-0">My Orders</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="float-sm-end">
+                            <a href="meal-kits.php" class="btn btn-primary">
+                                <i class="bi bi-bag-plus"></i> Continue Shopping
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        
+        <?php 
+        // Fetch recent order notifications
+        $notification_stmt = $mysqli->prepare("
+            SELECT notif.message, notif.created_at, o.order_id, os.status_name 
+            FROM order_notifications notif
+            JOIN orders o ON notif.order_id = o.order_id
+            JOIN order_status os ON o.status_id = os.status_id
+            WHERE notif.user_id = ? 
+            ORDER BY notif.created_at DESC
+            LIMIT 5
+        ");
+        $notification_stmt->bind_param("i", $_SESSION['user_id']);
+        $notification_stmt->execute();
+        $recent_notifications = $notification_stmt->get_result();
+        
+        if ($recent_notifications->num_rows > 0):
+        ?>
+        <div class="container-fluid mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-bell me-2"></i>Recent Order Updates</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <?php while ($notification = $recent_notifications->fetch_assoc()): 
+                            // Determine icon based on message content
+                            $icon = 'bi-info-circle';
+                            if (strpos($notification['message'], 'delivered') !== false) {
+                                $icon = 'bi-check-circle-fill text-success';
+                            } elseif (strpos($notification['message'], 'verified') !== false) {
+                                $icon = 'bi-shield-check text-success';
+                            } elseif (strpos($notification['message'], 'processing') !== false) {
+                                $icon = 'bi-gear text-primary';
+                            } elseif (strpos($notification['message'], 'cancelled') !== false) {
+                                $icon = 'bi-x-circle text-danger';
+                            } elseif (strpos($notification['message'], 'payment') !== false) {
+                                $icon = 'bi-credit-card text-info';
+                            }
+                        ?>
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi <?php echo $icon; ?> fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1"><?php echo htmlspecialchars($notification['message']); ?></h6>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge 
+                                                <?php echo match($notification['status_name']) {
+                                                    'Pending' => 'bg-warning text-dark',
+                                                    'Processing' => 'bg-info text-dark',
+                                                    'Shipped' => 'bg-primary',
+                                                    'Delivered' => 'bg-success',
+                                                    'Cancelled' => 'bg-danger',
+                                                    default => 'bg-secondary'
+                                                }; ?>
+                                                me-2"><?php echo htmlspecialchars($notification['status_name']); ?></span>
+                                            <small class="text-muted">Order #<?php echo $notification['order_id']; ?></small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted"><?php echo date('M d, g:i A', strtotime($notification['created_at'])); ?></small>
+                            </div>
+                        </div>
+                        <?php endwhile; ?>
+                    </div>
+                    <div class="card-footer bg-light py-2 text-end">
+                        <a href="#" onclick="document.getElementById('orderSearch').focus()" class="link-primary text-decoration-none">
+                            <i class="bi bi-search me-1"></i>Find My Orders
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <?php if ($checkout_success && $new_order_id > 0): ?>
+        <div class="container-fluid mb-4">
+            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                <div class="d-flex align-items-center">
+                    <div class="icon-circle bg-success bg-opacity-25 me-3">
+                        <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+                    </div>
+                    <div>
+                        <h4 class="alert-heading mb-1">Order Placed Successfully!</h4>
+                        <p class="mb-1">Your order #<?php echo $new_order_id; ?> has been received and is being processed. You can track its status below.</p>
+                        <?php if ($orders->num_rows > 0): $orders->data_seek(0); $latest_order = $orders->fetch_assoc(); ?>
+                            <?php if ($latest_order['payment_method'] != 'Cash on Delivery'): ?>
+                                <?php if ($latest_order['payment_status'] == 4): ?>
+                                    <div class="mt-2">
+                                        <strong>Note:</strong> Partial payment received. Please complete the remaining payment.
+                                    </div>
+                                <?php elseif ($latest_order['payment_verified'] == 0): ?>
+                                    <div class="mt-2">
+                                        <strong>Note:</strong> Your payment is being verified. You'll be notified once it's confirmed.
+                                    </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+        
+        <script>
+            // Highlight the newly placed order
+            document.addEventListener('DOMContentLoaded', function() {
+                const newOrderRow = document.querySelector(`tr.order-item[data-order-id="${<?php echo $new_order_id; ?>}"]`);
+                if (newOrderRow) {
+                    newOrderRow.classList.add('table-success');
+                    newOrderRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Pulse animation effect
+                    setTimeout(() => {
+                        newOrderRow.style.transition = 'all 0.5s ease-in-out';
+                        newOrderRow.style.boxShadow = '0 0 10px 5px rgba(25, 135, 84, 0.3)';
+                        
+                        setTimeout(() => {
+                            newOrderRow.style.boxShadow = 'none';
+                        }, 1500);
+                    }, 500);
+                }
+            });
+        </script>
+        <?php endif; ?>
         
         <div class="row mb-4">
             <!-- Order Statistics -->
             <div class="col-md-4 mb-3">
-                <div class="card bg-primary text-white text-center">
+                <div class="card border-0 shadow-sm bg-gradient-primary text-white">
                     <div class="card-body py-4">
-                        <h2 class="display-4"><?php echo $orders->num_rows; ?></h2>
-                        <p class="mb-0">Total Orders</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase mb-2">Total Orders</h6>
+                                <h2 class="display-4 mb-0"><?php echo $orders->num_rows; ?></h2>
+                            </div>
+                            <div class="icon-circle bg-white bg-opacity-25">
+                                <i class="bi bi-bag-check fs-1"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-4 mb-3">
-                <div class="card bg-success text-white text-center">
+                <div class="card border-0 shadow-sm bg-gradient-success text-white">
                     <div class="card-body py-4">
-                        <?php
-                        $pendingCount = 0;
-                        $orders->data_seek(0);
-                        while ($order = $orders->fetch_assoc()) {
-                            if ($order['status_name'] == 'Pending' || $order['status_name'] == 'Processing') {
-                                $pendingCount++;
-                            }
-                        }
-                        $orders->data_seek(0);
-                        ?>
-                        <h2 class="display-4"><?php echo $pendingCount; ?></h2>
-                        <p class="mb-0">Active Orders</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase mb-2">Active Orders</h6>
+                                <?php
+                                $pendingCount = 0;
+                                $orders->data_seek(0);
+                                while ($order = $orders->fetch_assoc()) {
+                                    if ($order['status_name'] == 'Pending' || $order['status_name'] == 'Processing') {
+                                        $pendingCount++;
+                                    }
+                                }
+                                $orders->data_seek(0);
+                                ?>
+                                <h2 class="display-4 mb-0"><?php echo $pendingCount; ?></h2>
+                            </div>
+                            <div class="icon-circle bg-white bg-opacity-25">
+                                <i class="bi bi-clock-history fs-1"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-4 mb-3">
-                <div class="card bg-info text-white text-center">
+                <div class="card border-0 shadow-sm bg-gradient-info text-white">
                     <div class="card-body py-4">
-                        <h2 class="display-4">
-                        <?php
-                        $totalSpent = 0;
-                        $orders->data_seek(0);
-                        while ($order = $orders->fetch_assoc()) {
-                            $totalSpent += $order['total_amount'] + $order['delivery_fee'];
-                        }
-                        $orders->data_seek(0);
-                        echo '$' . number_format($totalSpent, 2);
-                        ?>
-                        </h2>
-                        <p class="mb-0">Total Spent</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase mb-2">Total Spent</h6>
+                                <?php
+                                $totalSpent = 0;
+                                $orders->data_seek(0);
+                                while ($order = $orders->fetch_assoc()) {
+                                    $totalSpent += $order['total_amount'] + $order['delivery_fee'];
+                                }
+                                $orders->data_seek(0);
+                                ?>
+                                <h2 class="display-4 mb-0"><?php echo number_format($totalSpent); ?> MMK</h2>
+                            </div>
+                            <div class="icon-circle bg-white bg-opacity-25">
+                                <i class="bi bi-wallet2 fs-1"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -320,10 +526,10 @@ $user = $userStmt->get_result()->fetch_assoc();
         <div class="card mb-4">
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6 mb-3 mb-md-0">
+                    <div class="col-md-5 mb-3 mb-md-0">
                         <input type="text" id="orderSearch" class="form-control" placeholder="Search orders...">
                     </div>
-                    <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="col-md-5 mb-3 mb-md-0">
                         <select id="statusFilter" class="form-select">
                             <option value="all">All Statuses</option>
                             <option value="Pending">Pending</option>
@@ -331,6 +537,8 @@ $user = $userStmt->get_result()->fetch_assoc();
                             <option value="Shipped">Shipped</option>
                             <option value="Delivered">Delivered</option>
                             <option value="Cancelled">Cancelled</option>
+                            <option value="needs_verification">Needs Payment Verification</option>
+                            <option value="payment_failed">Payment Failed</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -354,19 +562,32 @@ $user = $userStmt->get_result()->fetch_assoc();
                                 <th>Date</th>
                                 <th>Items</th>
                                 <th>Status</th>
+                                <th>Payment</th>
                                 <th>Total</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php while ($order = $orders->fetch_assoc()): ?>
-                            <tr class="order-item" data-status="<?php echo $order['status_name']; ?>">
-                                <td><strong>#<?php echo $order['order_id']; ?></strong></td>
+                            <tr class="order-item" data-order-id="<?php echo $order['order_id']; ?>" 
+                                data-status="<?php echo $order['status_name']; ?>"
+                                data-payment-method="<?php echo $order['payment_method']; ?>"
+                                data-needs-verification="<?php echo (!empty($order['transfer_slip']) && $order['payment_verified'] == 0 && $order['payment_method'] != 'Cash on Delivery') ? '1' : '0'; ?>">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <strong>#<?php echo $order['order_id']; ?></strong>
+                                        <?php if ($order['unread_notifications'] > 0): ?>
+                                        <span class="badge bg-danger rounded-pill ms-2" title="<?php echo $order['unread_notifications']; ?> unread updates">
+                                            <?php echo $order['unread_notifications']; ?>
+                                        </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
                                 <td>
                                     <div><?php echo date('M d, Y', strtotime($order['created_at'])); ?></div>
                                     <small class="text-muted"><?php echo date('h:i A', strtotime($order['created_at'])); ?></small>
                                 </td>
-                                <td><?php echo $order['total_items']; ?> items</td>
+                                <td><?php echo $order['items_count']; ?> items</td>
                                 <td>
                                     <?php
                                     $statusClass = match($order['status_name']) {
@@ -380,7 +601,32 @@ $user = $userStmt->get_result()->fetch_assoc();
                                     ?>
                                     <span class="badge <?php echo $statusClass; ?>"><?php echo $order['status_name']; ?></span>
                                 </td>
-                                <td>$<?php echo number_format($order['total_amount'] + $order['delivery_fee'], 2); ?></td>
+                                <td>
+                                    <?php if ($order['payment_method'] != 'Cash on Delivery'): ?>
+                                        <?php if ($order['payment_verified'] == 1): ?>
+                                            <span class="badge bg-success">Verified</span>
+                                        <?php elseif ($order['payment_status'] == 2): ?>
+                                            <span class="badge bg-danger">Payment Failed</span>
+                                            <a href="#" class="small d-block mt-1 text-danger fw-bold" 
+                                               onclick="viewOrderDetails(<?php echo $order['order_id']; ?>); return false;">
+                                                <i class="bi bi-exclamation-triangle"></i> Action Required
+                                            </a>
+                                        <?php elseif ($order['payment_status'] == 4): ?>
+                                            <span class="badge bg-warning text-dark">Partial Payment</span>
+                                            <a href="#" class="small d-block mt-1 text-warning fw-bold" 
+                                               onclick="viewOrderDetails(<?php echo $order['order_id']; ?>); return false;">
+                                                <i class="bi bi-info-circle"></i> View Details
+                                            </a>
+                                        <?php elseif ($order['payment_status'] == 3): ?>
+                                            <span class="badge bg-info">Refunded</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-warning text-dark">Pending Verification</span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="badge bg-info">COD</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo number_format($order['subtotal'] + $order['delivery_fee']); ?> MMK</td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-outline-primary" 
                                             onclick="viewOrderDetails(<?php echo $order['order_id']; ?>)">
@@ -519,10 +765,38 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#statusFilter').on('change', function() {
         const status = this.value;
         
+        // Clear any existing custom search filter
+        $.fn.dataTable.ext.search.pop();
+        
         if (status === 'all') {
-            table.column(3).search('').draw();
+            table.search('').draw();
+        } else if (status === 'needs_verification') {
+            // Custom filtering for orders that need verification
+            $.fn.dataTable.ext.search.push(
+                function(settings, data, dataIndex) {
+                    const row = table.row(dataIndex).node();
+                    return $(row).attr('data-needs-verification') === '1';
+                }
+            );
+            table.draw();
+        } else if (status === 'payment_failed') {
+            // Custom filtering for orders with failed payment
+            $.fn.dataTable.ext.search.push(
+                function(settings, data, dataIndex) {
+                    const badge = $(table.row(dataIndex).node()).find('td:nth-child(5) .badge.bg-danger');
+                    return badge.length > 0 && badge.text() === 'Payment Failed';
+                }
+            );
+            table.draw();
         } else {
-            table.column(3).search(status).draw();
+            // Filter by order status
+            $.fn.dataTable.ext.search.push(
+                function(settings, data, dataIndex) {
+                    const row = table.row(dataIndex).node();
+                    return $(row).attr('data-status') === status;
+                }
+            );
+            table.draw();
         }
     });
     
@@ -530,7 +804,9 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#resetFilters').on('click', function() {
         $('#orderSearch').val('');
         $('#statusFilter').val('all');
-        table.search('').columns().search('').draw();
+        // Clear any custom search filters
+        $.fn.dataTable.ext.search.pop();
+        table.search('').draw();
     });
 });
 
@@ -550,13 +826,37 @@ function viewOrderDetails(orderId) {
                 document.getElementById('orderDetailsContent').innerHTML = data.html;
                 const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
                 modal.show();
+                
+                // Update notification badge (remove it when order details are viewed)
+                const orderRow = document.querySelector(`tr.order-item[data-order-id="${orderId}"]`);
+                if (orderRow) {
+                    const badge = orderRow.querySelector('.badge.bg-danger');
+                    if (badge) {
+                        badge.remove();
+                    }
+                }
             } else {
-                alert(data.message);
+                // Show error in toast
+                const errorToast = document.getElementById('errorToast');
+                if (errorToast) {
+                    document.getElementById('errorToastMessage').textContent = data.message || 'Error fetching order details';
+                    const toast = new bootstrap.Toast(errorToast);
+                    toast.show();
+                } else {
+                    alert(data.message);
+                }
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while fetching order details');
+            const errorToast = document.getElementById('errorToast');
+            if (errorToast) {
+                document.getElementById('errorToastMessage').textContent = 'An error occurred while fetching order details';
+                const toast = new bootstrap.Toast(errorToast);
+                toast.show();
+            } else {
+                alert('An error occurred while fetching order details');
+            }
         });
 }
 
@@ -622,6 +922,86 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Add uploadPaymentSlip function to handle payment slip uploads
+function uploadPaymentSlip() {
+    const form = document.getElementById("paymentSlipForm");
+    if (!form) {
+        console.error("Payment slip form not found");
+        return;
+    }
+    
+    const formData = new FormData(form);
+    const fileInput = document.getElementById("transferSlip");
+    
+    // Validate file
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert("Please select a file to upload");
+        return;
+    }
+    
+    // Show loading state
+    const uploadBtn = form.querySelector("button[type='button']");
+    const originalText = uploadBtn.innerHTML;
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Uploading...';
+    
+    fetch("api/orders/upload_payment_slip.php", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Reset button state
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalText;
+        
+        if (data.success) {
+            // Show success message
+            const successToast = document.getElementById("successToast");
+            if (successToast) {
+                const toastBody = successToast.querySelector(".toast-body");
+                if (toastBody) {
+                    toastBody.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i>' + data.message;
+                }
+                const toast = new bootstrap.Toast(successToast);
+                toast.show();
+            } else {
+                alert("Success: " + data.message);
+            }
+            
+            // Close the modal and reload the page after a delay
+            setTimeout(() => {
+                const orderModal = bootstrap.Modal.getInstance(document.getElementById("orderDetailsModal"));
+                if (orderModal) {
+                    orderModal.hide();
+                }
+                location.reload();
+            }, 2000);
+        } else {
+            // Show error message
+            const errorToast = document.getElementById("errorToast");
+            if (errorToast) {
+                const toastBody = errorToast.querySelector(".toast-body");
+                if (toastBody) {
+                    toastBody.innerHTML = '<i class="bi bi-exclamation-circle text-danger me-2"></i>' + data.message;
+                }
+                const toast = new bootstrap.Toast(errorToast);
+                toast.show();
+            } else {
+                alert("Error: " + data.message);
+            }
+        }
+    })
+    .catch(error => {
+        // Reset button state
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalText;
+        
+        console.error("Error:", error);
+        alert("An error occurred while uploading the payment slip. Please try again.");
+    });
+}
 
 </script>
 

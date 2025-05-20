@@ -1,90 +1,207 @@
-function toggleSidebar() {
-    const sidebar = document.getElementById('adminSidebar');
-    const body = document.body;
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize sidebar functionality
+    initSidebar();
     
-    if (!sidebar) {
-        return;
+    // Initialize DataTables with consistent settings
+    initDataTables();
+    
+    // Auto-dismiss alerts
+    autoCloseAlerts();
+});
+
+// Sidebar functionality
+function initSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+    const closeSidebarBtn = document.querySelector('.btn-close-sidebar');
+    
+    if (toggleSidebarBtn) {
+        toggleSidebarBtn.addEventListener('click', function() {
+            toggleSidebar();
+        });
     }
     
-    if (sidebar.classList.contains('show')) {
-        sidebar.classList.remove('show');
-        body.classList.remove('sidebar-open');
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', function() {
+            closeSidebar();
+        });
+    }
+    
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function() {
+            closeSidebar();
+        });
+    }
+    
+    // Toggle mini sidebar on medium screens
+    if (window.innerWidth >= 992 && window.innerWidth < 1200) {
+        document.querySelector('.admin-container').classList.add('mini-sidebar');
+    }
+    
+    // Handle window resize events
+    window.addEventListener('resize', function() {
+        handleResponsiveLayout();
+    });
+    
+    // Initial layout setup
+    handleResponsiveLayout();
+}
+
+function handleResponsiveLayout() {
+    const adminContainer = document.querySelector('.admin-container');
+    
+    // Toggle mini sidebar based on screen width
+    if (window.innerWidth >= 992 && window.innerWidth < 1200) {
+        adminContainer.classList.add('mini-sidebar');
     } else {
-        sidebar.classList.add('show');
-        body.classList.add('sidebar-open');
+        adminContainer.classList.remove('mini-sidebar');
+    }
+    
+    // Close sidebar on mobile view when resizing
+    if (window.innerWidth < 992) {
+        closeSidebar();
     }
 }
 
-// Close sidebar when clicking outside on mobile
-document.addEventListener('click', function(event) {
+function toggleSidebar() {
     const sidebar = document.getElementById('adminSidebar');
-    const sidebarToggle = document.querySelector('.sidebar-toggle');
-    const body = document.body;
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
     
-    if (!sidebar || !sidebarToggle) {
-        return;
+    if (!sidebar) return;
+    
+    if (sidebar.classList.contains('show')) {
+        closeSidebar();
+    } else {
+        openSidebar();
     }
+}
+
+function openSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
     
-    if (window.innerWidth <= 991.98) {
-        if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
-            if (sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                body.classList.remove('sidebar-open');
+    if (!sidebar) return;
+    
+    sidebar.classList.add('show');
+    if (sidebarOverlay) {
+        sidebarOverlay.classList.add('show');
+    }
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (!sidebar) return;
+    
+    sidebar.classList.remove('show');
+    if (sidebarOverlay) {
+        sidebarOverlay.classList.remove('show');
+    }
+    document.body.style.overflow = '';
+}
+
+// Initialize DataTables
+function initDataTables() {
+    // Select all DataTables in the admin panel
+    const tables = document.querySelectorAll('table.dataTable, table.table');
+    
+    // Initialize DataTables with consistent settings
+    tables.forEach(table => {
+        // Skip tables that are initialized in specific page scripts
+        const skipTables = [
+            'blogPostsTable',    // Initialized in blog-posts.js
+            'ordersTable',       // Initialized in orders.js
+            'usersTable',        // Initialized in users.js
+            'ingredientsTable',  // Initialized in ingredients.js
+            'categoriesTable',   // Initialized in categories.js
+            'mealKitsTable'      // Initialized in meal-kits.js
+        ];
+        
+        if (table.id && !table.classList.contains('dataTable') && !skipTables.includes(table.id)) {
+            try {
+                const dataTable = new DataTable('#' + table.id, {
+                    responsive: true,
+                    order: [[0, 'desc']], // Default sorting by ID descending
+                    language: {
+                        search: "Search:",
+                        lengthMenu: "Show _MENU_ entries per page",
+                        info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                        infoEmpty: "Showing 0 to 0 of 0 entries",
+                        emptyTable: "No data available",
+                        paginate: {
+                            first: '<i class="bi bi-chevron-double-left"></i>',
+                            previous: '<i class="bi bi-chevron-left"></i>',
+                            next: '<i class="bi bi-chevron-right"></i>',
+                            last: '<i class="bi bi-chevron-double-right"></i>'
+                        }
+                    },
+                    initComplete: function() {
+                        // Add placeholder to search input
+                        $('.dataTables_filter input')
+                            .attr('placeholder', 'Type to search...')
+                            .addClass('search-input');
+                    }
+                });
+            } catch (e) {
+                console.warn('Could not initialize DataTable for #' + table.id, e);
             }
         }
-    }
-});
+    });
+}
 
-// Handle window resize
-window.addEventListener('resize', function() {
-    const sidebar = document.getElementById('adminSidebar');
-    const body = document.body;
-    
-    if (!sidebar) {
-        return;
-    }
-    
-    if (window.innerWidth > 991.98) {
-        sidebar.classList.remove('show');
-        body.classList.remove('sidebar-open');
-    }
-});
-
-// Helper function to show alerts (moved from meal-kits.js for global use)
-function showAlert(type, message) {
-    try {
-        const alertsContainer = document.getElementById('alertsContainer');
-        if (alertsContainer) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-transition`;
-            alertDiv.role = 'alert';
-            alertDiv.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <strong>${message}</strong>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-            alertsContainer.appendChild(alertDiv);
-            // Add show class to trigger transition
-            setTimeout(() => {
-                alertDiv.classList.add('show');
-            }, 100);
-            // Initialize Bootstrap alert
-            new bootstrap.Alert(alertDiv);
-            // Remove alert after 3 seconds with transition
-            setTimeout(() => {
-                alertDiv.classList.remove('show');
-                alertDiv.classList.add('fade-out');
+// Auto-dismiss alerts
+function autoCloseAlerts() {
+    const alerts = document.querySelectorAll('.alert:not(.persistent)');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            if (alert && alert.parentNode) {
+                alert.classList.add('fade-out');
                 setTimeout(() => {
-                    alertDiv.remove();
-                }, 300);
-            }, 3000);
-        }
-    } catch (e) {
-        alert('Error showing alert');
+                    if (alert.parentNode) alert.parentNode.removeChild(alert);
+                }, 500);
+            }
+        }, 5000);
+    });
+}
+
+// Show alert function for JS-based alerts
+function showAlert(type, message, duration = 5000) {
+    const alertContainer = document.getElementById('alertContainer') || document.createElement('div');
+    
+    if (!document.getElementById('alertContainer')) {
+        alertContainer.id = 'alertContainer';
+        alertContainer.className = 'position-fixed top-0 end-0 p-3 z-index-1061';
+        alertContainer.style.zIndex = '1061';
+        document.body.appendChild(alertContainer);
     }
+    
+    const alertId = 'alert-' + Date.now();
+    const alertHTML = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+    
+    const alertElement = document.getElementById(alertId);
+    
+    if (duration > 0) {
+        setTimeout(() => {
+            if (alertElement && alertElement.parentNode) {
+                alertElement.classList.add('fade-out');
+                setTimeout(() => {
+                    if (alertElement.parentNode) alertElement.parentNode.removeChild(alertElement);
+                }, 500);
+            }
+        }, duration);
+    }
+    
+    return alertElement;
 }
 
 // Custom confirm modal for delete (dynamic, orders/categories style)
@@ -123,19 +240,3 @@ function showDeleteConfirmModal(onConfirm, options = {}) {
         $('#deleteConfirmModal').remove();
     });
 }
-
-// Initialize DataTables
-$(document).ready(function() {
-    if (!$.fn.DataTable.isDataTable('#ordersTable')) {
-        $('#ordersTable').DataTable({
-            responsive: true,
-            order: [[2, 'desc']], // Sort by date column by default
-            language: {
-                search: "Search orders:",
-                lengthMenu: "Show _MENU_ orders per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ orders",
-                emptyTable: "No orders available"
-            }
-        });
-    }
-});

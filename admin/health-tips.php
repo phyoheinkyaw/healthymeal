@@ -5,7 +5,7 @@ require_once '../includes/auth_check.php';
 $role = checkRememberToken();
 
 // Redirect non-admin users
-if (!$role || $role !== 'admin') {
+if (!$role || $role != 1) {
     header("Location: /hm/login.php");
     exit();
 }
@@ -108,6 +108,8 @@ if ($result) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/admin.css">
 </head>
@@ -164,11 +166,11 @@ if ($result) {
                             <div class="d-flex justify-content-end gap-2">
                                 <?php if ($edit_tip_id): ?>
                                     <a href="health-tips.php" class="btn btn-secondary">
-                                        <i class="bi bi-x-lg me-2"></i> Cancel
+                                        <i class="bi bi-x-lg"></i> Cancel
                                     </a>
                                 <?php endif; ?>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-save me-2"></i> <?php echo $edit_tip_id ? 'Save Changes' : 'Add Tip'; ?>
+                                <button type="submit" class="btn btn-primary btn-ripple">
+                                    <i class="bi bi-save"></i> <?php echo $edit_tip_id ? 'Save Changes' : 'Add Tip'; ?>
                                 </button>
                             </div>
                         </form>
@@ -179,7 +181,7 @@ if ($result) {
                 <div class="card">
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover" id="healthTipsTable">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
@@ -195,12 +197,14 @@ if ($result) {
                                         <td><?php echo htmlspecialchars($tip['content']); ?></td>
                                         <td><?php echo date('M d, Y H:i', strtotime($tip['created_at'])); ?></td>
                                         <td>
-                                            <a href="health-tips.php?edit=<?php echo $tip['tip_id']; ?>" class="btn btn-warning btn-sm me-2">
+                                            <div class="btn-group">
+                                                <a href="health-tips.php?edit=<?php echo $tip['tip_id']; ?>" class="btn btn-sm btn-outline-warning">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal" data-tip-id="<?php echo $tip['tip_id']; ?>">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal" data-tip-id="<?php echo $tip['tip_id']; ?>">
                                                 <i class="bi bi-trash"></i>
                                             </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -229,7 +233,7 @@ if ($result) {
                     <form method="POST" id="deleteForm">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="tip_id" id="deleteTipId">
-                        <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                        <button type="submit" class="btn btn-danger btn-ripple" id="confirmDeleteBtn">Delete</button>
                     </form>
                 </div>
             </div>
@@ -238,6 +242,11 @@ if ($result) {
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <!-- Admin JS -->
     <script src="assets/js/admin.js"></script>
     

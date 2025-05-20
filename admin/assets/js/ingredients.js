@@ -1,17 +1,3 @@
-// Initialize DataTable
-$(document).ready(function() {
-    $('#ingredientsTable').DataTable({
-        order: [[1, 'asc']],  // Sort by name by default
-        responsive: true,
-        language: {
-            search: "Search ingredients:",
-            lengthMenu: "Show _MENU_ ingredients per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ ingredients",
-            emptyTable: "No ingredients available"
-        }
-    });
-});
-
 // Edit Ingredient
 function editIngredient(id) {
     // Fetch ingredient details

@@ -5,33 +5,45 @@ require_once '../includes/auth_check.php';
 $role = checkRememberToken();
 
 // Redirect non-admin users
-if (!$role || $role !== 'admin') {
+if (!$role || $role != 1) {
     header("Location: /hm/login.php");
     exit();
+}
+
+// Check for payment resubmissions from session
+$resubmitted_order_id = 0;
+if (isset($_SESSION['payment_resubmitted'])) {
+    $resubmitted_order_id = $_SESSION['payment_resubmitted'];
+    // Clear the flag after use
+    unset($_SESSION['payment_resubmitted']);
 }
 
 // Fetch all orders with detailed information
 $stmt = $mysqli->prepare("
     SELECT 
-        o.order_id,
+        o.*,
+        os.status_name,
         u.full_name as customer_name,
         u.email as customer_email,
-        o.created_at,
-        os.status_id,
-        os.status_name,
-        o.delivery_address,
-        o.contact_number,
-        o.delivery_notes,
-        o.payment_method,
-        o.delivery_fee,
-        COUNT(oi.order_item_id) as items_count,
-        SUM(oi.price_per_unit * oi.quantity) as subtotal,
-        SUM(oi.price_per_unit * oi.quantity) + o.delivery_fee as total_amount
+        ph.payment_id,
+        COALESCE(pv.payment_status, 0) as payment_status,
+        COALESCE(pv.payment_verified, 0) as payment_verified,
+        COALESCE(pv.verification_attempt, 0) as verification_attempt,
+        ph.transaction_id,
+        ps.payment_method,
+        (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as items_count,
+        (SELECT transfer_slip FROM payment_verifications WHERE order_id = o.order_id ORDER BY created_at DESC LIMIT 1) as transfer_slip
     FROM orders o
     JOIN users u ON o.user_id = u.user_id
     JOIN order_status os ON o.status_id = os.status_id
-    JOIN order_items oi ON o.order_id = oi.order_id
-    GROUP BY o.order_id
+    LEFT JOIN (
+        SELECT ph1.* 
+        FROM payment_history ph1
+        LEFT JOIN payment_history ph2 ON ph1.order_id = ph2.order_id AND ph1.payment_id < ph2.payment_id
+        WHERE ph2.payment_id IS NULL
+    ) ph ON o.order_id = ph.order_id
+    LEFT JOIN payment_verifications pv ON ph.payment_id = pv.payment_id
+    LEFT JOIN payment_settings ps ON o.payment_method_id = ps.id
     ORDER BY o.created_at DESC
 ");
 
@@ -97,14 +109,21 @@ if ($status_result) {
                                     <th>Customer</th>
                                     <th>Date</th>
                                     <th>Status</th>
+                                    <th>Payment</th>
                                     <th>Items</th>
                                     <th>Total</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php while ($order = $orders->fetch_assoc()): ?>
-                                <tr>
+                                <?php while ($order = $orders->fetch_assoc()): 
+                                    $is_resubmitted = ($resubmitted_order_id > 0 && $resubmitted_order_id == $order['order_id']);
+                                ?>
+                                <tr data-order-id="<?php echo $order['order_id']; ?>" 
+                                    data-status-id="<?php echo $order['status_id']; ?>"
+                                    data-status="<?php echo htmlspecialchars($order['status_name']); ?>"
+                                    data-amount="<?php echo $order['total_amount']; ?>"
+                                    <?php if ($is_resubmitted): ?>class="table-warning" data-resubmitted="true"<?php endif; ?>>
                                     <td>#<?php echo $order['order_id']; ?></td>
                                     <td>
                                         <div><?php echo htmlspecialchars($order['customer_name']); ?></div>
@@ -127,18 +146,79 @@ if ($status_result) {
                                         </select>
                                     </td>
                                     <td>
-                                        <div><?php echo $order['items_count']; ?> items</div>
-                                        <small class="text-muted">$<?php echo number_format($order['subtotal'], 2); ?> + $<?php echo number_format($order['delivery_fee'], 2); ?> delivery</small>
+                                        <div class="d-flex flex-column">
+                                            <?php
+                                            $paymentStatusClass = match($order['payment_status']) {
+                                                0 => 'warning',
+                                                1 => 'success',
+                                                2 => 'danger',
+                                                3 => 'info',
+                                                4 => 'warning',
+                                                default => 'secondary'
+                                            };
+                                            $paymentStatusText = match($order['payment_status']) {
+                                                0 => 'Pending',
+                                                1 => 'Completed',
+                                                2 => 'Failed',
+                                                3 => 'Refunded',
+                                                4 => 'Partial',
+                                                default => 'Unknown'
+                                            };
+                                            ?>
+                                            <span class="badge bg-<?php echo $paymentStatusClass; ?> mb-1">
+                                                <?php echo $paymentStatusText; ?>
+                                            </span>
+                                            <small class="text-muted">
+                                                <?php echo htmlspecialchars($order['payment_method']); ?>
+                                                <?php if(!empty($order['transfer_slip'])): ?>
+                                                    <i class="bi bi-<?php echo $order['payment_verified'] == 1 ? 'check-circle-fill text-success' : 'exclamation-circle text-warning'; ?>"></i>
+                                                    <?php if($order['verification_attempt'] > 1): ?>
+                                                        <span class="badge bg-info">Attempt <?php echo $order['verification_attempt']; ?></span>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </small>
+                                            <?php if($order['payment_method'] === 'Cash on Delivery' && $order['payment_verified'] == 0): ?>
+                                            <div class="mt-1">
+                                                <button type="button" class="btn btn-sm btn-outline-success w-100" 
+                                                        onclick="verifyCODPayment(<?php echo $order['order_id']; ?>)"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Mark COD as Verified">
+                                                    <i class="bi bi-cash-coin"></i> Verify COD
+                                                </button>
+                                            </div>
+                                            <?php elseif(!empty($order['transfer_slip']) && ($order['payment_verified'] == 0 || $order['payment_status'] == 2)): ?>
+                                            <div class="mt-1">
+                                                <button type="button" class="btn btn-sm btn-outline-success w-100" 
+                                                        onclick="verifyPayment(<?php echo $order['order_id']; ?>, <?php echo ($order['payment_verified'] == 1) ? 'true' : 'false'; ?>)"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo ($order['payment_verified'] == 1) ? 'Verify Resubmitted Payment' : 'Verify Payment'; ?>">
+                                                    <i class="bi bi-shield-check"></i> <?php echo ($order['payment_verified'] == 1) ? 'Verify Resubmit' : 'Verify'; ?>
+                                                </button>
+                                            </div>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td>
-                                        <strong>$<?php echo number_format($order['total_amount'], 2); ?></strong>
+                                        <div><?php echo $order['items_count']; ?> items</div>
+                                        <small class="text-muted">
+                                            <?php echo number_format($order['subtotal']); ?> MMK +
+                                            <?php echo number_format($order['tax']); ?> MMK tax + 
+                                            <?php echo number_format($order['delivery_fee']); ?> MMK delivery
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong><?php echo number_format($order['total_amount']); ?> MMK</strong>
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="viewOrderDetails(<?php echo $order['order_id']; ?>)">
+                                            <a href="order-details.php?id=<?php echo $order['order_id']; ?>" class="btn btn-sm btn-outline-info">
                                                 <i class="bi bi-eye"></i>
+                                            </a>
+                                            <?php if(!empty($order['transfer_slip'])): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                    onclick="showPaymentHistory(<?php echo $order['order_id']; ?>)"
+                                                    data-bs-toggle="tooltip" title="Payment History">
+                                                <i class="bi bi-clock-history"></i>
                                             </button>
+                                            <?php endif; ?>
                                             <button type="button" class="btn btn-sm btn-outline-danger" 
                                                     onclick="deleteOrder(<?php echo $order['order_id']; ?>)">
                                                 <i class="bi bi-trash"></i>
@@ -156,21 +236,140 @@ if ($status_result) {
     </main>
 </div>
 
-<!-- Order Details Modal -->
-<div class="modal fade" id="orderDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Order Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<!-- Payment Verification Modal -->
+<div class="modal fade" id="paymentVerificationModal" tabindex="-1" aria-labelledby="paymentVerificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 0.75rem; overflow: hidden;">
+            <div class="modal-header border-0 p-4" style="background: linear-gradient(135deg, #0093E9 0%, #80D0C7 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white p-2 rounded-circle shadow me-3">
+                        <i class="bi bi-shield-check fs-4 text-primary"></i>
+                    </div>
+                    <h5 class="modal-title fs-4 fw-bold text-white m-0" id="paymentVerificationModalLabel">Verify Payment</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div id="orderDetailsContent">
-                    <!-- Content will be loaded dynamically -->
+            <div class="modal-body p-4">
+                <div id="paymentSlipPreview" class="text-center mb-4 p-3 bg-light rounded-4 shadow-sm">
+                    <!-- Payment slip image will be shown here -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Loading payment details...</p>
+                    </div>
+                </div>
+                <form id="verificationForm" class="bg-white p-4 rounded-4 shadow-sm">
+                    <input type="hidden" id="verify_order_id" name="order_id" value="">
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="account_number" class="form-label fw-semibold">Customer Account</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0 rounded-start-3 shadow-sm"><i class="bi bi-person-badge"></i></span>
+                                <input type="text" class="form-control bg-light border-0 rounded-end-3 shadow-sm" id="account_number" name="account_number" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold d-flex align-items-center">
+                                <span>Our KBZPay Account</span>
+                                <span class="badge bg-success ms-2 rounded-pill">For Verification</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-success-subtle border-success border-opacity-25 rounded-start-3 shadow-sm"><i class="bi bi-building"></i></span>
+                                <input type="text" class="form-control bg-success-subtle border-success border-opacity-25 text-success fw-bold rounded-0 shadow-sm" id="company_account" value="" readonly>
+                                <button class="btn btn-success rounded-end-3 shadow-sm" type="button" onclick="copyAccountNumber()">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <div class="form-text small mt-1">Compare with the account number on the slip.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="payment_status" class="form-label fw-semibold">Payment Status</label>
+                        <select class="form-select border-0 shadow-sm rounded-3" id="payment_status" name="payment_status">
+                            <option value="1">Completed</option>
+                            <option value="2">Failed</option>
+                            <option value="3">Refunded</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="transaction_id" class="form-label fw-semibold">Transaction ID</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control border-0 shadow-sm rounded-start-3" id="transaction_id" name="transaction_id" 
+                                   placeholder="Enter transaction ID from the slip" required>
+                            <button class="btn btn-primary rounded-end-3 shadow-sm" type="button" id="scanTransactionBtn" title="Scan Payment Slip">
+                                <i class="bi bi-upc-scan"></i>
+                            </button>
+                        </div>
+                        <div id="transaction_scan_status" class="small text-muted mt-1"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount_verified" class="form-label fw-semibold">Amount Verified (MMK)</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-0 shadow-sm rounded-start-3">MMK</span>
+                            <input type="number" class="form-control border-0 shadow-sm rounded-end-3" id="amount_verified" name="amount_verified" 
+                                step="1" min="0" value="<?php echo $_GET['amount'] ?? ''; ?>" required>
+                        </div>
+                        <div class="form-text small mt-1">Amount is pre-filled from order but can be modified if needed.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="verification_notes" class="form-label fw-semibold">Notes</label>
+                        <textarea class="form-control border-0 shadow-sm rounded-3" id="verification_notes" name="verification_notes" 
+                                  rows="3" placeholder="Add any verification notes here..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 bg-light p-3">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" onclick="submitPaymentVerification()">
+                        <i class="bi bi-shield-check me-2"></i>Verify Payment
+                    </button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Verification History Modal -->
+<div class="modal fade" id="paymentHistoryModal" tabindex="-1" aria-labelledby="paymentHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 0.75rem; overflow: hidden;">
+            <div class="modal-header border-0 p-4" style="background: linear-gradient(135deg, #8BC6EC 0%, #9599E2 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white p-2 rounded-circle shadow me-3">
+                        <i class="bi bi-clock-history fs-4 text-primary"></i>
+                    </div>
+                    <h5 class="modal-title fs-4 fw-bold text-white m-0" id="paymentHistoryModalLabel">Payment Verification History</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="paymentHistoryContent" class="p-4">
+                    <!-- Content will be loaded dynamically -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Loading payment history...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light p-3">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <small class="text-muted">Complete verification history for this order</small>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Close
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -193,6 +392,90 @@ if ($status_result) {
 <!-- Custom JS -->
 <script src="assets/js/admin.js"></script>
 <script src="assets/js/orders.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for resubmitted payments and show notification
+    const resubmittedRow = document.querySelector('tr[data-resubmitted="true"]');
+    if (resubmittedRow) {
+        const orderId = resubmittedRow.dataset.orderId;
+        
+        // Create notification
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-warning alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+                <div>
+                    <strong>Payment Resubmitted!</strong> Order #${orderId} has a new payment slip that needs verification.
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Insert at the top of the page
+        document.getElementById('orderMessage').appendChild(alertDiv);
+        
+        // Scroll to the row and highlight it
+        resubmittedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Add pulsing effect
+        setTimeout(() => {
+            resubmittedRow.style.transition = 'all 0.5s ease-in-out';
+            resubmittedRow.style.boxShadow = '0 0 15px 5px rgba(255, 193, 7, 0.5)';
+            
+            setTimeout(() => {
+                resubmittedRow.style.boxShadow = 'none';
+            }, 2000);
+        }, 500);
+    }
+});
+
+// Function to verify Cash on Delivery payment without requiring a payment slip
+function verifyCODPayment(orderId) {
+    if (!confirm('Are you sure you want to mark this Cash on Delivery payment as verified?')) {
+        return;
+    }
+    
+    const verificationData = {
+        order_id: orderId,
+        verify: true,
+        verification_details: {
+            transaction_id: 'COD-' + orderId, // Generate a pseudo transaction ID
+            amount_verified: document.querySelector(`tr[data-order-id="${orderId}"]`).dataset.amount,
+            verification_notes: 'Cash on Delivery payment marked as verified by admin',
+            payment_status: 1 // Completed
+        }
+    };
+    
+    // Call the verification API
+    fetch('/hm/api/orders/verify_payment.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(verificationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showToast('success', 'Cash on Delivery payment verified successfully');
+            // Reload page to reflect changes
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showToast('error', data.message || 'Failed to verify payment');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'An error occurred while verifying payment');
+    });
+}
+</script>
 
 </body>
 </html> 

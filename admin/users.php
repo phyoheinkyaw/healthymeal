@@ -5,7 +5,7 @@ require_once '../includes/auth_check.php';
 $role = checkRememberToken();
 
 // Redirect non-admin users
-if (!$role || $role !== 'admin') {
+if (!$role || $role != 1) {
     header("Location: /hm/login.php");
     exit();
 }
@@ -23,7 +23,7 @@ $result = $mysqli->query("
         u.created_at,
         COALESCE(up.dietary_restrictions, 'None') as dietary_restrictions,
         COALESCE(up.allergies, 'None') as allergies,
-        COALESCE(up.cooking_experience, 'Not specified') as cooking_experience,
+        COALESCE(up.cooking_experience, 0) as cooking_experience,
         COALESCE(up.household_size, 0) as household_size
     FROM users u
     LEFT JOIN user_preferences up ON u.user_id = up.user_id
@@ -33,6 +33,20 @@ $result = $mysqli->query("
 
 if ($result) {
     while ($row = $result->fetch_assoc()) {
+        // Convert cooking_experience numeric values to display strings
+        switch($row['cooking_experience']) {
+            case 0:
+                $row['cooking_experience_display'] = 'Beginner';
+                break;
+            case 1:
+                $row['cooking_experience_display'] = 'Intermediate';
+                break;
+            case 2:
+                $row['cooking_experience_display'] = 'Advanced';
+                break;
+            default:
+                $row['cooking_experience_display'] = 'Not specified';
+        }
         $users[] = $row;
     }
 }
@@ -72,7 +86,7 @@ if ($result) {
             <div class="row mb-4">
                 <div class="col-12 d-flex justify-content-between align-items-center">
                     <h3 class="page-title">User Management</h3>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <button type="button" class="btn btn-primary btn-ripple" data-bs-toggle="modal" data-bs-target="#addUserModal">
                         <i class="bi bi-plus-lg"></i> Add New User
                     </button>
                 </div>
@@ -91,7 +105,6 @@ if ($result) {
                                             <th>Email</th>
                                             <th>Role</th>
                                             <th>Joined Date</th>
-                                            <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -112,19 +125,20 @@ if ($result) {
                                                 </td>
                                                 <td><?php echo htmlspecialchars($user['email']); ?></td>
                                                 <td>
-                                                    <span class="badge bg-<?php echo $user['role'] === 'admin' ? 'danger' : 'info'; ?>">
-                                                        <?php echo ucfirst($user['role']); ?>
+                                                    <span class="badge bg-<?php echo $user['role'] == 1 ? 'danger' : 'info'; ?>">
+                                                        <?php echo $user['role'] == 1 ? 'Admin' : 'User'; ?>
                                                     </span>
                                                 </td>
                                                 <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
-                                                <td>
-                                                    <span class="badge bg-success">Active</span>
-                                                </td>
                                                 <td>
                                                     <div class="btn-group">
                                                         <button type="button" class="btn btn-sm btn-outline-info" 
                                                                 onclick="viewUserDetails(<?php echo $user['user_id']; ?>)">
                                                             <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                                onclick="editUser(<?php echo $user['user_id']; ?>)">
+                                                            <i class="bi bi-pencil"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-sm btn-outline-danger"
                                                                 onclick="deleteUser(<?php echo $user['user_id']; ?>)">
@@ -174,15 +188,15 @@ if ($result) {
                     <div class="mb-3">
                         <label class="form-label">Role</label>
                         <select class="form-select" name="role" required>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
+                            <option value="0">User</option>
+                            <option value="1">Admin</option>
                         </select>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveUser()">Save User</button>
+                <button type="button" class="btn btn-primary btn-ripple" onclick="saveUser()">Save User</button>
             </div>
         </div>
     </div>
@@ -234,8 +248,8 @@ if ($result) {
                     <div class="mb-3">
                         <label class="form-label">Role</label>
                         <select class="form-select" name="role" required>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
+                            <option value="0">User</option>
+                            <option value="1">Admin</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -249,10 +263,9 @@ if ($result) {
                     <div class="mb-3">
                         <label class="form-label">Cooking Experience</label>
                         <select class="form-select" name="cooking_experience">
-                            <option value="beginner">Beginner</option>
-                            <option value="intermediate">Intermediate</option>
-                            <option value="advanced">Advanced</option>
-                            <option value="Not specified">Not specified</option>
+                            <option value="0">Beginner</option>
+                            <option value="1">Intermediate</option>
+                            <option value="2">Advanced</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -263,7 +276,7 @@ if ($result) {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="updateUser()">Update User</button>
+                <button type="button" class="btn btn-primary btn-ripple" onclick="updateUser()">Update User</button>
             </div>
         </div>
     </div>

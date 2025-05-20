@@ -231,39 +231,39 @@ while ($ingredient = $ingredients->fetch_assoc()) {
                                             <small
                                                 class="text-muted d-block"><?php echo round($ingredient['calories_per_100g']); ?>
                                                 cal per 100g</small>
-                                            <?php if ($ingredient['is_vegetarian']): ?>
+                                            <?php if ($ingredient['is_vegetarian'] == 1): ?>
                                             <span class="badge bg-success">Veg</span>
                                             <?php endif; ?>
-                                            <?php if ($ingredient['is_vegan']): ?>
+                                            <?php if ($ingredient['is_vegan'] == 1): ?>
                                             <span class="badge bg-info">Vegan</span>
                                             <?php endif; ?>
-                                            <?php if ($ingredient['is_halal']): ?>
+                                            <?php if ($ingredient['is_halal'] == 1): ?>
                                             <span class="badge bg-primary">Halal</span>
                                             <?php endif; ?>
                                         </td>
                                         <td><?php echo $ingredient['default_quantity']; ?>g</td>
                                         <td><?php echo round($ingredient['calculated_calories']); ?> cal</td>
-                                        <td>$<?php echo number_format($ingredient['calculated_price'], 2); ?></td>
+                                        <td><?php echo number_format($ingredient['calculated_price'], 0); ?> MMK</td>
                                     </tr>
                                     <?php endforeach; ?>
                                     <tr>
                                         <td><strong>Ingredients Total</strong></td>
                                         <td></td>
                                         <td><strong><?php echo round($total_calories); ?> cal</strong></td>
-                                        <td><strong>$<?php echo number_format($total_ingredients_price, 2); ?></strong>
+                                        <td><strong><?php echo number_format($total_ingredients_price, 0); ?> MMK</strong>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td><strong>Preparation Fee</strong></td>
                                         <td></td>
                                         <td></td>
-                                        <td><strong>$<?php echo number_format($preparation_price, 2); ?></strong></td>
+                                        <td><strong><?php echo number_format($preparation_price, 0); ?> MMK</strong></td>
                                     </tr>
                                     <tr class="table-info">
                                         <td><strong>Total Price</strong></td>
                                         <td></td>
                                         <td></td>
-                                        <td><strong>$<?php echo number_format($total_ingredients_price + $preparation_price, 2); ?></strong>
+                                        <td><strong><?php echo number_format($total_ingredients_price + $preparation_price, 0); ?> MMK</strong>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -289,6 +289,131 @@ while ($ingredient = $ingredients->fetch_assoc()) {
             </div>
         </div>
     </div>
+
+    <!-- Similar Meal Kits Section -->
+    <?php
+    // Find similar meal kits based on dietary preferences
+    // Get the current meal's ingredients with dietary preferences
+    $stmt = $mysqli->prepare("
+        SELECT 
+            SUM(CASE WHEN i.is_vegetarian = 0 THEN 1 ELSE 0 END) as non_vegetarian_count,
+            SUM(CASE WHEN i.is_vegan = 0 THEN 1 ELSE 0 END) as non_vegan_count,
+            SUM(CASE WHEN i.is_halal = 0 THEN 1 ELSE 0 END) as non_halal_count,
+            COUNT(*) as total_ingredients
+        FROM meal_kit_ingredients mki
+        JOIN ingredients i ON mki.ingredient_id = i.ingredient_id
+        WHERE mki.meal_kit_id = ?
+    ");
+    $stmt->bind_param("i", $meal_kit_id);
+    $stmt->execute();
+    $dietary_result = $stmt->get_result()->fetch_assoc();
+
+    // Determine if this meal is vegetarian, vegan, or halal based on ingredients
+    $is_vegetarian = ($dietary_result['non_vegetarian_count'] == 0);
+    $is_vegan = ($dietary_result['non_vegan_count'] == 0);
+    $is_halal = ($dietary_result['non_halal_count'] == 0);
+
+    // Find similar meal kits based on dietary preferences
+    $query = "
+        SELECT mk.*, c.name as category_name,
+            (SELECT SUM(CASE WHEN i.is_vegetarian = 0 THEN 1 ELSE 0 END)
+             FROM meal_kit_ingredients mki 
+             JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
+             WHERE mki.meal_kit_id = mk.meal_kit_id) as non_vegetarian_count,
+            (SELECT SUM(CASE WHEN i.is_vegan = 0 THEN 1 ELSE 0 END)
+             FROM meal_kit_ingredients mki 
+             JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
+             WHERE mki.meal_kit_id = mk.meal_kit_id) as non_vegan_count,
+            (SELECT SUM(CASE WHEN i.is_halal = 0 THEN 1 ELSE 0 END)
+             FROM meal_kit_ingredients mki 
+             JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
+             WHERE mki.meal_kit_id = mk.meal_kit_id) as non_halal_count
+        FROM meal_kits mk
+        LEFT JOIN categories c ON mk.category_id = c.category_id
+        WHERE mk.is_active = 1 AND mk.meal_kit_id != ?
+    ";
+    
+    // Add conditions based on dietary preferences
+    $conditions = [];
+    $params = [$meal_kit_id];
+    $types = "i";
+
+    // Find meals with similar dietary preferences
+    if ($is_vegetarian) {
+        $conditions[] = "(SELECT COUNT(*) FROM meal_kit_ingredients mki JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
+                         WHERE mki.meal_kit_id = mk.meal_kit_id AND i.is_vegetarian = 0) = 0";
+    }
+    if ($is_vegan) {
+        $conditions[] = "(SELECT COUNT(*) FROM meal_kit_ingredients mki JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
+                         WHERE mki.meal_kit_id = mk.meal_kit_id AND i.is_vegan = 0) = 0";
+    }
+    if ($is_halal) {
+        $conditions[] = "(SELECT COUNT(*) FROM meal_kit_ingredients mki JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
+                         WHERE mki.meal_kit_id = mk.meal_kit_id AND i.is_halal = 0) = 0";
+    }
+
+    // Also include meals in the same category
+    $conditions[] = "mk.category_id = ?";
+    $params[] = $meal_kit['category_id'];
+    $types .= "i";
+
+    if (!empty($conditions)) {
+        $query .= " AND (" . implode(" OR ", $conditions) . ")";
+    }
+
+    $query .= " ORDER BY RAND() LIMIT 10";
+
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $similar_meal_kits = $stmt->get_result();
+    
+    // If we have similar meal kits, display them
+    if ($similar_meal_kits->num_rows > 0):
+    ?>
+    <section class="py-5 bg-light">
+        <div class="container">
+            <h2 class="mb-4">You May Also Like</h2>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                <?php while ($similar = $similar_meal_kits->fetch_assoc()): ?>
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <?php $similar_img_url = get_meal_kit_image_url($similar['image_url'], $similar['name']); ?>
+                        <img src="<?php echo htmlspecialchars($similar_img_url); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($similar['name']); ?>" style="height: 180px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title"><?php echo htmlspecialchars($similar['name']); ?></h5>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">
+                                    <i class="bi bi-fire"></i> <?php echo $similar['base_calories']; ?> cal
+                                </span>
+                                <span class="text-muted">
+                                    <i class="bi bi-clock"></i> <?php echo $similar['cooking_time']; ?> min
+                                </span>
+                            </div>
+                            <div class="mb-2">
+                                <?php if ($similar['non_vegetarian_count'] == 0): ?>
+                                <span class="badge bg-success me-1">Vegetarian</span>
+                                <?php endif; ?>
+                                <?php if ($similar['non_vegan_count'] == 0): ?>
+                                <span class="badge bg-info me-1">Vegan</span>
+                                <?php endif; ?>
+                                <?php if ($similar['non_halal_count'] == 0): ?>
+                                <span class="badge bg-primary">Halal</span>
+                                <?php endif; ?>
+                            </div>
+                            <p class="card-text small mb-3"><?php echo mb_strimwidth(htmlspecialchars($similar['description']), 0, 80, "..."); ?></p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong class="text-primary"><?php echo number_format($similar['preparation_price'], 0); ?> MMK</strong>
+                                <a href="meal-details.php?id=<?php echo $similar['meal_kit_id']; ?>" class="btn btn-outline-primary btn-sm">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endwhile; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <?php include 'includes/footer.php'; ?>
     
@@ -330,8 +455,6 @@ while ($ingredient = $ingredients->fetch_assoc()) {
                 toast.show();
             });
     }
-
-    // Use the standardized addToCart function from meal-customization.js
     </script>
 </body>
 

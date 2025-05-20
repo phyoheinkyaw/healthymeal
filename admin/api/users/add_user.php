@@ -6,7 +6,7 @@ require_once '../../../config/connection.php';
 header('Content-Type: application/json');
 
 // Check if user is logged in and is admin
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] != 1) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit();
@@ -36,7 +36,7 @@ try {
         exit();
     }
 
-    if (!in_array($role, ['user', 'admin'])) {
+    if (!in_array($role, [0, 1])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid role']);
         exit();

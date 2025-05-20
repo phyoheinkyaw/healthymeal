@@ -56,16 +56,57 @@ try {
     // Start transaction
     $mysqli->begin_transaction();
     
-    // Always insert as a new cart item, don't update existing ones
-    // Insert new cart item
-    $single_meal_price = isset($data['total_price']) ? filter_var($data['total_price'], FILTER_VALIDATE_FLOAT) : 0;
+    // STANDARDIZED PRICE CALCULATION
+    // Step 1: Get meal kit's preparation price
+        $stmt = $mysqli->prepare("
+            SELECT preparation_price
+            FROM meal_kits
+            WHERE meal_kit_id = ?
+        ");
+        $stmt->bind_param("i", $meal_kit_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $meal_kit = $result->fetch_assoc();
+    
+    if (!$meal_kit) {
+        throw new Exception("Meal kit not found");
+    }
+    
+    $preparation_price = $meal_kit['preparation_price'];
+    
+    // Step 2: Calculate ingredients price
+    $ingredients_price = 0;
+    $ingredient_details = [];
+    
+    foreach ($ingredients as $ingredient_id => $ingredient_qty) {
+        // Get ingredient price
+        $price_stmt = $mysqli->prepare("SELECT price_per_100g FROM ingredients WHERE ingredient_id = ?");
+        $price_stmt->bind_param("i", $ingredient_id);
+        $price_stmt->execute();
+        $price_result = $price_stmt->get_result();
+        $price_data = $price_result->fetch_assoc();
+        
+        $ingredient_price = round(($price_data['price_per_100g'] * $ingredient_qty / 100));
+        $ingredients_price += $ingredient_price;
+        
+        $ingredient_details[$ingredient_id] = [
+            'quantity' => $ingredient_qty,
+            'price' => $ingredient_price
+        ];
+    }
+    
+    // Step 3: Calculate single meal price (preparation price + ingredients price)
+    $single_meal_price = $preparation_price + $ingredients_price;
+    
+    // Step 4: Calculate total price (single meal price * quantity)
     $total_price = $single_meal_price * $quantity;
     
+    // Insert cart item
     $stmt = $mysqli->prepare("
         INSERT INTO cart_items (user_id, meal_kit_id, quantity, customization_notes, single_meal_price, total_price)
         VALUES (?, ?, ?, ?, ?, ?)
     ");
-    $stmt->bind_param("iisidd", $user_id, $meal_kit_id, $quantity, $customization_notes, $single_meal_price, $total_price);
+    $stmt->bind_param("iisiii", $user_id, $meal_kit_id, $quantity, $customization_notes, $single_meal_price, $total_price);
     $stmt->execute();
     
     $cart_item_id = $mysqli->insert_id;
@@ -76,16 +117,13 @@ try {
         VALUES (?, ?, ?, ?)
     ");
     
-    foreach ($ingredients as $ingredient_id => $ingredient_qty) {
-        // Get ingredient price (you may need to adjust this based on your pricing logic)
-        $price_stmt = $mysqli->prepare("SELECT price_per_100g FROM ingredients WHERE ingredient_id = ?");
-        $price_stmt->bind_param("i", $ingredient_id);
-        $price_stmt->execute();
-        $price_result = $price_stmt->get_result();
-        $price_data = $price_result->fetch_assoc();
-        $price = ($price_data['price_per_100g'] * $ingredient_qty / 100);
-        
-        $stmt->bind_param("iidd", $cart_item_id, $ingredient_id, $ingredient_qty, $price);
+    foreach ($ingredient_details as $ingredient_id => $detail) {
+        $stmt->bind_param("iidi", 
+            $cart_item_id, 
+            $ingredient_id, 
+            $detail['quantity'],
+            $detail['price']
+        );
         $stmt->execute();
     }
     

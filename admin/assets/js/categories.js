@@ -1,20 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize DataTable
-    const categoriesTable = $('#categoriesTable').DataTable({
-        order: [[1, 'asc']], // Sort by name by default
-        columnDefs: [
-            { orderable: false, targets: -1 } // Disable sorting on actions column
-        ],
-        pageLength: 10,
-        language: {
-            search: "Search categories:",
-            lengthMenu: "Show _MENU_ categories per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ categories",
-            infoEmpty: "No categories found",
-            emptyTable: "No categories available"
-        }
-    });
-
     // Add event listener for add category form
     document.getElementById('addCategoryForm').addEventListener('submit', function(e) {
         e.preventDefault();

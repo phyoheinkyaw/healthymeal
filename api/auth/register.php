@@ -1,5 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
 session_start();
+}
 require_once '../../config/connection.php';
 
 header('Content-Type: application/json');
@@ -72,7 +74,7 @@ try {
     $fullName = $firstName . ' ' . $lastName;
     
     // Insert new user
-    $stmt = $mysqli->prepare("INSERT INTO users (username, email, password, full_name, role) VALUES (?, ?, ?, ?, 'user')");
+    $stmt = $mysqli->prepare("INSERT INTO users (username, email, password, full_name, role) VALUES (?, ?, ?, ?, 0)");
     if (!$stmt) {
         throw new Exception('Prepare user insert failed: ' . $mysqli->error);
     }
@@ -99,11 +101,19 @@ try {
     // Commit transaction
     $mysqli->commit();
     
+    // Set last_login_at to NOW() for the new user
+    $updateLoginStmt = $mysqli->prepare("UPDATE users SET last_login_at = NOW(), is_active = 1 WHERE user_id = ?");
+    if ($updateLoginStmt) {
+        $updateLoginStmt->bind_param("i", $userId);
+        $updateLoginStmt->execute();
+        $updateLoginStmt->close();
+    }
+    
     // Set session variables for auto-login
     $_SESSION['user_id'] = $userId;
     $_SESSION['username'] = $username;
     $_SESSION['full_name'] = $fullName;
-    $_SESSION['role'] = 'user';
+    $_SESSION['role'] = 0; // 0: user role
     
     echo json_encode([
         'success' => true,
@@ -111,7 +121,7 @@ try {
         'user' => [
             'username' => $username,
             'name' => $fullName,
-            'role' => 'user'
+            'role' => 'user' // Convert numeric role to string for display
         ]
     ]);
     

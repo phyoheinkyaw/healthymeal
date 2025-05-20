@@ -6,7 +6,7 @@ require_once '../../../config/connection.php';
 header('Content-Type: application/json');
 
 // Check if user is logged in and is admin
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] != 1) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit();
@@ -33,7 +33,22 @@ try {
     // Optional fields with default values matching the database schema
     $dietary_restrictions = isset($_POST['dietary_restrictions']) ? $mysqli->real_escape_string($_POST['dietary_restrictions']) : null;
     $allergies = isset($_POST['allergies']) ? $mysqli->real_escape_string($_POST['allergies']) : null;
-    $cooking_experience = isset($_POST['cooking_experience']) ? $mysqli->real_escape_string($_POST['cooking_experience']) : 'beginner';
+    
+    // Convert cooking_experience to numeric value
+    $cooking_experience = 0; // Default to beginner
+    if (isset($_POST['cooking_experience'])) {
+        if ($_POST['cooking_experience'] === 'intermediate') {
+            $cooking_experience = 1;
+        } elseif ($_POST['cooking_experience'] === 'advanced') {
+            $cooking_experience = 2;
+        } elseif (is_numeric($_POST['cooking_experience'])) {
+            $cooking_experience = intval($_POST['cooking_experience']);
+            if ($cooking_experience < 0 || $cooking_experience > 2) {
+                $cooking_experience = 0; // Reset to beginner if out of range
+            }
+        }
+    }
+    
     $household_size = isset($_POST['household_size']) && $_POST['household_size'] !== '' ? intval($_POST['household_size']) : 1;
 
     if (!$email) {
@@ -42,15 +57,9 @@ try {
         exit();
     }
 
-    if (!in_array($role, ['user', 'admin'])) {
+    if (!in_array($role, [0, 1])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid role']);
-        exit();
-    }
-
-    if ($cooking_experience !== 'Not specified' && !in_array($cooking_experience, ['beginner', 'intermediate', 'advanced'])) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid cooking experience value']);
         exit();
     }
 

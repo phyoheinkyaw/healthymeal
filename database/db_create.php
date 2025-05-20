@@ -74,7 +74,12 @@ function checkTables($mysqli) {
         'comments',
         'health_tips',
         'remember_tokens',
-        'payment_settings'
+        'payment_settings',
+        'order_notifications',
+        'user_addresses',
+        'delivery_options',
+        'order_status',
+        'payment_history'
     ];
     
     echo "<h3>Checking created tables:</h3>";

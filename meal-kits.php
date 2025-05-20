@@ -116,9 +116,9 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                                 <label class="form-label">Price Range</label>
                                 <select class="form-select" id="priceFilter">
                                     <option value="">All Prices</option>
-                                    <option value="under10">Under $10</option>
-                                    <option value="10-20">$10 - $20</option>
-                                    <option value="over20">Over $20</option>
+                                    <option value="under10">Under 20,000 MMK</option>
+                                    <option value="10-20">20,000 - 40,000 MMK</option>
+                                    <option value="over20">Over 40,000 MMK</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -158,7 +158,7 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">
-                                $<?php echo number_format($mealKit['preparation_price']+$mealKit['ingredients_price'], 2); ?>
+                                <?php echo number_format($mealKit['preparation_price']+$mealKit['ingredients_price'], 0); ?> MMK
                             </h6>
                             <div class="btn-group">
                                 <a href="meal-details.php?id=<?php echo $mealKit['meal_kit_id']; ?>"
@@ -204,6 +204,17 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
     <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
 
     <script>
+    // Initialize cart count from localStorage
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCartCountFromStorage();
+        
+        // Add event listeners to filters
+        document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+        document.getElementById('dietaryFilter').addEventListener('change', applyFilters);
+        document.getElementById('calorieFilter').addEventListener('change', applyFilters);
+        document.getElementById('priceFilter').addEventListener('change', applyFilters);
+        document.getElementById('sortBy').addEventListener('change', applyFilters);
+    });
 
     function customizeMealKit(mealKitId) {
         fetch(`api/meal-kits/get_customization.php?meal_kit_id=${mealKitId}`)
@@ -231,83 +242,6 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             });
     }
 
-    function updateNutritionalValues() {
-        // Get base values from the form if available
-        const baseCaloriesEl = document.getElementById('baseCalories');
-        const basePriceEl = document.getElementById('basePrice');
-
-        // Initialize totals with base values if available
-        let totalCalories = baseCaloriesEl ? parseFloat(baseCaloriesEl.textContent) || 0 : 0;
-        let totalProtein = 0;
-        let totalCarbs = 0;
-        let totalFat = 0;
-        let ingredientsPrice = 0;
-        const preparationPrice = basePriceEl ? parseFloat(basePriceEl.textContent) || 0 : 0;
-
-        document.querySelectorAll('.ingredient-row').forEach(row => {
-            const quantityInput = row.querySelector('.ingredient-quantity');
-            if (!quantityInput) return;
-
-            const quantity = parseFloat(quantityInput.value) || 0;
-            const caloriesPer100g = parseFloat(row.dataset.calories) || 0;
-            const proteinPer100g = parseFloat(row.dataset.protein) || 0;
-            const carbsPer100g = parseFloat(row.dataset.carbs) || 0;
-            const fatPer100g = parseFloat(row.dataset.fat) || 0;
-            const pricePer100g = parseFloat(row.dataset.price) || 0;
-
-            const calories = (caloriesPer100g * quantity) / 100;
-            const protein = (proteinPer100g * quantity) / 100;
-            const carbs = (carbsPer100g * quantity) / 100;
-            const fat = (fatPer100g * quantity) / 100;
-            const price = (pricePer100g * quantity) / 100;
-
-            totalCalories += calories;
-            totalProtein += protein;
-            totalCarbs += carbs;
-            totalFat += fat;
-            ingredientsPrice += price;
-
-            // Update individual row values if cells exist
-            const caloriesCell = row.querySelector('.calories-cell');
-            const proteinCell = row.querySelector('.protein-cell');
-            const carbsCell = row.querySelector('.carbs-cell');
-            const fatCell = row.querySelector('.fat-cell');
-            const priceCell = row.querySelector('.price-cell');
-
-            if (caloriesCell) caloriesCell.textContent = Math.round(calories) + ' cal';
-            if (proteinCell) proteinCell.textContent = protein.toFixed(1) + 'g';
-            if (carbsCell) carbsCell.textContent = carbs.toFixed(1) + 'g';
-            if (fatCell) fatCell.textContent = fat.toFixed(1) + 'g';
-            if (priceCell) priceCell.textContent = '$' + price.toFixed(2);
-        });
-
-        // Update totals
-        const totalCaloriesEl = document.getElementById('totalCalories');
-        const totalProteinEl = document.getElementById('totalProtein');
-        const totalCarbsEl = document.getElementById('totalCarbs');
-        const totalFatEl = document.getElementById('totalFat');
-        const ingredientsPriceEl = document.getElementById('ingredientsPrice');
-        const totalPriceEl = document.getElementById('totalPrice');
-
-        // Get meal quantity
-        const mealQuantity = parseInt(document.getElementById('meal_quantity')?.value) || 1;
-
-        // Calculate total price (preparation price + ingredients price) * quantity
-        const totalPrice = (preparationPrice + ingredientsPrice) * mealQuantity;
-
-        if (totalCaloriesEl) totalCaloriesEl.textContent = Math.round(totalCalories);
-        if (totalProteinEl) totalProteinEl.textContent = totalProtein.toFixed(1);
-        if (totalCarbsEl) totalCarbsEl.textContent = totalCarbs.toFixed(1);
-        if (totalFatEl) totalFatEl.textContent = totalFat.toFixed(1);
-        if (ingredientsPriceEl) ingredientsPriceEl.textContent = ingredientsPrice.toFixed(2);
-        if (totalPriceEl) totalPriceEl.textContent = totalPrice.toFixed(2);
-    }
-
-    // For backward compatibility
-    function updateTotalCalories() {
-        updateNutritionalValues();
-    }
-
     function applyFilters() {
         const category = document.getElementById('categoryFilter').value;
         const dietary = document.getElementById('dietaryFilter').value;
@@ -324,13 +258,13 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
 
             switch(priceFilter) {
                 case 'under10':
-                    showCard = price < 10;
+                    showCard = price < 20000;
                     break;
                 case '10-20':
-                    showCard = price >= 10 && price <= 20;
+                    showCard = price >= 20000 && price <= 40000;
                     break;
                 case 'over20':
-                    showCard = price > 20;
+                    showCard = price > 40000;
                     break;
             }
 
@@ -365,13 +299,6 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             })
             .catch(error => console.error('Error:', error));
     }
-
-    // Add event listeners to filters
-    document.getElementById('categoryFilter').addEventListener('change', applyFilters);
-    document.getElementById('dietaryFilter').addEventListener('change', applyFilters);
-    document.getElementById('calorieFilter').addEventListener('change', applyFilters);
-    document.getElementById('priceFilter').addEventListener('change', applyFilters);
-    document.getElementById('sortBy').addEventListener('change', applyFilters);
     </script>
 
 </body>

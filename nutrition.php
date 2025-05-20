@@ -8,7 +8,7 @@ $role = checkRememberToken();
 if ($role) {
     // Set session variables if not already set
     if (!isset($_SESSION['user_id'])) {
-        $_SESSION['user_id'] = $role === 'admin' ? 1 : $role;
+        $_SESSION['user_id'] = $role == 1 ? 1 : $role;
         $_SESSION['role'] = $role;
     }
 }
@@ -283,19 +283,19 @@ $ingredients_result = $mysqli->query($ingredients_query);
                                 </div>
                             </div>
 
-                            <!-- <div class="dietary-tags mt-3">
-                            <?php if($ingredient['is_vegetarian']): ?>
+                            <div class="dietary-tags mt-3">
+                            <?php if($ingredient['is_vegetarian'] == 1): ?>
                                 <span class="dietary-tag tag-vegetarian">Vegetarian</span>
                             <?php endif; ?>
                             
-                            <?php if($ingredient['is_vegan']): ?>
+                            <?php if($ingredient['is_vegan'] == 1): ?>
                                 <span class="dietary-tag tag-vegan">Vegan</span>
                             <?php endif; ?>
                             
-                            <?php if($ingredient['is_halal']): ?>
+                            <?php if($ingredient['is_halal'] == 1): ?>
                                 <span class="dietary-tag tag-halal">Halal</span>
                             <?php endif; ?>
-                        </div> -->
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -383,7 +383,7 @@ $ingredients_result = $mysqli->query($ingredients_query);
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
     <!-- Owl Carousel JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
 

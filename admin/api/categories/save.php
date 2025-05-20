@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 
 // Check for admin role
 $role = checkRememberToken();
-if (!$role || $role !== 'admin') {
+if (!$role || $role != 1) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit();
