@@ -147,10 +147,33 @@ $_SESSION['cart_count'] = $total_items;
     <div class="container py-5">
         <h1 class="mb-4">Shopping Cart</h1>
 
+        <?php 
+        // Display any session messages
+        if (isset($_SESSION['message'])) {
+            $message_type = $_SESSION['message']['type'] ?? 'info';
+            $message_text = $_SESSION['message']['text'] ?? '';
+            
+            echo '<div class="alert alert-' . $message_type . ' alert-dismissible fade show" role="alert">';
+            echo $message_text;
+            echo '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+            echo '</div>';
+            
+            // Clear the message after displaying
+            unset($_SESSION['message']);
+        }
+        ?>
+
         <?php if (empty($cart_items)): ?>
         <div class="alert alert-info">
             <i class="bi bi-info-circle"></i> Your cart is empty.
-            <a href="meal-kits.php" class="alert-link">Browse meal kits</a> to add items.
+        </div>
+        <div class="text-center py-5">
+            <img src="assets/images/empty-cart.svg" alt="Empty Cart" class="img-fluid mb-4" style="max-width: 200px; opacity: 0.7;">
+            <h4>Your shopping cart is empty</h4>
+            <p class="text-muted mb-4">Looks like you haven't added any meal kits to your cart yet.</p>
+            <a href="meal-kits.php" class="btn btn-primary">
+                <i class="bi bi-basket"></i> Browse Meal Kits
+            </a>
         </div>
         <?php else: ?>
         <div class="row">
@@ -271,8 +294,11 @@ $_SESSION['cart_count'] = $total_items;
                             <strong>Estimated Total:</strong>
                             <strong><?php echo number_format(calculateTotal($total_amount, $delivery_fee_min), 0); ?>+ MMK</strong>
                         </div>
-                        <div class="d-grid">
+                        <div class="d-grid gap-2">
                             <a href="checkout.php" class="btn btn-primary">Proceed to Checkout</a>
+                            <a href="meal-kits.php" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Continue Shopping
+                            </a>
                         </div>
                     </div>
                 </div>

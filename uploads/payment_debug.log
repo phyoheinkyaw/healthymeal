@@ -1,0 +1,98 @@
+[2025-05-20 19:40:21] --- New order submission ---
+[2025-05-20 19:40:21] REQUEST_METHOD: POST
+[2025-05-20 19:40:21] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryFIsd9OjSGA1sjAuN
+[2025-05-20 19:40:21] file_uploads enabled: Yes
+[2025-05-20 19:40:21] upload_max_filesize: 20M
+[2025-05-20 19:40:21] Upload directory checks:
+[2025-05-20 19:40:21] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-05-20 19:40:21] Directory exists: Yes
+[2025-05-20 19:40:21] Directory writable: Yes
+[2025-05-20 19:40:21] User ID: 1
+[2025-05-20 19:40:21] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => fb356d57-e65b-444b-b54c-9f3a325d5ba8.jpeg
+            [full_path] => fb356d57-e65b-444b-b54c-9f3a325d5ba8.jpeg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php41AF.tmp
+            [error] => 0
+            [size] => 111835
+        )
+
+)
+
+[2025-05-20 19:40:21] POST data: Array
+(
+    [transaction_id] => 01003750051891722045
+    [order_data] => {"delivery_address":"1, 1 1","customer_phone":"1111","contact_number":"2222","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"1111","delivery_option_id":1,"delivery_date":"2025-05-21","delivery_time":"09:00:00","subtotal":19234,"tax":962,"delivery_fee":20000,"total_amount":40196,"transaction_id":"01003750051891722045"}
+)
+
+[2025-05-20 19:40:21] FILES array: {"transfer_slip":{"name":"fb356d57-e65b-444b-b54c-9f3a325d5ba8.jpeg","full_path":"fb356d57-e65b-444b-b54c-9f3a325d5ba8.jpeg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php41AF.tmp","error":0,"size":111835}}
+[2025-05-20 19:40:21] POST array: ["transaction_id","order_data"]
+[2025-05-20 19:40:21] Found both transfer_slip in FILES and order_data in POST
+[2025-05-20 19:40:21] Decoded order data from POST
+[2025-05-20 19:40:21] Using transaction_id from POST: 01003750051891722045
+[2025-05-20 19:40:21] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-05-20 19:40:21] Processing uploaded file: fb356d57-e65b-444b-b54c-9f3a325d5ba8.jpeg
+[2025-05-20 19:40:21] Processing file: {"name":"fb356d57-e65b-444b-b54c-9f3a325d5ba8.jpeg","full_path":"fb356d57-e65b-444b-b54c-9f3a325d5ba8.jpeg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php41AF.tmp","error":0,"size":111835}
+[2025-05-20 19:40:21] MIME type from file data: image/jpeg
+[2025-05-20 19:40:21] MIME type from fileinfo: image/jpeg
+[2025-05-20 19:40:21] Attempting to upload file to: ../../uploads/payment_slips/slip_682cbe85b3765.jpeg
+[2025-05-20 19:40:21] File uploaded successfully to: ../../uploads/payment_slips/slip_682cbe85b3765.jpeg
+[2025-05-20 19:40:21] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_682cbe85b3765.jpeg"}
+[2025-05-20 19:40:21] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_682cbe85b3765.jpeg
+[2025-05-20 19:40:21] Validating payment slip for KBZPay
+[2025-05-20 19:40:21] Already processed slip: Yes
+[2025-05-20 19:40:21] Using previously processed transfer slip
+[2025-05-20 19:40:21] --- End of order processing ---
+
+[2025-05-20 19:51:52] --- New order submission ---
+[2025-05-20 19:51:52] REQUEST_METHOD: POST
+[2025-05-20 19:51:52] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryNlZXyC4VztnmyGX4
+[2025-05-20 19:51:52] file_uploads enabled: Yes
+[2025-05-20 19:51:52] upload_max_filesize: 20M
+[2025-05-20 19:51:52] Upload directory checks:
+[2025-05-20 19:51:52] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-05-20 19:51:52] Directory exists: Yes
+[2025-05-20 19:51:52] Directory writable: Yes
+[2025-05-20 19:51:52] User ID: 1
+[2025-05-20 19:51:52] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Line Broadcast.jpg
+            [full_path] => Line Broadcast.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpCC8A.tmp
+            [error] => 0
+            [size] => 681041
+        )
+
+)
+
+[2025-05-20 19:51:52] POST data: Array
+(
+    [transaction_id] => AVAILABLE
+    [order_data] => {"delivery_address":"312, 321 231","customer_phone":"12","contact_number":"21","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"32131","delivery_option_id":1,"delivery_date":"2025-05-21","delivery_time":"09:00:00","subtotal":31420,"tax":1571,"delivery_fee":20000,"total_amount":52991,"transaction_id":"AVAILABLE"}
+)
+
+[2025-05-20 19:51:52] FILES array: {"transfer_slip":{"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpCC8A.tmp","error":0,"size":681041}}
+[2025-05-20 19:51:52] POST array: ["transaction_id","order_data"]
+[2025-05-20 19:51:52] Found both transfer_slip in FILES and order_data in POST
+[2025-05-20 19:51:52] Decoded order data from POST
+[2025-05-20 19:51:52] Using transaction_id from POST: AVAILABLE
+[2025-05-20 19:51:52] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-05-20 19:51:52] Processing uploaded file: Line Broadcast.jpg
+[2025-05-20 19:51:52] Processing file: {"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpCC8A.tmp","error":0,"size":681041}
+[2025-05-20 19:51:52] MIME type from file data: image/jpeg
+[2025-05-20 19:51:52] MIME type from fileinfo: image/jpeg
+[2025-05-20 19:51:52] Attempting to upload file to: ../../uploads/payment_slips/slip_682cc138a061c.jpg
+[2025-05-20 19:51:52] File uploaded successfully to: ../../uploads/payment_slips/slip_682cc138a061c.jpg
+[2025-05-20 19:51:52] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_682cc138a061c.jpg"}
+[2025-05-20 19:51:52] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_682cc138a061c.jpg
+[2025-05-20 19:51:52] Validating payment slip for KBZPay
+[2025-05-20 19:51:52] Already processed slip: Yes
+[2025-05-20 19:51:52] Using previously processed transfer slip
+[2025-05-20 19:51:52] --- End of order processing ---
+

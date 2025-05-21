@@ -21,7 +21,7 @@ if (!$ingredient_id) {
 // Fetch ingredient details
 $result = $mysqli->query("
     SELECT ingredient_id, name, calories_per_100g, protein_per_100g, carbs_per_100g, 
-           fat_per_100g, price_per_100g 
+           fat_per_100g, price_per_100g, is_meat, is_vegetarian, is_vegan, is_halal 
     FROM ingredients 
     WHERE ingredient_id = $ingredient_id
 ");

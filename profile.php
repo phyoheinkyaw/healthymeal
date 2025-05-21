@@ -550,6 +550,7 @@ $user = $result->fetch_assoc();
             const formData = new FormData(this);
             const fullName = formData.get('firstName') + ' ' + formData.get('lastName');
             formData.append('full_name', fullName);
+            formData.append('form_type', 'profile');
 
             fetch(this.action, {
                     method: 'POST',
@@ -559,6 +560,8 @@ $user = $result->fetch_assoc();
                 .then(data => {
                     if (data.success) {
                         showAlert('success', data.message);
+                        // Save new values as original values
+                        saveOriginalFormValues();
                     } else {
                         showAlert('danger', data.message);
                     }
@@ -574,15 +577,28 @@ $user = $result->fetch_assoc();
 
         dietaryForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            const formData = new FormData(this);
+            formData.append('form_type', 'dietary');
+            
+            // Add default values for first name and last name to ensure they're present
+            // These are required by the update_profile.php endpoint
+            if (!formData.has('firstName') || !formData.has('lastName')) {
+                const profileForm = document.querySelector('#profileForm');
+                formData.append('firstName', profileForm.querySelector('#firstName').value);
+                formData.append('lastName', profileForm.querySelector('#lastName').value);
+            }
 
             fetch(this.action, {
                     method: 'POST',
-                    body: new FormData(this)
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         showAlert('success', data.message);
+                        // Save new values as original values to prevent reset issues
+                        saveOriginalFormValues();
                     } else {
                         showAlert('danger', data.message);
                     }
@@ -605,6 +621,13 @@ $user = $result->fetch_assoc();
 
             if (newPassword !== confirmNewPassword) {
                 showAlert('danger', 'New passwords do not match!');
+                return;
+            }
+
+            // Check password strength
+            const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!passwordPattern.test(newPassword)) {
+                showAlert('danger', 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character.');
                 return;
             }
 
@@ -666,11 +689,17 @@ $user = $result->fetch_assoc();
         // Function to reset form to original values
         function resetForm(formId, originalValues) {
             const form = document.querySelector('#' + formId);
-
+            
             // Reset each field to its original value
             for (const [field, value] of Object.entries(originalValues)) {
-                if (form.querySelector('#' + field)) {
-                    form.querySelector('#' + field).value = value;
+                const fieldElement = form.querySelector('#' + field);
+                if (fieldElement) {
+                    // Handle different input types appropriately
+                    if (fieldElement.tagName === 'SELECT') {
+                        fieldElement.value = value;
+                    } else {
+                        fieldElement.value = value;
+                    }
                 }
             }
         }

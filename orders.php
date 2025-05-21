@@ -507,7 +507,7 @@ $user = $userStmt->get_result()->fetch_assoc();
                                 $totalSpent = 0;
                                 $orders->data_seek(0);
                                 while ($order = $orders->fetch_assoc()) {
-                                    $totalSpent += $order['total_amount'] + $order['delivery_fee'];
+                                    $totalSpent += $order['total_amount'];
                                 }
                                 $orders->data_seek(0);
                                 ?>
@@ -626,7 +626,7 @@ $user = $userStmt->get_result()->fetch_assoc();
                                         <span class="badge bg-info">COD</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo number_format($order['subtotal'] + $order['delivery_fee']); ?> MMK</td>
+                                <td><?php echo number_format($order['total_amount']); ?> MMK</td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-outline-primary" 
                                             onclick="viewOrderDetails(<?php echo $order['order_id']; ?>)">

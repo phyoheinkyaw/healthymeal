@@ -14,7 +14,7 @@ if (!$role || $role != 1) {
 $ingredients = [];
 $result = $mysqli->query("
     SELECT ingredient_id, name, calories_per_100g, protein_per_100g, carbs_per_100g, 
-           fat_per_100g, price_per_100g 
+           fat_per_100g, price_per_100g, is_meat, is_vegetarian, is_vegan, is_halal
     FROM ingredients
     ORDER BY created_at DESC
 ");
@@ -147,6 +147,7 @@ if ($result) {
                                                 <th>Carbs</th>
                                                 <th>Fat</th>
                                                 <th>Price</th>
+                                                <th>Dietary</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -160,6 +161,20 @@ if ($result) {
                                                 <td><?php echo $ingredient['carbs_per_100g']; ?>g</td>
                                                 <td><?php echo $ingredient['fat_per_100g']; ?>g</td>
                                                 <td><?php echo number_format($ingredient['price_per_100g'], 0); ?> MMK</td>
+                                                <td>
+                                                    <?php if($ingredient['is_meat'] == 1): ?>
+                                                        <span class="badge bg-danger" title="Meat">M</span>
+                                                    <?php endif; ?>
+                                                    <?php if($ingredient['is_vegetarian'] == 1): ?>
+                                                        <span class="badge bg-success" title="Vegetarian">V</span>
+                                                    <?php endif; ?>
+                                                    <?php if($ingredient['is_vegan'] == 1): ?>
+                                                        <span class="badge bg-info" title="Vegan">VG</span>
+                                                    <?php endif; ?>
+                                                    <?php if($ingredient['is_halal'] == 1): ?>
+                                                        <span class="badge bg-primary" title="Halal">H</span>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td>
                                                     <div class="btn-group">
                                                         <button type="button" class="btn btn-sm btn-outline-warning"
@@ -228,6 +243,35 @@ if ($result) {
                                         required>
                                 </div>
                             </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Dietary Options</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_meat" id="addIsMeat">
+                                        <label class="form-check-label" for="addIsMeat">
+                                            Is Meat
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_vegan" id="addIsVegan">
+                                        <label class="form-check-label" for="addIsVegan">
+                                            Is Vegan
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_vegetarian" id="addIsVegetarian">
+                                        <label class="form-check-label" for="addIsVegetarian">
+                                            Is Vegetarian
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_halal" id="addIsHalal">
+                                        <label class="form-check-label" for="addIsHalal">
+                                            Is Halal
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -282,6 +326,35 @@ if ($result) {
                                     <span class="input-group-text">MMK</span>
                                     <input type="number" class="form-control" name="price_per_100g" step="1" min="0"
                                         required>
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Dietary Options</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_meat" id="editIsMeat">
+                                        <label class="form-check-label" for="editIsMeat">
+                                            Is Meat
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_vegan" id="editIsVegan">
+                                        <label class="form-check-label" for="editIsVegan">
+                                            Is Vegan
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_vegetarian" id="editIsVegetarian">
+                                        <label class="form-check-label" for="editIsVegetarian">
+                                            Is Vegetarian
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_halal" id="editIsHalal">
+                                        <label class="form-check-label" for="editIsHalal">
+                                            Is Halal
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>

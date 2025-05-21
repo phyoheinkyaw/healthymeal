@@ -36,6 +36,12 @@ $carbs = filter_var($_POST['carbs_per_100g'], FILTER_VALIDATE_FLOAT);
 $fat = filter_var($_POST['fat_per_100g'], FILTER_VALIDATE_FLOAT);
 $price = filter_var($_POST['price_per_100g'], FILTER_VALIDATE_FLOAT);
 
+// Handle dietary options
+$is_meat = isset($_POST['is_meat']) ? 1 : 0;
+$is_vegetarian = isset($_POST['is_vegetarian']) ? 1 : 0;
+$is_vegan = isset($_POST['is_vegan']) ? 1 : 0;
+$is_halal = isset($_POST['is_halal']) ? 1 : 0;
+
 if (!$calories || !$protein || !$carbs || !$fat || !$price) {
     echo json_encode([
         'success' => false,
@@ -54,8 +60,8 @@ try {
     $stmt = $mysqli->prepare("
         INSERT INTO ingredients (
             name, calories_per_100g, protein_per_100g, carbs_per_100g, 
-            fat_per_100g, price_per_100g
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            fat_per_100g, price_per_100g, is_meat, is_vegetarian, is_vegan, is_halal
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     if (!$stmt) {
@@ -70,8 +76,9 @@ try {
     $price = (float)$price;
 
     $stmt->bind_param(
-        "sddddd",
-        $name, $calories, $protein, $carbs, $fat, $price
+        "sdddddiiii",
+        $name, $calories, $protein, $carbs, $fat, $price, 
+        $is_meat, $is_vegetarian, $is_vegan, $is_halal
     );
 
     if (!$stmt->execute()) {

@@ -17,6 +17,12 @@ function editIngredient(id) {
                 form.querySelector('[name="fat_per_100g"]').value = ingredient.fat_per_100g;
                 form.querySelector('[name="price_per_100g"]').value = ingredient.price_per_100g;
                 
+                // Set dietary checkboxes
+                form.querySelector('#editIsMeat').checked = ingredient.is_meat == 1;
+                form.querySelector('#editIsVegetarian').checked = ingredient.is_vegetarian == 1;
+                form.querySelector('#editIsVegan').checked = ingredient.is_vegan == 1;
+                form.querySelector('#editIsHalal').checked = ingredient.is_halal == 1;
+                
                 // Show modal
                 const modal = new bootstrap.Modal(document.getElementById('editIngredientModal'));
                 modal.show();

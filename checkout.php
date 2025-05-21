@@ -2,6 +2,31 @@
 session_start();
 require_once 'config/connection.php';
 
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['user_id'];
+
+// Fetch cart items first to check if cart is empty
+$cart_check = $mysqli->prepare("SELECT COUNT(*) as count FROM cart_items WHERE user_id = ?");
+$cart_check->bind_param("i", $user_id);
+$cart_check->execute();
+$cart_count_result = $cart_check->get_result();
+$cart_count = $cart_count_result->fetch_assoc()['count'];
+
+// Redirect to cart page if cart is empty
+if ($cart_count == 0) {
+    $_SESSION['message'] = [
+        'type' => 'warning',
+        'text' => 'Your cart is empty. Please add items before proceeding to checkout.'
+    ];
+    header("Location: cart.php");
+    exit();
+}
+
 // Fetch payment methods from payment_settings table
 $payment_methods = [];
 $cash_on_delivery_icon = 'bi bi-cash-coin'; // Default icon
@@ -36,13 +61,6 @@ while ($row = $delivery_result->fetch_assoc()) {
     $delivery_options[] = $row;
 }
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
-
-$user_id = $_SESSION['user_id'];
 $error_message = '';
 $success_message = '';
 
@@ -651,6 +669,12 @@ $order_total = $total_amount + $tax;
                                     <i class="bi bi-bag-check me-1"></i> Place Order
                                 </button>
                             </div>
+                            
+                            <div class="d-flex justify-content-center mt-3">
+                                <a href="cart.php" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i> Return to Cart
+                                </a>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -716,6 +740,12 @@ $order_total = $total_amount + $tax;
                             <div class="alert p-2 mb-0 small" style="background-color: var(--light); border-left: 3px solid var(--primary);">
                                 <i class="bi bi-info-circle-fill me-1" style="color: var(--primary);"></i> Select a delivery option above to see the final delivery fee and total.
                             </div>
+                        </div>
+                        
+                        <div class="mt-3 text-center">
+                            <a href="meal-kits.php" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Continue Shopping
+                            </a>
                         </div>
                     </div>
                 </div>

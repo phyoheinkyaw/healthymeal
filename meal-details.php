@@ -101,6 +101,9 @@ while ($ingredient = $ingredients->fetch_assoc()) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Slick Carousel CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- Include meal-customization.js in the head -->
@@ -292,118 +295,128 @@ while ($ingredient = $ingredients->fetch_assoc()) {
 
     <!-- Similar Meal Kits Section -->
     <?php
-    // Find similar meal kits based on dietary preferences
-    // Get the current meal's ingredients with dietary preferences
-    $stmt = $mysqli->prepare("
+    // First, determine dietary preferences of the current meal kit
+    $dietary_query = $mysqli->prepare("
         SELECT 
             SUM(CASE WHEN i.is_vegetarian = 0 THEN 1 ELSE 0 END) as non_vegetarian_count,
             SUM(CASE WHEN i.is_vegan = 0 THEN 1 ELSE 0 END) as non_vegan_count,
-            SUM(CASE WHEN i.is_halal = 0 THEN 1 ELSE 0 END) as non_halal_count,
-            COUNT(*) as total_ingredients
+            SUM(CASE WHEN i.is_halal = 0 THEN 1 ELSE 0 END) as non_halal_count
         FROM meal_kit_ingredients mki
         JOIN ingredients i ON mki.ingredient_id = i.ingredient_id
         WHERE mki.meal_kit_id = ?
     ");
-    $stmt->bind_param("i", $meal_kit_id);
-    $stmt->execute();
-    $dietary_result = $stmt->get_result()->fetch_assoc();
-
-    // Determine if this meal is vegetarian, vegan, or halal based on ingredients
+    $dietary_query->bind_param("i", $meal_kit_id);
+    $dietary_query->execute();
+    $dietary_result = $dietary_query->get_result()->fetch_assoc();
+    
+    // Determine if this meal is vegetarian, vegan, or halal
     $is_vegetarian = ($dietary_result['non_vegetarian_count'] == 0);
     $is_vegan = ($dietary_result['non_vegan_count'] == 0);
     $is_halal = ($dietary_result['non_halal_count'] == 0);
-
-    // Find similar meal kits based on dietary preferences
+    
+    // Build query to find similar meal kits based on dietary preferences
     $query = "
         SELECT mk.*, c.name as category_name,
-            (SELECT SUM(CASE WHEN i.is_vegetarian = 0 THEN 1 ELSE 0 END)
-             FROM meal_kit_ingredients mki 
-             JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
-             WHERE mki.meal_kit_id = mk.meal_kit_id) as non_vegetarian_count,
-            (SELECT SUM(CASE WHEN i.is_vegan = 0 THEN 1 ELSE 0 END)
-             FROM meal_kit_ingredients mki 
-             JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
-             WHERE mki.meal_kit_id = mk.meal_kit_id) as non_vegan_count,
-            (SELECT SUM(CASE WHEN i.is_halal = 0 THEN 1 ELSE 0 END)
-             FROM meal_kit_ingredients mki 
-             JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
-             WHERE mki.meal_kit_id = mk.meal_kit_id) as non_halal_count
+               SUM(i.calories_per_100g * mki.default_quantity / 100) as base_calories,
+               SUM(i.price_per_100g * mki.default_quantity / 100) as ingredients_price
         FROM meal_kits mk
         LEFT JOIN categories c ON mk.category_id = c.category_id
-        WHERE mk.is_active = 1 AND mk.meal_kit_id != ?
+        LEFT JOIN meal_kit_ingredients mki ON mk.meal_kit_id = mki.meal_kit_id
+        LEFT JOIN ingredients i ON mki.ingredient_id = i.ingredient_id
+        WHERE mk.is_active = 1 
+        AND mk.meal_kit_id != ?
     ";
     
-    // Add conditions based on dietary preferences
-    $conditions = [];
     $params = [$meal_kit_id];
     $types = "i";
-
-    // Find meals with similar dietary preferences
+    
+    // Add dietary conditions
+    $conditions = [];
+    
     if ($is_vegetarian) {
-        $conditions[] = "(SELECT COUNT(*) FROM meal_kit_ingredients mki JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
-                         WHERE mki.meal_kit_id = mk.meal_kit_id AND i.is_vegetarian = 0) = 0";
+        $conditions[] = "NOT EXISTS (
+            SELECT 1 FROM meal_kit_ingredients mki2
+            JOIN ingredients i2 ON mki2.ingredient_id = i2.ingredient_id
+            WHERE mki2.meal_kit_id = mk.meal_kit_id
+            AND i2.is_vegetarian = 0
+        )";
     }
+    
     if ($is_vegan) {
-        $conditions[] = "(SELECT COUNT(*) FROM meal_kit_ingredients mki JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
-                         WHERE mki.meal_kit_id = mk.meal_kit_id AND i.is_vegan = 0) = 0";
+        $conditions[] = "NOT EXISTS (
+            SELECT 1 FROM meal_kit_ingredients mki2
+            JOIN ingredients i2 ON mki2.ingredient_id = i2.ingredient_id
+            WHERE mki2.meal_kit_id = mk.meal_kit_id
+            AND i2.is_vegan = 0
+        )";
     }
+    
     if ($is_halal) {
-        $conditions[] = "(SELECT COUNT(*) FROM meal_kit_ingredients mki JOIN ingredients i ON mki.ingredient_id = i.ingredient_id 
-                         WHERE mki.meal_kit_id = mk.meal_kit_id AND i.is_halal = 0) = 0";
+        $conditions[] = "NOT EXISTS (
+            SELECT 1 FROM meal_kit_ingredients mki2
+            JOIN ingredients i2 ON mki2.ingredient_id = i2.ingredient_id
+            WHERE mki2.meal_kit_id = mk.meal_kit_id
+            AND i2.is_halal = 0
+        )";
     }
-
-    // Also include meals in the same category
+    
+    // Also add condition for same category
     $conditions[] = "mk.category_id = ?";
     $params[] = $meal_kit['category_id'];
     $types .= "i";
-
+    
     if (!empty($conditions)) {
         $query .= " AND (" . implode(" OR ", $conditions) . ")";
     }
-
-    $query .= " ORDER BY RAND() LIMIT 10";
-
+    
+    $query .= " GROUP BY mk.meal_kit_id ORDER BY RAND() LIMIT 10";
+    
     $stmt = $mysqli->prepare($query);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $similar_meal_kits = $stmt->get_result();
+    
+    // Determine the title based on dietary preferences
+    $similar_title = "Similar Meal Kits";
+    if ($is_vegan) {
+        $similar_title = "Similar Vegan Meal Kits";
+    } elseif ($is_vegetarian) {
+        $similar_title = "Similar Vegetarian Meal Kits";
+    } elseif ($is_halal) {
+        $similar_title = "Similar Halal Meal Kits";
+    }
     
     // If we have similar meal kits, display them
     if ($similar_meal_kits->num_rows > 0):
     ?>
     <section class="py-5 bg-light">
         <div class="container">
-            <h2 class="mb-4">You May Also Like</h2>
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-                <?php while ($similar = $similar_meal_kits->fetch_assoc()): ?>
-                <div class="col">
+            <h2 class="mb-4"><?php echo $similar_title; ?></h2>
+            
+            <div class="similar-meal-kits-slider">
+                <?php while ($similar = $similar_meal_kits->fetch_assoc()): 
+                    $total_price = $similar['preparation_price'] + ($similar['ingredients_price'] ?? 0);
+                ?>
+                <div class="px-2">
                     <div class="card h-100 shadow-sm">
                         <?php $similar_img_url = get_meal_kit_image_url($similar['image_url'], $similar['name']); ?>
                         <img src="<?php echo htmlspecialchars($similar_img_url); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($similar['name']); ?>" style="height: 180px; object-fit: cover;">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column">
                             <h5 class="card-title"><?php echo htmlspecialchars($similar['name']); ?></h5>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="text-muted">
-                                    <i class="bi bi-fire"></i> <?php echo $similar['base_calories']; ?> cal
-                                </span>
-                                <span class="text-muted">
-                                    <i class="bi bi-clock"></i> <?php echo $similar['cooking_time']; ?> min
-                                </span>
-                            </div>
                             <div class="mb-2">
-                                <?php if ($similar['non_vegetarian_count'] == 0): ?>
+                                <?php if ($is_vegetarian): ?>
                                 <span class="badge bg-success me-1">Vegetarian</span>
                                 <?php endif; ?>
-                                <?php if ($similar['non_vegan_count'] == 0): ?>
+                                <?php if ($is_vegan): ?>
                                 <span class="badge bg-info me-1">Vegan</span>
                                 <?php endif; ?>
-                                <?php if ($similar['non_halal_count'] == 0): ?>
+                                <?php if ($is_halal): ?>
                                 <span class="badge bg-primary">Halal</span>
                                 <?php endif; ?>
                             </div>
                             <p class="card-text small mb-3"><?php echo mb_strimwidth(htmlspecialchars($similar['description']), 0, 80, "..."); ?></p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong class="text-primary"><?php echo number_format($similar['preparation_price'], 0); ?> MMK</strong>
+                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                <strong class="text-primary"><?php echo number_format($total_price, 0); ?> MMK</strong>
                                 <a href="meal-details.php?id=<?php echo $similar['meal_kit_id']; ?>" class="btn btn-outline-primary btn-sm">View Details</a>
                             </div>
                         </div>
@@ -413,6 +426,73 @@ while ($ingredient = $ingredients->fetch_assoc()) {
             </div>
         </div>
     </section>
+    
+    <!-- Custom CSS for Slick Carousel -->
+    <style>
+        /* Slick Slider Customization */
+        .similar-meal-kits-slider .slick-prev,
+        .similar-meal-kits-slider .slick-next {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            z-index: 1;
+        }
+        
+        .similar-meal-kits-slider .slick-prev {
+            left: -20px;
+        }
+        
+        .similar-meal-kits-slider .slick-next {
+            right: -20px;
+        }
+        
+        .similar-meal-kits-slider .slick-prev:before,
+        .similar-meal-kits-slider .slick-next:before {
+            font-family: 'bootstrap-icons' !important;
+            font-size: 20px;
+            color: white;
+            opacity: 1;
+        }
+        
+        .similar-meal-kits-slider .slick-prev:before {
+            content: '\f284';
+        }
+        
+        .similar-meal-kits-slider .slick-next:before {
+            content: '\f285';
+        }
+        
+        .similar-meal-kits-slider .slick-dots {
+            bottom: -40px;
+        }
+        
+        .similar-meal-kits-slider .slick-dots li button:before {
+            font-size: 12px;
+            color: var(--primary);
+            opacity: 0.5;
+        }
+        
+        .similar-meal-kits-slider .slick-dots li.slick-active button:before {
+            opacity: 1;
+        }
+        
+        /* Card hover effects */
+        .similar-meal-kits-slider .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin: 10px;
+        }
+        
+        .similar-meal-kits-slider .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* Add space for dots */
+        .similar-meal-kits-slider {
+            padding-bottom: 50px;
+        }
+    </style>
     <?php endif; ?>
 
     <?php include 'includes/footer.php'; ?>
@@ -455,6 +535,47 @@ while ($ingredient = $ingredients->fetch_assoc()) {
                 toast.show();
             });
     }
+    </script>
+
+    <!-- Slick Carousel JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('.similar-meal-kits-slider').slick({
+                slidesToShow: 4,
+                slidesToScroll: 1,
+                autoplay: true,
+                autoplaySpeed: 3000,
+                dots: true,
+                arrows: true,
+                infinite: true,
+                responsive: [
+                    {
+                        breakpoint: 1200,
+                        settings: {
+                            slidesToShow: 3,
+                            slidesToScroll: 1
+                        }
+                    },
+                    {
+                        breakpoint: 992,
+                        settings: {
+                            slidesToShow: 2,
+                            slidesToScroll: 1
+                        }
+                    },
+                    {
+                        breakpoint: 576,
+                        settings: {
+                            slidesToShow: 1,
+                            slidesToScroll: 1,
+                            arrows: false
+                        }
+                    }
+                ]
+            });
+        });
     </script>
 </body>
 

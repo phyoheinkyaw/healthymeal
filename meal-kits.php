@@ -19,6 +19,15 @@ $stmt->execute();
 $result = $stmt->get_result();
 $userPrefs = $result->fetch_assoc();
 
+// Set default values if user has no preferences
+if (!$userPrefs) {
+    $userPrefs = [
+        'dietary_restrictions' => '',
+        'allergies' => '',
+        'calorie_goal' => 0
+    ];
+}
+
 // Fetch categories for filter
 $categories = $mysqli->query("SELECT * FROM categories ORDER BY name");
 
@@ -201,104 +210,123 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
     <?php include 'includes/toast-notifications.php'; ?>
 
     <!-- Bootstrap JS -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     <script>
-    // Initialize cart count from localStorage
-    document.addEventListener('DOMContentLoaded', function() {
-        updateCartCountFromStorage();
+        $(document).ready(function(){
+            // Initialize cart count from localStorage
+            updateCartCountFromStorage();
+            
+            // Add event listeners to filters
+            document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+            document.getElementById('dietaryFilter').addEventListener('change', applyFilters);
+            document.getElementById('calorieFilter').addEventListener('change', applyFilters);
+            document.getElementById('priceFilter').addEventListener('change', applyFilters);
+            document.getElementById('sortBy').addEventListener('change', applyFilters);
+            
+            // Apply any default filters (from user preferences)
+            applyFilters();
+        });
         
-        // Add event listeners to filters
-        document.getElementById('categoryFilter').addEventListener('change', applyFilters);
-        document.getElementById('dietaryFilter').addEventListener('change', applyFilters);
-        document.getElementById('calorieFilter').addEventListener('change', applyFilters);
-        document.getElementById('priceFilter').addEventListener('change', applyFilters);
-        document.getElementById('sortBy').addEventListener('change', applyFilters);
-    });
-
-    function customizeMealKit(mealKitId) {
-        fetch(`api/meal-kits/get_customization.php?meal_kit_id=${mealKitId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('customizeContent').innerHTML = data.html;
-                    var modal = new bootstrap.Modal(document.getElementById('customizeModal'));
-                    modal.show();
-                    
-                    // Initialize listeners after content is loaded
-                    initializeQuantityListeners();
-                } else {
-                    // Show error message
-                    document.getElementById('errorToastMessage').textContent = data.message || 'Failed to load customization options';
+        // Function to customize meal kit
+        function customizeMealKit(mealKitId) {
+            fetch(`api/meal-kits/get_customization.php?meal_kit_id=${mealKitId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('customizeContent').innerHTML = data.html;
+                        var modal = new bootstrap.Modal(document.getElementById('customizeModal'));
+                        modal.show();
+                        
+                        // Initialize listeners after content is loaded
+                        initializeQuantityListeners();
+                    } else {
+                        // Show error message
+                        document.getElementById('errorToastMessage').textContent = data.message || 'Failed to load customization options';
+                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                        toast.show();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('errorToastMessage').textContent = 'An error occurred while loading customization options';
                     const toast = new bootstrap.Toast(document.getElementById('errorToast'));
                     toast.show();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('errorToastMessage').textContent = 'An error occurred while loading customization options';
-                const toast = new bootstrap.Toast(document.getElementById('errorToast'));
-                toast.show();
-            });
-    }
-
-    function applyFilters() {
-        const category = document.getElementById('categoryFilter').value;
-        const dietary = document.getElementById('dietaryFilter').value;
-        const calories = document.getElementById('calorieFilter').value;
-        const price = document.getElementById('priceFilter').value;
-        const sort = document.getElementById('sortBy').value;
-
-        // Client-side filtering for price
-        const mealKitCards = document.querySelectorAll('.meal-kit-card');
-        mealKitCards.forEach(card => {
-            const price = parseFloat(card.dataset.price);
-            const priceFilter = document.getElementById('priceFilter').value;
-            let showCard = true;
-
-            switch(priceFilter) {
-                case 'under10':
-                    showCard = price < 20000;
-                    break;
-                case '10-20':
-                    showCard = price >= 20000 && price <= 40000;
-                    break;
-                case 'over20':
-                    showCard = price > 40000;
-                    break;
-            }
-
-            card.style.display = showCard ? '' : 'none';
-        });
-
-        fetch('api/meal-kits/filter.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    category: category,
-                    dietary: dietary,
-                    calories: calories,
-                    price: price,
-                    sort: sort
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Optionally update the grid if server-side filtering is implemented
-                // const grid = document.getElementById('mealKitsGrid');
-                // grid.innerHTML = data.html;
-
-                // Reinitialize dropdowns after content update
-                var newDropdownTriggerList = [].slice.call(document.querySelectorAll(
-                    '[data-bs-toggle="dropdown"]'));
-                var newDropdownList = newDropdownTriggerList.map(function(dropdownTriggerEl) {
-                    return new bootstrap.Dropdown(dropdownTriggerEl);
                 });
-            })
-            .catch(error => console.error('Error:', error));
-    }
+        }
+
+        function applyFilters() {
+            const category = document.getElementById('categoryFilter').value;
+            const dietary = document.getElementById('dietaryFilter').value;
+            const calories = document.getElementById('calorieFilter').value;
+            const price = document.getElementById('priceFilter').value;
+            const sort = document.getElementById('sortBy').value;
+            
+            // Show loading state
+            const grid = document.getElementById('mealKitsGrid');
+            grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Loading meal kits...</p></div>';
+
+            // Validate dietary value to prevent issues
+            const validDietary = ['', 'vegetarian', 'vegan', 'halal'].includes(dietary) ? dietary : '';
+
+            fetch('api/meal-kits/filter.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        category: category,
+                        dietary: validDietary,
+                        calories: calories,
+                        price: price,
+                        sort: sort
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the grid with server-filtered results
+                        document.getElementById('mealKitsGrid').innerHTML = data.html;
+                        
+                        // Re-initialize any needed components
+                        initializeComponents();
+                    } else {
+                        // Show error
+                        grid.innerHTML = '<div class="col-12 text-center py-5"><div class="alert alert-danger">Failed to load meal kits. Please try again.</div></div>';
+                        console.error('Error fetching filtered meal kits:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    grid.innerHTML = '<div class="col-12 text-center py-5"><div class="alert alert-danger">An error occurred while loading meal kits. Please try again.</div></div>';
+                });
+        }
+        
+        // Re-initialize components after filtering
+        function initializeComponents() {
+            // Re-initialize tooltips, popovers, or other Bootstrap components if needed
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+        
+        // Update cart count from localStorage
+        function updateCartCountFromStorage() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const count = cart.reduce((total, item) => total + item.quantity, 0);
+            updateCartBadge(count);
+        }
+        
+        // Update the cart badge in the navbar
+        function updateCartBadge(count) {
+            const badge = document.getElementById('cartCount');
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'inline-block' : 'none';
+            }
+        }
     </script>
 
 </body>
