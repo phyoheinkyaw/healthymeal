@@ -497,10 +497,104 @@ $user = $result->fetch_assoc();
                         </div>
                     </div>
                 </div>
+
+                <!-- Address Management -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>My Addresses <span class="address-counter ms-2 badge bg-secondary">0/6</span></h5>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addressModal" id="addAddressBtn">
+                                <i class="bi bi-plus-circle"></i> Add New Address
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="addressesContainer" class="row g-3">
+                                <!-- Addresses will be loaded here -->
+                                <div class="col-12">
+                                    <div class="text-center p-5 text-muted address-loading">
+                                        <div class="spinner-border text-primary mb-3" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p>Loading saved addresses...</p>
+                                    </div>
+                                    <div class="text-center p-5 text-muted address-empty d-none">
+                                        <i class="bi bi-geo-alt display-4"></i>
+                                        <p class="mt-2">You don't have any saved addresses yet.</p>
+                                        <button class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addressModal">
+                                            <i class="bi bi-plus-circle"></i> Add Your First Address
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Address Modal -->
+    <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="addressForm">
+                    <input type="hidden" id="addressId" name="address_id">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addressModalLabel">Add New Address</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="addressName" class="form-label">Address Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="addressName" name="address_name" placeholder="e.g. Home, Office, etc." required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fullAddress" class="form-label">Street Address <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="fullAddress" name="full_address" placeholder="123 Main St" required>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="city" class="form-label">City <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="city" name="city" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="postalCode" class="form-label">Postal Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="postalCode" name="postal_code" required>
+                            </div>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="defaultAddress" name="is_default">
+                            <label class="form-check-label" for="defaultAddress">Set as default address</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Address</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Address Confirmation Modal -->
+    <div class="modal fade" id="deleteAddressModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Address</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this address?</p>
+                    <p class="text-danger"><small>This action cannot be undone.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -517,10 +611,52 @@ $user = $result->fetch_assoc();
     let originalProfileValues = {};
     let originalDietaryValues = {};
     let originalPasswordValues = {};
+    let addresses = [];
+    let currentAddressId = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         // Store original form values when page loads
         saveOriginalFormValues();
+        
+        // Load addresses
+        loadAddresses();
+        
+        // Address form handling
+        const addressForm = document.getElementById('addressForm');
+        addressForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveAddress();
+        });
+        
+        // Add address button click
+        const addAddressBtn = document.getElementById('addAddressBtn');
+        addAddressBtn.addEventListener('click', function(e) {
+            const addressCounter = document.querySelector('.address-counter');
+            const currentCount = parseInt(addressCounter.textContent.split('/')[0]);
+            
+            if (currentCount >= 6) {
+                e.preventDefault();
+                e.stopPropagation();
+                showAlert('danger', 'You have reached the maximum limit of 6 addresses. Please delete an existing address before adding a new one.');
+                return false;
+            }
+        });
+        
+        // Reset address form when modal is hidden
+        const addressModal = document.getElementById('addressModal');
+        addressModal.addEventListener('hidden.bs.modal', function() {
+            addressForm.reset();
+            document.getElementById('addressId').value = '';
+            document.getElementById('addressModalLabel').textContent = 'Add New Address';
+            // Ensure default checkbox is unchecked
+            document.getElementById('defaultAddress').checked = false;
+        });
+        
+        // Also ensure default checkbox starts unchecked when modal opens
+        document.getElementById('addAddressBtn').addEventListener('click', function() {
+            document.getElementById('defaultAddress').checked = false;
+        });
+        
         // Password toggle functionality
         function setupPasswordToggle(toggleButtonId, passwordFieldId) {
             const toggleButton = document.querySelector(toggleButtonId);
@@ -665,6 +801,13 @@ $user = $result->fetch_assoc();
             document.querySelector('#passwordForm').reset();
             showAlert('info', 'Password change cancelled.');
         });
+        
+        // Setup confirm delete button
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (currentAddressId) {
+                deleteAddress(currentAddressId);
+            }
+        });
 
         // Function to save original form values
         function saveOriginalFormValues() {
@@ -722,6 +865,315 @@ $user = $result->fetch_assoc();
                     bsAlert.close();
                 }
             }, 5000);
+        }
+        
+        // Address Management Functions
+        function loadAddresses() {
+            fetch('api/user/get_addresses.php')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('addressesContainer');
+                    
+                    // Remove loading indicator if it exists
+                    const loadingIndicator = document.querySelector('.address-loading');
+                    if (loadingIndicator) {
+                        loadingIndicator.remove();
+                    }
+                    
+                    // Clear existing content
+                    container.innerHTML = '';
+                    
+                    if (data.success && data.addresses && data.addresses.length > 0) {
+                        addresses = data.addresses;
+                        
+                        // Add addresses
+                        addresses.forEach(address => {
+                            container.appendChild(createAddressCard(address));
+                        });
+                        
+                        // Make sure empty state is hidden
+                        const emptyState = document.querySelector('.address-empty');
+                        if (emptyState) {
+                            emptyState.classList.add('d-none');
+                        }
+                        
+                        // Update address counter
+                        const addressCounter = document.querySelector('.address-counter');
+                        addressCounter.textContent = `${addresses.length}/6`;
+                        
+                        // Disable add button if limit reached
+                        const addAddressBtn = document.getElementById('addAddressBtn');
+                        if (addresses.length >= 6) {
+                            addAddressBtn.classList.add('disabled');
+                            addAddressBtn.setAttribute('disabled', 'disabled');
+                        } else {
+                            addAddressBtn.classList.remove('disabled');
+                            addAddressBtn.removeAttribute('disabled');
+                        }
+                    } else {
+                        // Show empty state
+                        const emptyStateHtml = `
+                            <div class="col-12">
+                                <div class="text-center p-5 text-muted address-empty">
+                                    <i class="bi bi-geo-alt display-4"></i>
+                                    <p class="mt-2">You don't have any saved addresses yet.</p>
+                                    <button class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addressModal">
+                                        <i class="bi bi-plus-circle"></i> Add Your First Address
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML = emptyStateHtml;
+                        
+                        // Update address counter for empty state
+                        const addressCounter = document.querySelector('.address-counter');
+                        addressCounter.textContent = '0/6';
+                        
+                        // Enable add button
+                        const addAddressBtn = document.getElementById('addAddressBtn');
+                        addAddressBtn.classList.remove('disabled');
+                        addAddressBtn.removeAttribute('disabled');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading addresses:', error);
+                    showAlert('danger', 'Failed to load addresses. Please try again later.');
+                    
+                    // Show error state
+                    const container = document.getElementById('addressesContainer');
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                Failed to load addresses. Please try again later.
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Update address counter for error state
+                    const addressCounter = document.querySelector('.address-counter');
+                    addressCounter.textContent = '0/6';
+                });
+        }
+        
+        function createAddressCard(address) {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4 mb-3';
+            
+            const card = document.createElement('div');
+            card.className = 'card h-100 position-relative';
+            if (address.is_default == 1) {
+                card.classList.add('border-primary');
+            }
+            
+            // Default badge if this is the default address
+            if (address.is_default == 1) {
+                const badge = document.createElement('div');
+                badge.className = 'position-absolute top-0 end-0 badge bg-primary rounded-pill m-2';
+                badge.textContent = 'Default';
+                card.appendChild(badge);
+            }
+            
+            const cardBody = document.createElement('div');
+            cardBody.className = 'card-body';
+            
+            const title = document.createElement('h5');
+            title.className = 'card-title';
+            title.textContent = address.address_name;
+            cardBody.appendChild(title);
+            
+            const addressText = document.createElement('p');
+            addressText.className = 'card-text';
+            addressText.textContent = address.full_address;
+            cardBody.appendChild(addressText);
+            
+            const cityZip = document.createElement('p');
+            cityZip.className = 'card-text text-muted';
+            cityZip.textContent = `${address.city}, ${address.postal_code}`;
+            cardBody.appendChild(cityZip);
+            
+            const cardFooter = document.createElement('div');
+            cardFooter.className = 'card-footer d-flex justify-content-between bg-transparent';
+            
+            // Edit button
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-sm btn-outline-primary';
+            editBtn.innerHTML = '<i class="bi bi-pencil"></i> Edit';
+            editBtn.addEventListener('click', () => editAddress(address));
+            cardFooter.appendChild(editBtn);
+            
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-sm btn-outline-danger';
+            deleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete';
+            deleteBtn.addEventListener('click', () => showDeleteConfirmation(address.address_id));
+            cardFooter.appendChild(deleteBtn);
+            
+            // Set as default button (only show if not default)
+            if (address.is_default != 1) {
+                const defaultBtn = document.createElement('button');
+                defaultBtn.className = 'btn btn-sm btn-outline-secondary';
+                defaultBtn.innerHTML = '<i class="bi bi-star"></i> Set as Default';
+                defaultBtn.addEventListener('click', () => setAsDefault(address.address_id));
+                cardFooter.appendChild(defaultBtn);
+            }
+            
+            card.appendChild(cardBody);
+            card.appendChild(cardFooter);
+            col.appendChild(card);
+            
+            return col;
+        }
+        
+        function editAddress(address) {
+            // Populate form with address data
+            document.getElementById('addressId').value = address.address_id;
+            document.getElementById('addressName').value = address.address_name;
+            document.getElementById('fullAddress').value = address.full_address;
+            document.getElementById('city').value = address.city;
+            document.getElementById('postalCode').value = address.postal_code;
+            document.getElementById('defaultAddress').checked = address.is_default == 1;
+            
+            // Update modal title
+            document.getElementById('addressModalLabel').textContent = 'Edit Address';
+            
+            // Show modal
+            const addressModal = new bootstrap.Modal(document.getElementById('addressModal'));
+            addressModal.show();
+        }
+        
+        function saveAddress() {
+            const form = document.getElementById('addressForm');
+            const formData = new FormData(form);
+            
+            // Get the address ID if editing
+            const addressId = formData.get('address_id');
+            const isEditing = addressId && addressId !== '';
+            
+            // Check if we're at the limit for addresses
+            if (!isEditing) {
+                const addressCounter = document.querySelector('.address-counter');
+                const currentCount = parseInt(addressCounter.textContent.split('/')[0]);
+                
+                if (currentCount >= 6) {
+                    showAlert('danger', 'You have reached the maximum limit of 6 addresses. Please delete an existing address before adding a new one.');
+                    return;
+                }
+            }
+            
+            // Convert checkbox to boolean - ensure it's explicitly true only when checked
+            const isDefaultChecked = document.getElementById('defaultAddress').checked;
+            formData.set('is_default', isDefaultChecked);
+            
+            // Convert FormData to JSON
+            const addressData = {};
+            formData.forEach((value, key) => {
+                // Special handling for is_default to ensure it's sent as boolean
+                if (key === 'is_default') {
+                    addressData[key] = value === 'true' || value === true;
+                } else {
+                    addressData[key] = value;
+                }
+            });
+            
+            console.log('Address data being sent:', addressData);
+            
+            // Only include address_id if we're editing
+            if (!isEditing) {
+                delete addressData.address_id;
+            }
+            
+            // If we're editing, ensure we're using the API correctly
+            const endpoint = isEditing ? 'api/user/update_address.php' : 'api/user/save_address.php';
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(addressData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide modal
+                    const addressModal = bootstrap.Modal.getInstance(document.getElementById('addressModal'));
+                    addressModal.hide();
+                    
+                    // Show success message
+                    showAlert('success', data.message || 'Address saved successfully!');
+                    
+                    // Reload addresses
+                    loadAddresses();
+                } else {
+                    showAlert('danger', data.message || 'Failed to save address.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'An error occurred while saving your address. Please try again.');
+            });
+        }
+        
+        function showDeleteConfirmation(addressId) {
+            currentAddressId = addressId;
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteAddressModal'));
+            deleteModal.show();
+        }
+        
+        function deleteAddress(addressId) {
+            fetch('api/user/delete_address.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ address_id: addressId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide modal
+                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteAddressModal'));
+                deleteModal.hide();
+                
+                if (data.success) {
+                    // Show success message
+                    showAlert('success', 'Address deleted successfully!');
+                    
+                    // Reload addresses
+                    loadAddresses();
+                } else {
+                    showAlert('danger', data.message || 'Failed to delete address.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'An error occurred while deleting the address. Please try again.');
+            });
+        }
+        
+        function setAsDefault(addressId) {
+            fetch('api/user/set_default_address.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ address_id: addressId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showAlert('success', 'Default address updated successfully!');
+                    
+                    // Reload addresses
+                    loadAddresses();
+                } else {
+                    showAlert('danger', data.message || 'Failed to update default address.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'An error occurred while updating your default address. Please try again.');
+            });
         }
     });
     </script>

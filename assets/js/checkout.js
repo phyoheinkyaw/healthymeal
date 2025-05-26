@@ -9,8 +9,9 @@ let savedAddresses = [];
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize variables
     
-    // Load saved addresses if available
+    // Load saved addresses if available and check address count limit
     loadSavedAddresses();
+    checkAddressLimit();
     
     // Add event listeners for delivery option radios
     document.querySelectorAll('.delivery-option-radio').forEach(radio => {
@@ -105,6 +106,7 @@ function checkAddressDuplication() {
     
     const saveAddressCheckbox = document.getElementById('saveAddress');
     const addressExistsWarning = document.getElementById('addressExistsWarning');
+    const saveAddressDetails = document.getElementById('saveAddressDetails');
     
     // Check if this address already exists
     const addressExists = savedAddresses.some(addr => {
@@ -115,32 +117,63 @@ function checkAddressDuplication() {
         );
     });
     
-    if (addressExists && saveAddressCheckbox && addressExistsWarning) {
+    // Check if user has reached address limit (6 addresses)
+    const hasReachedLimit = savedAddresses.length >= 6;
+    
+    // First, clear the existing warning to avoid confusion
+    if (addressExistsWarning) {
+        addressExistsWarning.style.display = 'none';
+    }
+    
+    if (addressExists && saveAddressCheckbox) {
+        // Address already exists
         saveAddressCheckbox.checked = false;
         saveAddressCheckbox.disabled = true;
-        addressExistsWarning.style.display = 'block';
         
-        // Find the matching address to display its name
-        const matchingAddress = savedAddresses.find(addr => 
-            currentStreet.toLowerCase() === addr.full_address.toLowerCase() &&
-            currentCity.toLowerCase() === addr.city.toLowerCase() &&
-            currentZip.toLowerCase() === addr.postal_code.toLowerCase()
-        );
-        
-        if (matchingAddress && addressExistsWarning) {
-            addressExistsWarning.innerHTML = `
-                <i class="bi bi-info-circle"></i> This address already exists as "${matchingAddress.address_name}" in your saved addresses.
-            `;
+        if (addressExistsWarning) {
+            addressExistsWarning.style.display = 'block';
+            
+            // Find the matching address to display its name
+            const matchingAddress = savedAddresses.find(addr => 
+                currentStreet.toLowerCase() === addr.full_address.toLowerCase() &&
+                currentCity.toLowerCase() === addr.city.toLowerCase() &&
+                currentZip.toLowerCase() === addr.postal_code.toLowerCase()
+            );
+            
+            if (matchingAddress) {
+                addressExistsWarning.innerHTML = `
+                    <i class="bi bi-info-circle"></i> This address already exists as "${matchingAddress.address_name}" in your saved addresses.
+                `;
+            }
         }
         
-        // Also hide the save address details section
-        const saveAddressDetails = document.getElementById('saveAddressDetails');
+        // Hide the save address details section
         if (saveAddressDetails) {
             saveAddressDetails.style.display = 'none';
         }
-    } else if (saveAddressCheckbox && addressExistsWarning) {
+    } else if (hasReachedLimit && saveAddressCheckbox) {
+        // Address limit reached
+        saveAddressCheckbox.checked = false;
+        saveAddressCheckbox.disabled = true;
+        
+        // Show the limit warning but not the "already exists" warning
+        if (addressExistsWarning) {
+            addressExistsWarning.style.display = 'block';
+            addressExistsWarning.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill"></i> You have reached the maximum limit of 6 addresses.
+            `;
+        }
+        
+        // Hide the save address details section
+        if (saveAddressDetails) {
+            saveAddressDetails.style.display = 'none';
+        }
+    } else if (saveAddressCheckbox) {
+        // Address doesn't exist and user hasn't reached limit
         saveAddressCheckbox.disabled = false;
-        addressExistsWarning.style.display = 'none';
+        if (addressExistsWarning) {
+            addressExistsWarning.style.display = 'none';
+        }
     }
 }
 
@@ -493,74 +526,124 @@ function submitOrder() {
         }
     }
     
-    // Prepare order data
-    const orderData = {
-        delivery_address: deliveryAddress,
-        customer_phone: customerPhone,
-        contact_number: contactNumber,
-        delivery_notes: deliveryNotes,
-        payment_method: paymentMethodRadio.value,
-        payment_method_id: paymentMethodRadio.dataset.paymentId || null,
-        account_phone: accountPhone,
-        delivery_option_id: parseInt(deliveryOptionRadio.value),
-        delivery_date: deliveryDate,
-        delivery_time: deliveryOptionRadio.dataset.time || null,
-        subtotal: parseInt(document.getElementById('orderSubtotal').dataset.valueRounded || 0),
-        tax: parseInt(document.getElementById('orderTax').dataset.valueRounded || 0),
-        delivery_fee: parseInt(document.getElementById('orderDeliveryFee').dataset.valueRounded || 0),
-        total_amount: parseInt(document.getElementById('orderTotal').dataset.valueRounded || 0)
-    };
-    
-    // Add transaction ID to order data if available
-    if (paymentMethodRadio.id !== 'cashOnDelivery') {
-        const paymentId = paymentMethodRadio.dataset.paymentId;
-        const transactionIdInput = document.getElementById(`transaction_id_${paymentId}`);
-        if (transactionIdInput && transactionIdInput.value) {
-            orderData.transaction_id = transactionIdInput.value;
-        }
-    }
-    
-    console.log('Order data prepared:', orderData);
-    
-    // Create form data if payment slip is included
-    if (paymentMethodRadio.id !== 'cashOnDelivery') {
-        const paymentId = paymentMethodRadio.dataset.paymentId;
-        const transferSlipInput = document.getElementById(`transfer_slip_${paymentId}`);
-        const transactionIdInput = document.getElementById(`transaction_id_${paymentId}`);
+    // Save address if checkbox is checked (do this BEFORE submitting order)
+    const saveAddressCheckbox = document.getElementById('saveAddress');
+    if (saveAddressCheckbox && saveAddressCheckbox.checked) {
+        const addressName = document.getElementById('addressName').value;
+        const isDefault = document.getElementById('defaultAddress').checked;
         
-        if (transferSlipInput && transferSlipInput.files && transferSlipInput.files.length > 0) {
-            console.log('Preparing FormData with payment slip...');
-            const formData = new FormData();
+        if (addressName && street && city && zip) {
+            console.log('Saving address before submitting order...');
             
-            // Add the file
-            formData.append('transfer_slip', transferSlipInput.files[0]);
-            console.log('Added file to FormData:', transferSlipInput.files[0].name, transferSlipInput.files[0].size + ' bytes');
+            const addressData = {
+                address_name: addressName,
+                full_address: street,
+                city: city,
+                postal_code: zip,
+                is_default: isDefault
+            };
             
-            // Add transaction ID
-            if (transactionIdInput && transactionIdInput.value) {
-                // Use the standardized transaction_id field name for the backend
-                formData.append('transaction_id', transactionIdInput.value);
-                console.log('Added transaction_id to FormData:', transactionIdInput.value);
-            }
-            
-            // Add order data
-            formData.append('order_data', JSON.stringify(orderData));
-            console.log('Added order_data to FormData (JSON):', JSON.stringify(orderData));
-            
-            // Debug log all form data entries
-            console.log('FormData contents:');
-            for (const pair of formData.entries()) {
-                console.log(pair[0] + ': ' + (pair[0] === 'order_data' ? '[JSON data]' : pair[1]));
-            }
-            
-            console.log('Submitting order with file...');
-            submitOrderWithFile(formData);
-            return;
+            // Save the address before proceeding with the order
+            saveUserAddress(addressData)
+                .then((response) => {
+                    if (response.success) {
+                        console.log('Address saved successfully before order submission');
+                    } else if (response.message === 'Address limit reached') {
+                        // Special case: Let the user know about the address limit but continue with order
+                        console.log('Address limit reached but continuing with order');
+                        // The warning is already shown by saveUserAddress function
+                    } else {
+                        console.error('Error saving address:', response.message);
+                    }
+                    // In all cases, continue with the order submission
+                    continueWithOrderSubmission();
+                })
+                .catch(error => {
+                    console.error('Error saving address:', error);
+                    // Continue with order submission even if saving address fails
+                    continueWithOrderSubmission();
+                });
+        } else {
+            console.error('Cannot save address - missing required fields');
+            // Don't block order submission if address saving fails
+            continueWithOrderSubmission();
         }
+    } else {
+        // No address to save, continue with order submission
+        continueWithOrderSubmission();
     }
     
-    console.log('Submitting order as JSON...');
-    submitOrderAsJson(orderData);
+    // Function to continue with order submission after address processing
+    function continueWithOrderSubmission() {
+        // Prepare order data
+        const orderData = {
+            delivery_address: deliveryAddress,
+            customer_phone: customerPhone,
+            contact_number: contactNumber,
+            delivery_notes: deliveryNotes,
+            payment_method: paymentMethodRadio.value,
+            payment_method_id: paymentMethodRadio.dataset.paymentId || null,
+            account_phone: accountPhone,
+            delivery_option_id: parseInt(deliveryOptionRadio.value),
+            delivery_date: deliveryDate,
+            delivery_time: deliveryOptionRadio.dataset.time || null,
+            subtotal: parseInt(document.getElementById('orderSubtotal').dataset.valueRounded || 0),
+            tax: parseInt(document.getElementById('orderTax').dataset.valueRounded || 0),
+            delivery_fee: parseInt(document.getElementById('orderDeliveryFee').dataset.valueRounded || 0),
+            total_amount: parseInt(document.getElementById('orderTotal').dataset.valueRounded || 0)
+        };
+        
+        // Add transaction ID to order data if available
+        if (paymentMethodRadio.id !== 'cashOnDelivery') {
+            const paymentId = paymentMethodRadio.dataset.paymentId;
+            const transactionIdInput = document.getElementById(`transaction_id_${paymentId}`);
+            if (transactionIdInput && transactionIdInput.value) {
+                orderData.transaction_id = transactionIdInput.value;
+            }
+        }
+        
+        console.log('Order data prepared:', orderData);
+        
+        // Create form data if payment slip is included
+        if (paymentMethodRadio.id !== 'cashOnDelivery') {
+            const paymentId = paymentMethodRadio.dataset.paymentId;
+            const transferSlipInput = document.getElementById(`transfer_slip_${paymentId}`);
+            const transactionIdInput = document.getElementById(`transaction_id_${paymentId}`);
+            
+            if (transferSlipInput && transferSlipInput.files && transferSlipInput.files.length > 0) {
+                console.log('Preparing FormData with payment slip...');
+                const formData = new FormData();
+                
+                // Add the file
+                formData.append('transfer_slip', transferSlipInput.files[0]);
+                console.log('Added file to FormData:', transferSlipInput.files[0].name, transferSlipInput.files[0].size + ' bytes');
+                
+                // Add transaction ID
+                if (transactionIdInput && transactionIdInput.value) {
+                    // Use the standardized transaction_id field name for the backend
+                    formData.append('transaction_id', transactionIdInput.value);
+                    console.log('Added transaction_id to FormData:', transactionIdInput.value);
+                }
+                
+                // Add order data
+                formData.append('order_data', JSON.stringify(orderData));
+                console.log('Added order_data to FormData (JSON):', JSON.stringify(orderData));
+                
+                // Debug log all form data entries
+                console.log('FormData contents:');
+                for (const pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + (pair[0] === 'order_data' ? '[JSON data]' : pair[1]));
+                }
+                
+                console.log('Submitting order with file...');
+                submitOrderWithFile(formData);
+                return;
+            }
+        }
+        
+        console.log('Submitting order as JSON...');
+        submitOrderAsJson(orderData);
+    }
 }
 
 /**
@@ -683,14 +766,22 @@ function handleOrderResponse(data) {
     document.getElementById('placeOrderBtn').disabled = false;
     
     if (data.success) {
-        // Set a success message to display in the orders page
-        localStorage.setItem('checkout_success', 'true');
-        localStorage.setItem('new_order_id', data.order_id);
-        // Redirect to my orders page instead of confirmation page
-        window.location.href = 'orders.php?checkout_success=true&order_id=' + data.order_id;
+        // Address is already saved before order submission
+        redirectAfterOrder(data);
     } else {
         showAlert('danger', data.message || 'An error occurred while placing your order');
     }
+}
+
+/**
+ * Redirects to the orders page after successful order
+ */
+function redirectAfterOrder(data) {
+    // Set a success message to display in the orders page
+    localStorage.setItem('checkout_success', 'true');
+    localStorage.setItem('new_order_id', data.order_id);
+    // Redirect to my orders page instead of confirmation page
+    window.location.href = 'orders.php?checkout_success=true&order_id=' + data.order_id;
 }
 
 /**
@@ -746,28 +837,41 @@ function showAlert(type, message) {
  * Save user address to the database
  */
 function saveUserAddress(addressData) {
-    return fetch('api/user/save_address.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(addressData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log('Address saved successfully');
-            // Add the new address to the savedAddresses array
-            savedAddresses.push(addressData);
-        } else {
-            console.error('Error saving address:', data.message);
-        }
-        return data;
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        throw error;
-    });
+    // First check if the user has already reached the address limit
+    return fetch('api/user/get_addresses.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.addresses && data.addresses.length >= 6) {
+                // User has reached the limit
+                showAlert('warning', 'You have reached the maximum limit of 6 addresses. Please delete an existing address before adding a new one.');
+                return { success: false, message: 'Address limit reached' };
+            }
+            
+            // Continue with saving the address if limit not reached
+            return fetch('api/user/save_address.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(addressData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Address saved successfully');
+                    // Add the new address to the savedAddresses array
+                    savedAddresses.push(addressData);
+                } else {
+                    console.error('Error saving address:', data.message);
+                    showAlert('warning', data.message || 'Failed to save address. Please try again.');
+                }
+                return data;
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            throw error;
+        });
 }
 
 /**
@@ -819,4 +923,48 @@ function hideLoadingOverlay() {
         overlay.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
+}
+
+/**
+ * Check if user has reached the address limit and disable save option if needed
+ */
+function checkAddressLimit() {
+    fetch('api/user/get_addresses.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.addresses) {
+                const addressCount = data.addresses.length;
+                
+                // If user has 6 or more addresses, disable the save address option
+                if (addressCount >= 6) {
+                    const saveAddressCheckbox = document.getElementById('saveAddress');
+                    
+                    if (saveAddressCheckbox) {
+                        // Disable the checkbox
+                        saveAddressCheckbox.checked = false;
+                        saveAddressCheckbox.disabled = true;
+                        
+                        // Add warning message
+                        const warningMessage = document.createElement('div');
+                        warningMessage.className = 'text-warning small mt-1';
+                        warningMessage.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> You have reached the maximum limit of 6 addresses.';
+                        
+                        // Insert after checkbox label - find the parent element (likely label or div)
+                        const parentElement = saveAddressCheckbox.closest('.form-check') || saveAddressCheckbox.parentNode;
+                        if (parentElement) {
+                            parentElement.appendChild(warningMessage);
+                        }
+                        
+                        // Hide the save address details section
+                        const saveAddressDetails = document.getElementById('saveAddressDetails');
+                        if (saveAddressDetails) {
+                            saveAddressDetails.style.display = 'none';
+                        }
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error checking address limit:', error);
+        });
 } 

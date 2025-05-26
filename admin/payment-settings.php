@@ -81,7 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$error) {
             if ($id) {
                 $sql = "UPDATE payment_settings SET payment_method=?, account_phone=?, icon_class=?, is_active=?, description=?, bank_info=?";
-                $params = [$method, $phone, $icon_class, $is_active, $_POST['description'] ?? null, $_POST['bank_info'] ?? null];
+                $description = $_POST['description'] ?? null;
+                $bank_info = $_POST['bank_info'] ?? null;
+                $params = [$method, $phone, $icon_class, $is_active, $description, $bank_info];
                 if ($qr_code) {
                     $sql .= ", qr_code=?";
                     $params[] = $qr_code;
@@ -105,8 +107,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $stmt->close();
             } else {
+                $description = $_POST['description'] ?? null;
+                $bank_info = $_POST['bank_info'] ?? null;
                 $stmt = $mysqli->prepare("INSERT INTO payment_settings (payment_method, qr_code, account_phone, icon_class, is_active, description, bank_info) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param('ssssiss', $method, $qr_code, $phone, $icon_class, $is_active, $_POST['description'] ?? null, $_POST['bank_info'] ?? null);
+                $stmt->bind_param('ssssiss', $method, $qr_code, $phone, $icon_class, $is_active, $description, $bank_info);
                 if ($stmt->execute()) {
                     $message = 'Payment method added.';
                 } else {

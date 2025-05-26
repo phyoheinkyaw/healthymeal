@@ -135,12 +135,6 @@ unset($_SESSION['flash_message']);
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h1 class="h3 mb-0">Blog Management</h1>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="index.php">Dashboard</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Blog Posts</li>
-                            </ol>
-                        </nav>
                     </div>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPostModal">
                         <i class="bi bi-plus-lg"></i> Create New Post

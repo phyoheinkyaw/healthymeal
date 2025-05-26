@@ -38,12 +38,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Function to update cart count from localStorage
 function updateCartCountFromStorage() {
-    const savedCartCount = localStorage.getItem('cartCount');
-    if (savedCartCount) {
-        const cartCountElement = document.getElementById('cartCount');
-        if (cartCountElement) {
-            cartCountElement.textContent = savedCartCount;
-        }
+    const savedCartCount = localStorage.getItem('cartCount') || '0';
+    const cartCountElement = document.getElementById('cartCount');
+    if (cartCountElement) {
+        cartCountElement.textContent = savedCartCount;
+        // Always show the badge
+        cartCountElement.style.display = 'inline-block';
     }
 }
 
@@ -54,8 +54,23 @@ function updateCartCount(count) {
     const cartCountElement = document.getElementById('cartCount');
     if (cartCountElement) {
         cartCountElement.textContent = cartCount;
+        // Always show the cart count badge, even if it's zero
+        cartCountElement.style.display = 'inline-block';
     }
     localStorage.setItem('cartCount', cartCount);
+    
+    // Optionally fetch the updated count from the database too
+    // This ensures other parts of the site also get updated
+    fetch('api/cart/get_cart_count.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && cartCountElement) {
+                cartCountElement.textContent = data.count;
+                // Always show the badge
+                cartCountElement.style.display = 'inline-block';
+            }
+        })
+        .catch(error => console.log('Error updating cart count from database:', error));
 }
 
 // Function to initialize quantity listeners (can be called after AJAX loads content)

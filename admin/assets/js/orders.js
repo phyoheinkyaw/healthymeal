@@ -343,52 +343,78 @@ function showAlert(type, message) {
 }
 
 // Function to verify payment - modified to show verification modal
-function verifyPayment(orderId, isResubmitted = false) {
-    const modal = new bootstrap.Modal(document.getElementById('paymentVerificationModal'));
+function verifyPayment(orderId, isResubmitted = false, orderAmount = null) {
+    // Clear previous modal data
+    document.getElementById('paymentVerificationModal').querySelectorAll('form')[0].reset();
     
-    // Clear previous form data
+    // Set order ID
     document.getElementById('verify_order_id').value = orderId;
-    document.getElementById('transaction_id').value = '';
-    document.getElementById('verification_notes').value = '';
     
-    // Set default status
-    document.getElementById('payment_status').value = "1"; // Default to Completed
-    
-    // Get the amount from the order row
-    const amountValue = document.querySelector(`tr[data-order-id="${orderId}"]`).dataset.amount;
-    document.getElementById('amount_verified').value = amountValue;
-    
-    // Set modal title based on whether this is a resubmission
-    const modalTitle = document.getElementById('paymentVerificationModalLabel');
-    if (isResubmitted) {
-        modalTitle.innerHTML = '<i class="bi bi-shield-check fs-4 text-primary me-2"></i>Verify Resubmitted Payment';
-    } else {
-        modalTitle.innerHTML = '<i class="bi bi-shield-check fs-4 text-success me-2"></i>Verify Payment';
+    // Add hidden field for resubmission flag if it doesn't exist
+    if (!document.getElementById('isResubmission')) {
+        const resubmissionField = document.createElement('input');
+        resubmissionField.type = 'hidden';
+        resubmissionField.id = 'isResubmission';
+        resubmissionField.name = 'isResubmission';
+        document.getElementById('verificationForm').appendChild(resubmissionField);
     }
     
-    // Reset payment slip preview
-    document.getElementById('paymentSlipPreview').innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-3 text-muted">Loading payment details...</p>
-        </div>
-    `;
+    // Set resubmission flag
+    document.getElementById('isResubmission').value = isResubmitted;
     
-    // Show the modal
-    modal.show();
+    // Update modal title based on resubmission status
+    const modalTitle = document.getElementById('paymentVerificationModalLabel');
+    if (isResubmitted) {
+        modalTitle.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Verify Resubmitted Payment';
+        
+        // Add resubmission badge if not already added
+        if (!document.getElementById('resubmissionBadge')) {
+            const resubmissionBadge = document.createElement('div');
+            resubmissionBadge.id = 'resubmissionBadge';
+            resubmissionBadge.className = 'alert alert-info mt-3';
+            resubmissionBadge.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill fs-4 me-2"></i>
+                    <div>This payment has been resubmitted by the customer after a previous failed verification.</div>
+                </div>
+            `;
+            document.getElementById('paymentSlipPreview').after(resubmissionBadge);
+        }
+    } else {
+        modalTitle.innerHTML = 'Verify Payment';
+        
+        // Remove resubmission badge if exists
+        const resubmissionBadge = document.getElementById('resubmissionBadge');
+        if (resubmissionBadge) {
+            resubmissionBadge.remove();
+        }
+    }
+    
+    // Set amount if provided
+    if (orderAmount) {
+        document.getElementById('amount_verified').value = orderAmount;
+    } else {
+        // Try to get amount from the table row data attribute
+        const orderRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
+        if (orderRow && orderRow.dataset.amount) {
+            document.getElementById('amount_verified').value = orderRow.dataset.amount;
+        }
+    }
+    
+    // Show modal
+    const paymentVerificationModal = new bootstrap.Modal(document.getElementById('paymentVerificationModal'));
+    paymentVerificationModal.show();
     
     // Fetch payment details
-    fetchPaymentDetails(orderId);
+    fetchPaymentDetails(orderId, isResubmitted);
 }
 
 /**
  * Fetch payment details for verification
  */
-function fetchPaymentDetails(orderId) {
+function fetchPaymentDetails(orderId, isResubmitted) {
     $.ajax({
-        url: `/hm/api/orders/get_payment_details.php?order_id=${orderId}`,
+        url: `/hm/api/orders/get_payment_details.php?order_id=${orderId}&resubmitted=${isResubmitted ? 1 : 0}`,
         type: 'GET',
         dataType: 'json',
         success: function(response) {
@@ -414,7 +440,10 @@ function fetchPaymentDetails(orderId) {
                     
                     if (isImage) {
                         slipHtml = `
-                            <h6 class="mb-3">Payment Slip</h6>
+                            <h6 class="mb-3">
+                                Payment Slip
+                                ${isResubmitted ? '<span class="badge bg-primary ms-2">Resubmitted</span>' : ''}
+                            </h6>
                             <div class="text-center">
                                 <img src="${details.transfer_slip_url}" class="img-fluid rounded shadow-sm" style="max-height: 400px;" alt="Payment Slip">
                             </div>
@@ -426,7 +455,10 @@ function fetchPaymentDetails(orderId) {
                         `;
                     } else if (isPdf) {
                         slipHtml = `
-                            <h6 class="mb-3">Payment Slip (PDF)</h6>
+                            <h6 class="mb-3">
+                                Payment Slip (PDF)
+                                ${isResubmitted ? '<span class="badge bg-primary ms-2">Resubmitted</span>' : ''}
+                            </h6>
                             <div class="text-center">
                                 <div class="mb-3">
                                     <i class="bi bi-file-earmark-pdf fs-1 text-danger"></i>
@@ -438,7 +470,10 @@ function fetchPaymentDetails(orderId) {
                         `;
                     } else {
                         slipHtml = `
-                            <h6 class="mb-3">Payment Slip</h6>
+                            <h6 class="mb-3">
+                                Payment Slip
+                                ${isResubmitted ? '<span class="badge bg-primary ms-2">Resubmitted</span>' : ''}
+                            </h6>
                             <div class="text-center">
                                 <div class="alert alert-warning">
                                     <i class="bi bi-exclamation-triangle me-2"></i>
@@ -505,74 +540,79 @@ function fetchPaymentDetails(orderId) {
  * Submit payment verification
  */
 function submitPaymentVerification() {
-    const orderId = document.getElementById('verify_order_id').value;
-    const transactionId = document.getElementById('transaction_id').value;
-    const amountVerified = parseFloat(document.getElementById('amount_verified').value);
-    const paymentStatus = parseInt(document.getElementById('payment_status').value);
-    const verificationNotes = document.getElementById('verification_notes').value;
+    const orderId = $('#verify_order_id').val();
+    const paymentStatus = $('#payment_status').val();
+    const transactionId = $('#transaction_id').val();
+    const verificationNotes = $('#verification_notes').val();
+    const amountVerified = $('#amount_verified').val();
+    const isResubmission = document.getElementById('isResubmission') ? 
+                          document.getElementById('isResubmission').value === 'true' : false;
     
-    // Validate required fields
-    if (!transactionId) {
-        showToast('error', 'Transaction ID is required');
+    if (!transactionId.trim()) {
+        showToast('error', 'Please enter a valid transaction ID');
+        $('#transaction_id').focus();
         return;
     }
     
-    if (!amountVerified || isNaN(amountVerified) || amountVerified <= 0) {
-        showToast('error', 'Please enter a valid amount');
-        return;
-    }
+    // Disable submit button and show loading
+    $('#paymentVerificationModal .modal-footer button').prop('disabled', true);
+    $('#paymentVerificationModal .modal-footer button:last-child').html(
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...'
+    );
     
-    // Prepare verification data
     const verificationData = {
         order_id: orderId,
         verify: true,
         verification_details: {
             transaction_id: transactionId,
-            amount_verified: amountVerified,
+            verification_notes: verificationNotes,
             payment_status: paymentStatus,
-            verification_notes: verificationNotes
+            amount_verified: amountVerified || 0,
+            is_resubmission: isResubmission
         }
     };
     
-    // Show loading
-    const submitBtn = document.querySelector('#paymentVerificationModal .btn-primary');
-    const originalBtnText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `
-        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        Processing...
-    `;
-    
-    // Submit verification
-    $.ajax({
-        url: '/hm/api/orders/verify_payment.php',
-        type: 'POST',
-        data: JSON.stringify(verificationData),
-        contentType: 'application/json',
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                showToast('success', 'Payment verified successfully');
-                
-                // Close modal
-                bootstrap.Modal.getInstance(document.getElementById('paymentVerificationModal')).hide();
-                
-                // Reload page to reflect changes
-                setTimeout(() => {
-                    location.reload();
-                }, 1500);
-            } else {
-                showToast('error', response.message || 'Failed to verify payment');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            }
+    fetch('/hm/api/orders/verify_payment.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
         },
-        error: function(xhr, status, error) {
-            showToast('error', 'An error occurred while verifying payment');
-            console.error('Error:', error);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
+        body: JSON.stringify(verificationData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message || 'Payment verification completed successfully');
+            
+            // Hide modal
+            bootstrap.Modal.getInstance(document.getElementById('paymentVerificationModal')).hide();
+            
+            // Store success message for after reload
+            localStorage.setItem('orderMessage', data.message || 'Payment verification completed successfully');
+            localStorage.setItem('orderMessageType', 'success');
+            
+            // Reload page after a short delay
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        } else {
+            throw new Error(data.message || 'Failed to verify payment');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', error.message || 'An error occurred during verification');
+        
+        // Re-enable buttons
+        $('#paymentVerificationModal .modal-footer button').prop('disabled', false);
+        $('#paymentVerificationModal .modal-footer button:last-child').html(
+            '<i class="bi bi-shield-check me-2"></i>Verify Payment'
+        );
     });
 }
 
@@ -1022,4 +1062,4 @@ style.innerHTML = `
     position: relative;
 }
 `;
-document.head.appendChild(style); 
+document.head.appendChild(style);

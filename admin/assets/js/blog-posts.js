@@ -209,7 +209,7 @@ $(document).ready(function() {
 
         // Send AJAX request
         $.ajax({
-            url: postId ? 'api/blog/update.php' : 'api/blog/create.php',
+            url: postId ? 'api/blog/update.php' : 'api/blog/create_post.php',
             type: 'POST',
             data: formData,
             processData: false,

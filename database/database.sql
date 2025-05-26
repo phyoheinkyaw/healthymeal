@@ -248,13 +248,15 @@ CREATE TABLE payment_verifications (
     amount_verified INT NOT NULL,
     payment_status TINYINT(1) DEFAULT 0 COMMENT '0: pending, 1: completed, 2: failed, 3: refunded, 4: partial',
     verification_notes TEXT,
-    verified_by_id INT NOT NULL,
+    verified_by_id INT NULL,
     transfer_slip VARCHAR(255) NULL COMMENT 'Path to uploaded payment proof image',
     payment_verified TINYINT(1) DEFAULT 0 COMMENT '0: not verified, 1: verified',
     payment_verified_at DATETIME NULL,
     additional_proof_requested TINYINT(1) DEFAULT 0 COMMENT '0: no, 1: yes',
     verification_attempt INT DEFAULT 1 COMMENT 'Which attempt at verification this is',
+    resubmission_status TINYINT(1) DEFAULT 0 COMMENT '0: original, 1: resubmitted, 2: pending resubmission',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
     FOREIGN KEY (payment_id) REFERENCES payment_history(payment_id) ON DELETE SET NULL,
     FOREIGN KEY (verified_by_id) REFERENCES users(user_id)
@@ -499,13 +501,13 @@ INSERT INTO order_item_ingredients (order_item_id, ingredient_id, custom_grams) 
     (2, 3, 120.00); -- Broccoli 120g for order_item_id 2
 
 -- Insert payment verifications
-INSERT INTO payment_verifications (order_id, payment_id, transaction_id, amount_verified, payment_status, verification_notes, verified_by_id, transfer_slip, payment_verified, payment_verified_at, verification_attempt) VALUES
-(1, 1, 'TXN123456789', 159540, 1, 'Payment slip matches transaction details', 1, 'slip1.jpg', 1, '2024-02-01 11:30:00', 1),
-(2, 2, 'PP987654321', 148540, 1, 'Verified through PayPal API', 1, 'slip2.jpg', 1, '2024-02-15 15:45:00', 1),
-(3, 3, 'TXN567891234', 166140, 1, 'Transaction confirmed in bank statement', 1, 'slip3.jpg', 1, '2024-02-28 10:20:00', 1),
-(4, 4, 'PARTIAL-PAY', 92110, 4, 'Partial payment verified, waiting for remaining amount', 1, 'slip4.jpg', 0, NULL, 1),
-(4, NULL, NULL, 0, 0, 'Awaiting payment for remaining balance', 1, NULL, 0, NULL, 2),
-(5, 5, 'TXN456789123', 108960, 3, 'Refunded due to out of stock', 1, 'slip5.jpg', 1, '2024-02-10 13:15:00', 1);
+INSERT INTO payment_verifications (order_id, payment_id, transaction_id, amount_verified, payment_status, verification_notes, verified_by_id, transfer_slip, payment_verified, payment_verified_at, verification_attempt, resubmission_status) VALUES
+(1, 1, 'TXN123456789', 159540, 1, 'Payment slip matches transaction details', 1, 'slip1.jpg', 1, '2024-02-01 11:30:00', 1, 0),
+(2, 2, 'PP987654321', 148540, 1, 'Verified through PayPal API', 1, 'slip2.jpg', 1, '2024-02-15 15:45:00', 1, 0),
+(3, 3, 'TXN567891234', 166140, 1, 'Transaction confirmed in bank statement', 1, 'slip3.jpg', 1, '2024-02-28 10:20:00', 1, 0),
+(4, 4, 'PARTIAL-PAY', 92110, 4, 'Partial payment verified, waiting for remaining amount', 1, 'slip4.jpg', 0, NULL, 1, 0),
+(4, NULL, NULL, 0, 0, 'Awaiting payment for remaining balance', 1, NULL, 0, NULL, 2, 2),
+(5, 5, 'TXN456789123', 108960, 3, 'Refunded due to out of stock', 1, 'slip5.jpg', 1, '2024-02-10 13:15:00', 1, 0);
 
 -- Insert payment verification logs
 INSERT INTO payment_verification_logs (verification_id, order_id, status_changed_from, status_changed_to, amount, admin_notes, verified_by_id) VALUES

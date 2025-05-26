@@ -29,10 +29,11 @@ $stmt = $mysqli->prepare("
         COALESCE(pv.payment_status, 0) as payment_status,
         COALESCE(pv.payment_verified, 0) as payment_verified,
         COALESCE(pv.verification_attempt, 0) as verification_attempt,
+        COALESCE(pv.resubmission_status, 0) as resubmission_status,
         ph.transaction_id,
         ps.payment_method,
         (SELECT COUNT(*) FROM order_items WHERE order_id = o.order_id) as items_count,
-        (SELECT transfer_slip FROM payment_verifications WHERE order_id = o.order_id ORDER BY created_at DESC LIMIT 1) as transfer_slip
+        pv.transfer_slip
     FROM orders o
     JOIN users u ON o.user_id = u.user_id
     JOIN order_status os ON o.status_id = os.status_id
@@ -42,7 +43,14 @@ $stmt = $mysqli->prepare("
         LEFT JOIN payment_history ph2 ON ph1.order_id = ph2.order_id AND ph1.payment_id < ph2.payment_id
         WHERE ph2.payment_id IS NULL
     ) ph ON o.order_id = ph.order_id
-    LEFT JOIN payment_verifications pv ON ph.payment_id = pv.payment_id
+    LEFT JOIN (
+        SELECT pv1.*
+        FROM payment_verifications pv1
+        LEFT JOIN payment_verifications pv2
+            ON pv1.order_id = pv2.order_id
+            AND (pv1.created_at < pv2.created_at OR (pv1.created_at = pv2.created_at AND pv1.verification_id < pv2.verification_id))
+        WHERE pv2.verification_id IS NULL
+    ) pv ON o.order_id = pv.order_id
     LEFT JOIN payment_settings ps ON o.payment_method_id = ps.id
     ORDER BY o.created_at DESC
 ");
@@ -102,17 +110,17 @@ if ($status_result) {
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover" id="ordersTable">
+                        <table class="table table-hover table-sm" id="ordersTable">
                             <thead>
                                 <tr>
-                                    <th>Order ID</th>
-                                    <th>Customer</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th>Payment</th>
-                                    <th>Items</th>
-                                    <th>Total</th>
-                                    <th>Actions</th>
+                                    <th><small>ID</small></th>
+                                    <th><small>Customer</small></th>
+                                    <th><small>Created</small></th>
+                                    <th style="min-width: 130px; max-width: 160px;"><small>Status</small></th>
+                                    <th><small>Payment</small></th>
+                                    <th><small>Qty</small></th>
+                                    <th><small>Total</small></th>
+                                    <th><small>Actions</small></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -123,17 +131,17 @@ if ($status_result) {
                                     data-status-id="<?php echo $order['status_id']; ?>"
                                     data-status="<?php echo htmlspecialchars($order['status_name']); ?>"
                                     data-amount="<?php echo $order['total_amount']; ?>"
-                                    <?php if ($is_resubmitted): ?>class="table-warning" data-resubmitted="true"<?php endif; ?>>
-                                    <td>#<?php echo $order['order_id']; ?></td>
+                                    <?php if ($is_resubmitted): ?>class="table-warning" data-resubmitted="true"<?php elseif ($order['resubmission_status'] == 2): ?>class="table-warning" data-needs-resubmit="true"<?php endif; ?>>
+                                    <td><small>#<?php echo $order['order_id']; ?></small></td>
                                     <td>
-                                        <div><?php echo htmlspecialchars($order['customer_name']); ?></div>
+                                        <div class="small"><?php echo htmlspecialchars($order['customer_name']); ?></div>
                                         <small class="text-muted"><?php echo htmlspecialchars($order['customer_email']); ?></small>
                                     </td>
                                     <td>
-                                        <div><?php echo date('M d, Y', strtotime($order['created_at'])); ?></div>
-                                        <small class="text-muted"><?php echo date('h:i A', strtotime($order['created_at'])); ?></small>
+                                        <div class="small"><?php echo date('M d, Y', strtotime($order['created_at'])); ?></div>
+                                        <small class="text-muted d-none d-md-block"><?php echo date('h:i A', strtotime($order['created_at'])); ?></small>
                                     </td>
-                                    <td>
+                                    <td style="min-width: 130px; max-width: 160px;">
                                         <select class="form-select form-select-sm status-select" 
                                                 data-order-id="<?php echo $order['order_id']; ?>"
                                                 data-original-status="<?php echo $order['status_id']; ?>">
@@ -175,6 +183,11 @@ if ($status_result) {
                                                     <?php if($order['verification_attempt'] > 1): ?>
                                                         <span class="badge bg-info">Attempt <?php echo $order['verification_attempt']; ?></span>
                                                     <?php endif; ?>
+                                                    <?php if($order['resubmission_status'] == 1): ?>
+                                                        <span class="badge bg-primary">Resubmitted</span>
+                                                    <?php elseif($order['resubmission_status'] == 2): ?>
+                                                        <span class="badge bg-warning text-dark">Needs Resubmit</span>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </small>
                                             <?php if($order['payment_method'] === 'Cash on Delivery' && $order['payment_verified'] == 0): ?>
@@ -182,30 +195,39 @@ if ($status_result) {
                                                 <button type="button" class="btn btn-sm btn-outline-success w-100" 
                                                         onclick="verifyCODPayment(<?php echo $order['order_id']; ?>)"
                                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Mark COD as Verified">
-                                                    <i class="bi bi-cash-coin"></i> Verify COD
+                                                    <i class="bi bi-cash-coin"></i> <span class="d-none d-lg-inline">Verify COD</span>
                                                 </button>
                                             </div>
                                             <?php elseif(!empty($order['transfer_slip']) && ($order['payment_verified'] == 0 || $order['payment_status'] == 2)): ?>
                                             <div class="mt-1">
+                                                <?php
+                                                // Allow verification only if:
+                                                // 1. Not verified yet ($order['payment_verified'] == 0) AND payment status is not failed (status 2)
+                                                // OR 2. This is a proper resubmission (tracked via resubmitted flag or resubmission_status)
+                                                // OR 3. Payment has failed but resubmission is provided (resubmission_status == 1)
+                                                $isResubmission = $is_resubmitted || $order['resubmission_status'] == 1;
+                                                $canVerify = ($order['payment_verified'] == 0 && $order['payment_status'] != 2) || $isResubmission;
+                                                
+                                                if ($canVerify): ?>
                                                 <button type="button" class="btn btn-sm btn-outline-success w-100" 
-                                                        onclick="verifyPayment(<?php echo $order['order_id']; ?>, <?php echo ($order['payment_verified'] == 1) ? 'true' : 'false'; ?>)"
-                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo ($order['payment_verified'] == 1) ? 'Verify Resubmitted Payment' : 'Verify Payment'; ?>">
-                                                    <i class="bi bi-shield-check"></i> <?php echo ($order['payment_verified'] == 1) ? 'Verify Resubmit' : 'Verify'; ?>
+                                                        onclick="verifyPayment(<?php echo $order['order_id']; ?>, <?php echo $isResubmission ? 'true' : 'false'; ?>)"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo $isResubmission ? 'Verify Resubmitted Payment' : 'Verify Payment'; ?>">
+                                                    <i class="bi bi-shield-check"></i> <span class="d-none d-lg-inline"><?php echo $isResubmission ? 'Verify Resubmit' : 'Verify'; ?></span>
                                                 </button>
+                                                <?php else: ?>
+                                                <span class="badge bg-secondary w-100" data-bs-toggle="tooltip" title="Payment marked as failed. User must resubmit payment.">
+                                                    <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">Awaiting Resubmit</span>
+                                                </span>
+                                                <?php endif; ?>
                                             </div>
                                             <?php endif; ?>
                                         </div>
                                     </td>
                                     <td>
-                                        <div><?php echo $order['items_count']; ?> items</div>
-                                        <small class="text-muted">
-                                            <?php echo number_format($order['subtotal']); ?> MMK +
-                                            <?php echo number_format($order['tax']); ?> MMK tax + 
-                                            <?php echo number_format($order['delivery_fee']); ?> MMK delivery
-                                        </small>
+                                        <div class="small"><?php echo $order['items_count']; ?> items</div>
                                     </td>
                                     <td>
-                                        <strong><?php echo number_format($order['total_amount']); ?> MMK</strong>
+                                        <strong class="small"><?php echo number_format($order['total_amount']); ?> MMK</strong>
                                     </td>
                                     <td>
                                         <div class="btn-group">
@@ -430,6 +452,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 2000);
         }, 500);
     }
+    
+    // Add highlighting for awaiting resubmission status
+    document.querySelectorAll('tr').forEach(row => {
+        const paymentCell = row.querySelector('td:nth-child(5)');
+        if (paymentCell && paymentCell.innerHTML.includes('Needs Resubmit')) {
+            row.classList.add('bg-warning-subtle');
+        }
+    });
 });
 
 // Function to verify Cash on Delivery payment without requiring a payment slip

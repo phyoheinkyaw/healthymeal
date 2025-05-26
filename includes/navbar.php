@@ -202,7 +202,10 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                document.getElementById('cartCount').textContent = data.count;
+                const cartBadge = document.getElementById('cartCount');
+                cartBadge.textContent = data.count;
+                // Always show the badge
+                cartBadge.style.display = 'inline-block';
             }
         });
 });

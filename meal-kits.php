@@ -209,14 +209,12 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
     <!-- Include Toast Notifications -->
     <?php include 'includes/toast-notifications.php'; ?>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <script>
         $(document).ready(function(){
-            // Initialize cart count from localStorage
-            updateCartCountFromStorage();
+            // First try to get cart count from database via API
+            fetchCartCountFromDatabase();
             
             // Add event listeners to filters
             document.getElementById('categoryFilter').addEventListener('change', applyFilters);
@@ -228,6 +226,26 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             // Apply any default filters (from user preferences)
             applyFilters();
         });
+        
+        // Function to fetch cart count from database
+        function fetchCartCountFromDatabase() {
+            fetch('api/cart/get_cart_count.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the cart badge with count from database
+                        updateCartBadge(data.count);
+                    } else {
+                        // If API call fails, fall back to localStorage
+                        updateCartCountFromStorage();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching cart count:', error);
+                    // If fetch fails, fall back to localStorage
+                    updateCartCountFromStorage();
+                });
+        }
         
         // Function to customize meal kit
         function customizeMealKit(mealKitId) {
@@ -312,7 +330,7 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             });
         }
         
-        // Update cart count from localStorage
+        // Update cart count from localStorage as fallback
         function updateCartCountFromStorage() {
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
             const count = cart.reduce((total, item) => total + item.quantity, 0);
@@ -324,7 +342,8 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             const badge = document.getElementById('cartCount');
             if (badge) {
                 badge.textContent = count;
-                badge.style.display = count > 0 ? 'inline-block' : 'none';
+                // Always show the badge, even when count is zero
+                badge.style.display = 'inline-block';
             }
         }
     </script>

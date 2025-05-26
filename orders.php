@@ -79,6 +79,8 @@ $user = $userStmt->get_result()->fetch_assoc();
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
         /* Dashboard specific styles */
         body {
@@ -826,6 +828,293 @@ function viewOrderDetails(orderId) {
                 document.getElementById('orderDetailsContent').innerHTML = data.html;
                 const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
                 modal.show();
+                
+                // Attach event listener to payment submit button if it exists
+                const submitBtn = document.getElementById('orderDetailsContent').querySelector('.orderDetailsSubmitBtn');
+                if (submitBtn) {
+                    // Set up file upload preview functionality
+                    const fileInput = document.getElementById('transferSlip');
+                    const fileSelectionText = document.getElementById('fileSelectionText');
+                    const previewContainer = document.getElementById('previewContainer');
+                    const imagePreview = document.getElementById('imagePreview');
+                    const pdfPreview = document.getElementById('pdfPreview');
+                    const previewImg = document.getElementById('previewImg');
+                    const removeFileBtn = document.getElementById('removeFileBtn');
+                    const viewImageBtn = document.getElementById('viewImageBtn');
+                    const uploadContainer = document.querySelector('.upload-container');
+                    
+                    // Initialize file preview functionality
+                    if (fileInput) {
+                        fileInput.addEventListener('change', function() {
+                            const file = this.files[0];
+                            
+                            if (file) {
+                                // Hide error alert if visible
+                                const errorDiv = document.getElementById('uploadError');
+                                if (errorDiv) {
+                                    errorDiv.classList.add('d-none');
+                                }
+                                
+                                fileSelectionText.textContent = 'Selected: ' + file.name;
+                                previewContainer.classList.remove('d-none');
+                                uploadContainer.style.borderColor = 'rgba(25, 135, 84, 0.5)';
+                                uploadContainer.style.background = 'rgba(25, 135, 84, 0.03)';
+                                
+                                try {
+                                    if (file.type.indexOf('image') > -1) {
+                                        // For images
+                                        imagePreview.classList.remove('d-none');
+                                        pdfPreview.classList.add('d-none');
+                                        
+                                        const reader = new FileReader();
+                                        reader.onload = function(e) {
+                                            previewImg.src = e.target.result;
+                                        };
+                                        reader.readAsDataURL(file);
+                                    } 
+                                    else if (file.type === 'application/pdf') {
+                                        // For PDFs
+                                        imagePreview.classList.add('d-none');
+                                        pdfPreview.classList.remove('d-none');
+                                    }
+                                } catch(err) {
+                                    console.log('Preview error:', err);
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Initialize remove button functionality
+                    if (removeFileBtn) {
+                        removeFileBtn.addEventListener('click', function() {
+                            fileInput.value = '';
+                            previewContainer.classList.add('d-none');
+                            fileSelectionText.textContent = 'Click to select payment slip image or PDF';
+                            uploadContainer.style.borderColor = 'rgba(0, 123, 255, 0.3)';
+                            uploadContainer.style.background = 'rgba(0, 123, 255, 0.03)';
+                        });
+                    }
+                    
+                    // Initialize view image button
+                    if (viewImageBtn) {
+                        viewImageBtn.addEventListener('click', function() {
+                            if (previewImg && previewImg.src) {
+                                createImagePreviewModal(previewImg.src);
+                            }
+                        });
+                    }
+                    
+                    // Initialize existing view image buttons
+                    document.querySelectorAll('.view-image-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const imgSrc = this.getAttribute('data-img-src');
+                            if (imgSrc) {
+                                createImagePreviewModal(imgSrc);
+                            }
+                        });
+                    });
+                    
+                    // Create image preview modal function
+                    function createImagePreviewModal(imgSrc) {
+                        // Remove any existing modal
+                        const existingModal = document.getElementById('imagePreviewModal');
+                        if (existingModal) {
+                            existingModal.remove();
+                        }
+                        
+                        // Create modal HTML
+                        const modalHTML = `
+                            <div class='modal fade' id='imagePreviewModal' tabindex='-1' aria-hidden='true'>
+                                <div class='modal-dialog modal-lg modal-dialog-centered'>
+                                    <div class='modal-content'>
+                                        <div class='modal-header'>
+                                            <h5 class='modal-title'>Payment Slip Preview</h5>
+                                            <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                                        </div>
+                                        <div class='modal-body text-center'>
+                                            <img src='${imgSrc}' class='img-fluid rounded' alt='Payment slip preview' style='max-height: 70vh;'>
+                                        </div>
+                                        <div class='modal-footer'>
+                                            <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Add modal to the document
+                        document.body.insertAdjacentHTML('beforeend', modalHTML);
+                        
+                        // Show the modal
+                        const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+                        modal.show();
+                    }
+                    
+                    // Submit button click event
+                    submitBtn.addEventListener('click', function() {
+                        // Get the form and file input
+                        const form = document.getElementById('paymentSlipForm');
+                        const fileInput = document.getElementById('transferSlip');
+                        const errorDiv = document.getElementById('uploadError');
+                        const successDiv = document.getElementById('uploadSuccess');
+                        
+                        // Validate form and show error if needed
+                        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                            if (errorDiv) {
+                                const errorMessage = errorDiv.querySelector('#errorMessage');
+                                if (errorMessage) errorMessage.textContent = 'Please select a file before submitting.';
+                                
+                                errorDiv.classList.remove('d-none');
+                                errorDiv.classList.add('animate__animated', 'animate__shakeX');
+                                
+                                // Highlight upload container
+                                const uploadContainer = document.querySelector('.upload-container');
+                                if (uploadContainer) {
+                                    uploadContainer.classList.add('animate__animated', 'animate__headShake');
+                                    uploadContainer.style.borderColor = 'rgba(220, 53, 69, 0.5)';
+                                    uploadContainer.style.background = 'rgba(220, 53, 69, 0.05)';
+                                }
+                                
+                                // Scroll to error message
+                                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                
+                                // Automatically open file dialog after a short delay
+                                setTimeout(function() {
+                                    // Reset upload container style
+                                    if (uploadContainer) {
+                                        uploadContainer.style.borderColor = 'rgba(0, 123, 255, 0.3)';
+                                        uploadContainer.style.background = 'rgba(0, 123, 255, 0.03)';
+                                    }
+                                    
+                                    // Trigger click on the file input to open file dialog
+                                    fileInput.click();
+                                }, 1000);
+                            } else {
+                                // Scroll to error message
+                                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                
+                                // Automatically open file dialog after a short delay
+                                setTimeout(function() {
+                                    // Reset upload container style
+                                    uploadContainer.style.borderColor = 'rgba(0, 123, 255, 0.3)';
+                                    uploadContainer.style.background = 'rgba(0, 123, 255, 0.03)';
+                                    
+                                    // Trigger click on the file input to open file dialog
+                                    fileInput.click();
+                                }, 1000);
+                            }
+                        }
+                        
+                        // Get form data
+                        const formData = new FormData(form);
+                        
+                        // Show loading state
+                        const originalText = submitBtn.innerHTML;
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
+                        
+                        // Submit form with fetch
+                        fetch("api/orders/resubmit_payment.php", {
+                            method: "POST",
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            // Reset button state
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            
+                            if (data.success) {
+                                // Show custom success message if available
+                                if (successDiv) {
+                                    const successMessage = successDiv.querySelector('#successMessage');
+                                    if (successMessage) successMessage.textContent = data.message || 'Payment slip uploaded successfully.';
+                                    
+                                    successDiv.classList.remove('d-none');
+                                    successDiv.classList.add('animate__animated', 'animate__fadeIn');
+                                    
+                                    // Scroll to success message
+                                    successDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    
+                                    // Reset form
+                                    const removeBtn = document.getElementById('removeFileBtn');
+                                    if (removeBtn) removeBtn.click();
+                                } else {
+                                    // Fallback to toast
+                                    const successToast = document.getElementById('successToast');
+                                    if (successToast) {
+                                        const toastBody = successToast.querySelector('.toast-body');
+                                        if (toastBody) {
+                                            toastBody.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i>' + data.message;
+                                        }
+                                        const toast = new bootstrap.Toast(successToast);
+                                        toast.show();
+                                    }
+                                }
+                                
+                                // Close the modal and reload the page after a delay
+                                setTimeout(() => {
+                                    const orderModal = bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'));
+                                    if (orderModal) {
+                                        orderModal.hide();
+                                    }
+                                    location.reload();
+                                }, 2000);
+                            } else {
+                                // Show custom error message if available
+                                if (errorDiv) {
+                                    const errorMessage = errorDiv.querySelector('#errorMessage');
+                                    if (errorMessage) errorMessage.textContent = data.message || 'Failed to upload payment slip.';
+                                    
+                                    errorDiv.classList.remove('d-none');
+                                    errorDiv.classList.add('animate__animated', 'animate__shakeX');
+                                    
+                                    // Scroll to error message
+                                    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                } else {
+                                    // Fallback to toast
+                                    const errorToast = document.getElementById('errorToast');
+                                    if (errorToast) {
+                                        const toastBody = errorToast.querySelector('.toast-body');
+                                        if (toastBody) {
+                                            toastBody.innerHTML = '<i class="bi bi-exclamation-circle text-danger me-2"></i>' + data.message;
+                                        }
+                                        const toast = new bootstrap.Toast(errorToast);
+                                        toast.show();
+                                    }
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            // Reset button state
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            
+                            console.error('Error:', error);
+                            // Show error message
+                            if (errorDiv) {
+                                const errorMessage = errorDiv.querySelector('#errorMessage');
+                                if (errorMessage) errorMessage.textContent = 'A network error occurred. Please try again.';
+                                
+                                errorDiv.classList.remove('d-none');
+                                errorDiv.classList.add('animate__animated', 'animate__shakeX');
+                                
+                                // Scroll to error message
+                                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } else {
+                                const errorToast = document.getElementById('errorToast');
+                                if (errorToast) {
+                                    const toastBody = errorToast.querySelector('.toast-body');
+                                    if (toastBody) {
+                                        toastBody.innerHTML = '<i class="bi bi-exclamation-circle text-danger me-2"></i>A network error occurred. Please try again.';
+                                    }
+                                    const toast = new bootstrap.Toast(errorToast);
+                                    toast.show();
+                                }
+                            }
+                        });
+                    });
+                }
                 
                 // Update notification badge (remove it when order details are viewed)
                 const orderRow = document.querySelector(`tr.order-item[data-order-id="${orderId}"]`);

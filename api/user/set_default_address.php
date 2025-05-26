@@ -31,6 +31,9 @@ if (!isset($data['address_id']) || empty($data['address_id'])) {
 $address_id = (int) $data['address_id'];
 
 try {
+    // Start transaction
+    $mysqli->begin_transaction();
+
     // First check if address belongs to this user
     $check_stmt = $mysqli->prepare("SELECT address_id FROM user_addresses WHERE address_id = ? AND user_id = ?");
     $check_stmt->bind_param("ii", $address_id, $user_id);
@@ -38,25 +41,33 @@ try {
     $result = $check_stmt->get_result();
     
     if ($result->num_rows === 0) {
-        echo json_encode(['success' => false, 'message' => 'Address not found or you do not have permission to delete it']);
+        echo json_encode(['success' => false, 'message' => 'Address not found or you do not have permission to update it']);
         exit;
     }
     
-    // Delete the address
-    $delete_stmt = $mysqli->prepare("DELETE FROM user_addresses WHERE address_id = ? AND user_id = ?");
-    $delete_stmt->bind_param("ii", $address_id, $user_id);
-    $delete_stmt->execute();
+    // Clear default status from all addresses
+    $clear_stmt = $mysqli->prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?");
+    $clear_stmt->bind_param("i", $user_id);
+    $clear_stmt->execute();
     
-    if ($delete_stmt->affected_rows > 0) {
-        echo json_encode(['success' => true, 'message' => 'Address deleted successfully']);
+    // Set selected address as default
+    $default_stmt = $mysqli->prepare("UPDATE user_addresses SET is_default = 1 WHERE address_id = ?");
+    $default_stmt->bind_param("i", $address_id);
+    $default_stmt->execute();
+    
+    if ($default_stmt->affected_rows > 0) {
+        $mysqli->commit();
+        echo json_encode(['success' => true, 'message' => 'Default address updated successfully']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete address']);
+        $mysqli->rollback();
+        echo json_encode(['success' => false, 'message' => 'Failed to update default address']);
     }
     
 } catch (Exception $e) {
+    $mysqli->rollback();
     echo json_encode([
         'success' => false,
-        'message' => 'Error deleting address: ' . $e->getMessage()
+        'message' => 'Error updating default address: ' . $e->getMessage()
     ]);
 }
 

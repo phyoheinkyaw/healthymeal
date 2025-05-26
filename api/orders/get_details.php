@@ -423,7 +423,7 @@ if ($order['payment_method'] !== 'Cash on Delivery' &&
     $warning_icon = $latest_payment_status == 2 ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill';
     
     // Create a simple card with warning and direct link to payment page
-    $html .= "<div class='mt-4 p-3 border rounded bg-light-subtle shadow-sm'>";
+    $html .= "<div class='mt-4 p-3 border rounded bg-light-subtle shadow-sm' id='paymentSlipSection'>";
     
     // Add warning message
     if ($latest_payment_status == 2) {
@@ -444,25 +444,273 @@ if ($order['payment_method'] !== 'Cash on Delivery' &&
     
     // If there's a previous payment slip, show it
     if ($has_payment_slip) {
-        $html .= "<div class='mb-3'>
-            <strong>Previous Payment Slip:</strong><br>
-            <img src='" . htmlspecialchars($latest_verification['transfer_slip']) . "' 
-                 class='img-fluid rounded mt-2' style='max-height: 200px;'>
-        </div>";
+        $file_ext = strtolower(pathinfo($latest_verification['transfer_slip'], PATHINFO_EXTENSION));
+        if (in_array($file_ext, ['jpg', 'jpeg', 'png'])) {
+            $html .= "<div class='mb-3'>
+                <strong>Previous Payment Slip:</strong><br>
+                <div class='position-relative mt-2'>
+                    <div class='badge bg-danger position-absolute top-0 end-0 m-2'>Failed Verification</div>
+                    <img src='" . htmlspecialchars($latest_verification['transfer_slip']) . "' 
+                        class='img-fluid rounded shadow-sm border' style='max-height: 200px;'>
+                </div>
+                <div class='mt-2'>
+                    <button type='button' class='btn btn-sm btn-outline-primary view-image-btn' data-img-src='" . htmlspecialchars($latest_verification['transfer_slip']) . "'>
+                        <i class='bi bi-zoom-in'></i> View Larger
+                    </button>
+                </div>
+            </div>";
+        } elseif ($file_ext === 'pdf') {
+            $html .= "<div class='mb-3'>
+                <strong>Previous Payment Slip:</strong><br>
+                <div class='p-3 bg-white rounded shadow-sm border text-center mt-2' style='max-width: 200px;'>
+                    <div class='position-relative'>
+                        <div class='badge bg-danger position-absolute top-0 end-0 m-2'>Failed</div>
+                        <i class='bi bi-file-earmark-pdf text-danger' style='font-size: 48px;'></i>
+                        <p class='mt-2 mb-0'>PDF Document</p>
+                    </div>
+                    <a href='" . htmlspecialchars($latest_verification['transfer_slip']) . "' target='_blank' class='btn btn-sm btn-primary mt-2'>
+                        <i class='bi bi-eye'></i> View PDF
+                    </a>
+                </div>
+            </div>";
+        }
     }
     
     // Add upload form
     $html .= "<form id='paymentSlipForm' enctype='multipart/form-data'>
         <input type='hidden' name='order_id' value='" . $order_id . "'>
-        <div class='mb-3'>
-            <label for='transferSlip' class='form-label'>Upload Payment Slip</label>
-            <input type='file' class='form-control' id='transferSlip' name='transfer_slip' 
-                   accept='image/jpeg,image/png,application/pdf' required>
+        
+        <div class='upload-container border border-2 border-dashed rounded-3 p-4 text-center mb-3' 
+             style='border-color: rgba(0, 123, 255, 0.3); background: rgba(0, 123, 255, 0.03);'>
+            
+            <input type='file' name='transfer_slip' class='form-control d-none' id='transferSlip' 
+                accept='image/jpeg,image/png,image/jpg,application/pdf'>
+            
+            <label for='transferSlip' class='mb-2 d-block' style='cursor: pointer;'>
+                <i class='bi bi-cloud-arrow-up fs-3 d-block mb-2 text-primary'></i>
+                <span id='fileSelectionText'>Click to select payment slip image or PDF</span>
+            </label>
+            
+            <div id='previewContainer' class='text-center d-none mt-3'>
+                <!-- Image preview -->
+                <div id='imagePreview' class='d-none'>
+                    <div class='position-relative mb-2'>
+                        <img src='' id='previewImg' class='img-fluid rounded mx-auto d-block shadow-sm' 
+                            style='max-height: 250px; max-width: 100%; border: 1px solid #dee2e6;'>
+                        <span class='position-absolute top-0 end-0 badge rounded-pill bg-primary m-2' id='previewBadge'>
+                            <i class='bi bi-arrow-repeat me-1'></i>Resubmission
+                        </span>
+                    </div>
+                    <div class='mt-2 small text-muted'>Image preview</div>
+                </div>
+                
+                <!-- PDF preview -->
+                <div id='pdfPreview' class='d-none py-4 bg-white rounded border shadow-sm' style='max-width: 200px; margin: 0 auto;'>
+                    <i class='bi bi-file-earmark-pdf text-danger' style='font-size: 48px;'></i>
+                    <p class='mt-2 mb-0 fw-semibold'>PDF Document</p>
+                    <span class='badge rounded-pill bg-primary my-2' id='pdfPreviewBadge'>
+                        <i class='bi bi-arrow-repeat me-1'></i>Resubmission
+                    </span>
+                    <div class='mt-1 small text-muted'>PDF selected</div>
+                </div>
+                
+                <div class='d-flex justify-content-center gap-2 mt-3'>
+                    <!-- View button for images -->
+                    <button type='button' class='btn btn-sm btn-outline-primary' id='viewImageBtn'>
+                        <i class='bi bi-fullscreen'></i> View Larger
+                    </button>
+                    <!-- Remove button -->
+                    <button type='button' class='btn btn-sm btn-outline-danger' id='removeFileBtn'>
+                        <i class='bi bi-trash'></i> Remove
+                    </button>
+                </div>
+            </div>
+            
+            <div id='fileHint' class='form-text mt-2'>Only JPEG, PNG or PDF files are accepted (max 5MB)</div>
         </div>
-        <button type='button' class='btn btn-primary' onclick='uploadPaymentSlip()'>
-            <i class='bi bi-upload me-2'></i>" . $upload_title . "
-        </button>
+
+        <!-- Error alert (initially hidden) -->
+        <div class='alert alert-danger d-none' id='uploadError'>
+            <i class='bi bi-exclamation-triangle-fill me-2'></i>
+            <span id='errorMessage'>Please select a file before submitting</span>
+        </div>
+
+        <!-- Success alert (initially hidden) -->
+        <div class='alert alert-success d-none' id='uploadSuccess'>
+            <i class='bi bi-check-circle-fill me-2'></i>
+            <span id='successMessage'>Payment slip uploaded successfully</span>
+        </div>
+        
+        <!-- Success alert (initially hidden) -->
+        <div class='alert alert-success alert-dismissible fade show d-none' id='uploadSuccess' role='alert'>
+            <div class='d-flex align-items-center'>
+                <i class='bi bi-check-circle-fill fs-4 me-2'></i>
+                <div>
+                    <strong>Success!</strong> <span id='successMessage'>Payment slip uploaded successfully</span>
+                </div>
+            </div>
+            <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+        </div>
+        
+        <!-- Error alert (initially hidden) -->
+        <div class='alert alert-danger alert-dismissible fade show d-none' id='uploadError' role='alert'>
+            <div class='d-flex align-items-center'>
+                <i class='bi bi-exclamation-octagon-fill fs-4 me-2'></i>
+                <div>
+                    <strong>Error!</strong> <span id='errorMessage'>Please select a file before submitting</span>
+                </div>
+            </div>
+            <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+        </div>
+        
+        <div class='d-grid gap-2 d-md-flex'>
+            <a href='payment-resubmit.php?order_id=" . $order_id . "' class='btn btn-outline-primary flex-grow-1'>
+                <i class='bi bi-arrow-up-square me-2'></i>Use Dedicated Upload Page
+            </a>
+            <button type='button' class='btn btn-primary flex-grow-1 orderDetailsSubmitBtn' id='submitPaymentBtn'>
+                <i class='bi bi-upload me-2'></i>" . $upload_title . "
+            </button>
+        </div>
     </form>";
+    
+    // Add JavaScript for preview functionality
+    $html .= "<script>
+    // Dynamically load Animate.css if not already loaded
+    if (!document.querySelector('link[href*=\"animate.css\"]')) {
+        var animateCSS = document.createElement('link');
+        animateCSS.rel = 'stylesheet';
+        animateCSS.href = 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
+        document.head.appendChild(animateCSS);
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('transferSlip');
+        const fileSelectionText = document.getElementById('fileSelectionText');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const pdfPreview = document.getElementById('pdfPreview');
+        const previewImg = document.getElementById('previewImg');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        const viewImageBtn = document.getElementById('viewImageBtn');
+        const uploadContainer = document.querySelector('.upload-container');
+        const errorDiv = document.getElementById('uploadError');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // Initialize Bootstrap alert dismissal
+        if (errorDiv) {
+            const closeBtn = errorDiv.querySelector('.btn-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    errorDiv.classList.add('d-none');
+                });
+            }
+        }
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                
+                if (file) {
+                    // Hide error alert if visible
+                    if (errorDiv) {
+                        errorDiv.classList.add('d-none');
+                    }
+                    
+                    fileSelectionText.textContent = 'Selected: ' + file.name;
+                    previewContainer.classList.remove('d-none');
+                    uploadContainer.style.borderColor = 'rgba(25, 135, 84, 0.5)';
+                    uploadContainer.style.background = 'rgba(25, 135, 84, 0.03)';
+                    
+                    try {
+                        if (file.type.indexOf('image') > -1) {
+                            // For images
+                            imagePreview.classList.remove('d-none');
+                            pdfPreview.classList.add('d-none');
+                            
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                previewImg.src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        } 
+                        else if (file.type === 'application/pdf') {
+                            // For PDFs
+                            imagePreview.classList.add('d-none');
+                            pdfPreview.classList.remove('d-none');
+                        }
+                    } catch(err) {
+                        console.log('Preview error:', err);
+                    }
+                }
+            });
+        }
+        
+        // Remove file button
+        if (removeFileBtn) {
+            removeFileBtn.addEventListener('click', function() {
+                fileInput.value = '';
+                previewContainer.classList.add('d-none');
+                fileSelectionText.textContent = 'Click to select payment slip image or PDF';
+                uploadContainer.style.borderColor = 'rgba(0, 123, 255, 0.3)';
+                uploadContainer.style.background = 'rgba(0, 123, 255, 0.03)';
+            });
+        }
+        
+        // View image button
+        if (viewImageBtn) {
+            viewImageBtn.addEventListener('click', function() {
+                if (previewImg && previewImg.src) {
+                    createImagePreviewModal(previewImg.src);
+                }
+            });
+        }
+        
+        // View image buttons for existing slips
+        document.querySelectorAll('.view-image-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const imgSrc = this.getAttribute('data-img-src');
+                if (imgSrc) {
+                    createImagePreviewModal(imgSrc);
+                }
+            });
+        });
+        
+        function createImagePreviewModal(imgSrc) {
+            // Remove any existing modal
+            const existingModal = document.getElementById('imagePreviewModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Create modal HTML
+            const modalHTML = `
+                <div class='modal fade' id='imagePreviewModal' tabindex='-1' aria-hidden='true'>
+                    <div class='modal-dialog modal-lg modal-dialog-centered'>
+                        <div class='modal-content'>
+                            <div class='modal-header'>
+                                <h5 class='modal-title'>Payment Slip Preview</h5>
+                                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                            </div>
+                            <div class='modal-body text-center'>
+                                <img src='${imgSrc}' class='img-fluid rounded' alt='Payment slip preview' style='max-height: 70vh;'>
+                            </div>
+                            <div class='modal-footer'>
+                                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add modal to the document
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+            modal.show();
+        }
+    });
+    </script>";
     
     $html .= "</div>";
 }

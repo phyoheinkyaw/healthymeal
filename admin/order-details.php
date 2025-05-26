@@ -25,17 +25,42 @@ $stmt = $mysqli->prepare("
         os.status_name,
         u.full_name as customer_name,
         u.email as customer_email,
-        ph.payment_id,
-        ph.transaction_id,
         ps.payment_method,
         ps.account_phone as company_account_phone,
-        COALESCE(pv.payment_status, 0) as payment_status
+        
+        lph.payment_id AS latest_payment_history_id,
+        lph.transaction_id AS latest_transaction_id,
+
+        lpv.payment_status AS current_payment_status_val,
+        lpv.transfer_slip AS current_transfer_slip,
+        lpv.payment_verified AS current_payment_verified,
+        lpv.payment_verified_at AS current_payment_verified_at,
+        lpv.verification_notes AS current_verification_notes,
+        lpv.amount_verified AS current_amount_verified,
+        lpv.transaction_id AS current_verification_transaction_id,
+        verifier.full_name AS verified_by_admin_name
+
     FROM orders o
     JOIN users u ON o.user_id = u.user_id
     JOIN order_status os ON o.status_id = os.status_id
-    LEFT JOIN payment_history ph ON o.order_id = ph.order_id
-    LEFT JOIN payment_verifications pv ON o.order_id = pv.order_id
     LEFT JOIN payment_settings ps ON o.payment_method_id = ps.id
+    
+    LEFT JOIN (
+        SELECT ph1.*
+        FROM payment_history ph1
+        LEFT JOIN payment_history ph2 ON ph1.order_id = ph2.order_id AND ph1.payment_id < ph2.payment_id
+        WHERE ph2.payment_id IS NULL
+    ) lph ON o.order_id = lph.order_id
+
+    LEFT JOIN (
+        SELECT pv1.*
+        FROM payment_verifications pv1
+        LEFT JOIN payment_verifications pv2
+            ON pv1.order_id = pv2.order_id
+            AND (pv1.created_at < pv2.created_at OR (pv1.created_at = pv2.created_at AND pv1.verification_id < pv2.verification_id))
+        WHERE pv2.verification_id IS NULL
+    ) lpv ON o.order_id = lpv.order_id
+    LEFT JOIN users verifier ON lpv.verified_by_id = verifier.user_id
     WHERE o.order_id = ?
 ");
 
@@ -45,10 +70,18 @@ if (!$stmt) {
 
 $stmt->bind_param("i", $order_id);
 $stmt->execute();
-$order = $stmt->get_result()->fetch_assoc();
+$order_result = $stmt->get_result();
+$order = $order_result->fetch_assoc();
+
+// Initialize payment status variables to prevent undefined warnings
+$paymentStatusText = "Not Available";
+$paymentStatusClass = "secondary";
 
 if (!$order) {
-    header("Location: /hm/admin/orders.php");
+    // Order not found, redirect or show error, but ensure variables are set if HTML relies on them
+    // For safety, one might echo an error message and exit, or redirect.
+    // If the page structure still attempts to render parts of the layout, ensure all needed vars are safe.
+    header("Location: /hm/admin/orders.php?error=notfound");
     exit();
 }
 
@@ -139,59 +172,49 @@ function get_absolute_file_path($relative_path) {
     return $projectBase . '/' . ltrim($relative_path, '/');
 }
 
-// Get payment status
-$paymentStatusText = "Not Available";
-$paymentStatusClass = "secondary";
+// Get payment status text and class based on the new field current_payment_status_val
+$currentPaymentStatusNumeric = isset($order['current_payment_status_val']) ? (int)$order['current_payment_status_val'] : -1; // -1 for undefined
 
-if (isset($order['payment_status'])) {
-    switch($order['payment_status']) {
-        case 0:
+if ($currentPaymentStatusNumeric !== -1) {
+    switch($currentPaymentStatusNumeric) {
+        case 0: // Pending
             $paymentStatusText = "Pending";
             $paymentStatusClass = "warning";
             break;
-        case 1:
+        case 1: // Completed
             $paymentStatusText = "Completed";
             $paymentStatusClass = "success";
             break;
-        case 2:
+        case 2: // Failed
             $paymentStatusText = "Failed";
             $paymentStatusClass = "danger";
             break;
-        case 3:
+        case 3: // Refunded
             $paymentStatusText = "Refunded";
             $paymentStatusClass = "info";
+            break;
+        case 4: // Partial (if used)
+            $paymentStatusText = "Partial";
+            $paymentStatusClass = "warning";
+            break;
+        default:
+            $paymentStatusText = "Unknown";
+            $paymentStatusClass = "secondary";
             break;
     }
 }
 
-// Get verification details if available
-$verificationDetails = null;
-$verificationStmt = $mysqli->prepare("
-    SELECT v.*, u.full_name as admin_name 
-    FROM payment_verifications v
-    LEFT JOIN users u ON v.verified_by_id = u.user_id
-    WHERE v.order_id = ? 
-    ORDER BY v.created_at DESC 
-    LIMIT 1
-");
-
-if ($verificationStmt) {
-    $verificationStmt->bind_param("i", $order_id);
-    $verificationStmt->execute();
-    $verificationResult = $verificationStmt->get_result();
-    if ($verificationResult->num_rows > 0) {
-        $verificationDetails = $verificationResult->fetch_assoc();
-    }
-    $verificationStmt->close();
-}
-
 // Format order status
-$statusRaw = strtolower(trim($order['status_name'] ?? $order['status'] ?? ''));
+$statusRaw = strtolower(trim($order['status_name'] ?? 'unknown'));
 $statusMap = [
     'pending' => 'warning',
-    'processing' => 'info',
+    'confirmed' => 'primary', // Example: 'confirmed' might map to 'primary'
+    'preparing' => 'info',
+    'processing' => 'info', // Added processing as it's common
     'shipped' => 'primary',
+    'out_for_delivery' => 'primary', // Example for a common status
     'delivered' => 'success',
+    'failed_delivery' => 'danger', // Example for a common status
     'cancelled' => 'danger',
 ];
 $statusClass = $statusMap[$statusRaw] ?? 'secondary';
@@ -331,9 +354,26 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
             margin-right: 0.35rem;
             font-size: 0.75rem;
         }
-        .order-item-price {
+        .order-item-pricing {
             text-align: right;
-            min-width: 100px;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: center;
+            margin-left: auto;
+            border-left: 1px solid #eee;
+            padding-left: 20px;
+        }
+        .order-item-price, .order-item-quantity, .order-item-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .order-item-price {
+            font-size: 0.875rem;
+            color: #6c757d;
         }
         .order-item-quantity {
             font-size: 0.875rem;
@@ -341,8 +381,23 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
         }
         .order-item-total {
             font-weight: 600;
-            font-size: 1.125rem;
+            font-size: 1rem;
             color: #343a40;
+            padding-top: 8px;
+            border-top: 1px dashed #e9ecef;
+        }
+        .price-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: normal;
+            margin-right: auto;
+        }
+        .price-value {
+            font-weight: 500;
+        }
+        .order-item-total .price-value {
+            font-weight: 700;
+            color: #212529;
         }
         .order-summary {
             background: #f8f9fa;
@@ -431,9 +486,14 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
                 margin-right: 0;
                 margin-bottom: 1rem;
             }
-            .order-item-price {
+            .order-item-pricing {
                 text-align: left;
-                margin-top: 1rem;
+                border-left: none;
+                padding-left: 0;
+                padding-top: 15px;
+                margin-top: 15px;
+                border-top: 1px solid #eee;
+                width: 100%;
             }
         }
     </style>
@@ -599,70 +659,118 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
                             </div>
                         </div>
                         
-                        <?php if (!empty($order['transaction_id'])): ?>
+                        <?php if (!empty($order['latest_transaction_id'])): ?>
                         <div class="info-group">
-                            <div class="info-label">Transaction ID</div>
-                            <div class="info-value"><?php echo htmlspecialchars($order['transaction_id']); ?></div>
+                            <div class="info-label">Transaction ID (from Payment History)</div>
+                            <div class="info-value"><?php echo htmlspecialchars($order['latest_transaction_id']); ?></div>
                         </div>
                         <?php endif; ?>
                         
-                        <?php if (!empty($order['transfer_slip'])): ?>
+                        <?php if (!empty($order['current_transfer_slip'])): ?>
                         <div class="info-group">
                             <div class="info-label">Payment Slip</div>
-                            <a href="<?php echo get_absolute_file_path($order['transfer_slip']); ?>" target="_blank">
-                                <img src="<?php echo get_absolute_file_path($order['transfer_slip']); ?>" class="payment-slip" alt="Payment Slip">
+                            <a href="<?php echo get_absolute_file_path($order['current_transfer_slip']); ?>" target="_blank">
+                                <img src="<?php echo get_absolute_file_path($order['current_transfer_slip']); ?>" class="payment-slip" alt="Payment Slip">
                             </a>
                             
-                            <?php if ($order['payment_verified'] == 1): ?>
+                            <?php if ($order['current_payment_verified'] == 1): ?>
                             <div class="payment-verified-badge">
                                 <i class="bi bi-check-circle-fill"></i> Payment Verified
-                                <?php if (!empty($order['payment_verified_at'])): ?>
-                                    on <?php echo date('F d, Y h:i A', strtotime($order['payment_verified_at'])); ?>
+                                <?php if (!empty($order['current_payment_verified_at'])): ?>
+                                    on <?php echo date('F d, Y h:i A', strtotime($order['current_payment_verified_at'])); ?>
+                                <?php endif; ?>
+                                <?php if (!empty($order['verified_by_admin_name'])): ?>
+                                    by <?php echo htmlspecialchars($order['verified_by_admin_name']); ?>
                                 <?php endif; ?>
                             </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php elseif ($order['payment_method'] !== 'Cash on Delivery' && $order['current_payment_status_val'] != 1 && $order['current_payment_status_val'] != 3 ): // No slip, not COD, not completed or refunded ?>
+                        <div class="info-group">
+                            <div class="info-label">Payment Slip</div>
+                            <p class="text-muted">No payment slip uploaded yet.</p>
+                            <?php 
+                            // Only show manual verification button if payment has not been marked as failed
+                            if ($order['current_payment_status_val'] != 2): ?>
+                             <button type="button" class="btn btn-success" onclick="verifyPayment(<?php echo $order['order_id']; ?>, false, <?php echo $order['total_amount']; ?>)">
+                                <i class="bi bi-shield-check me-2"></i> Manually Verify / Record Payment
+                             </button>
                             <?php else: ?>
-                            <div class="mt-3">
-                                <button type="button" class="btn btn-success" onclick="verifyPayment(<?php echo $order['order_id']; ?>, false)">
-                                    <i class="bi bi-shield-check me-2"></i> Verify Payment
-                                </button>
-                            </div>
+                             <p class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Payment was marked as failed. User must resubmit payment before verification.</p>
                             <?php endif; ?>
                         </div>
                         <?php endif; ?>
                         
-                        <?php if ($verificationDetails): ?>
+                        <?php // Display latest verification details if they exist from the main query
+                        if (!empty($order['current_verification_transaction_id']) || !empty($order['current_verification_notes'])): ?>
                         <div class="verification-details">
-                            <h6 class="mb-3">Verification Details</h6>
+                            <h6 class="mb-3">Latest Verification Attempt</h6>
+                            <?php if (!empty($order['verified_by_admin_name'])): ?>
                             <div class="verification-row">
                                 <div class="info-label">Verified By</div>
-                                <div class="info-value"><?php echo htmlspecialchars($verificationDetails['admin_name']); ?></div>
+                                <div class="info-value"><?php echo htmlspecialchars($order['verified_by_admin_name']); ?></div>
                             </div>
+                            <?php endif; ?>
+                            <?php if (!empty($order['current_verification_transaction_id'])): ?>
                             <div class="verification-row">
-                                <div class="info-label">Transaction ID</div>
-                                <div class="info-value"><?php echo htmlspecialchars($verificationDetails['transaction_id']); ?></div>
+                                <div class="info-label">Transaction ID (from slip)</div>
+                                <div class="info-value"><?php echo htmlspecialchars($order['current_verification_transaction_id']); ?></div>
                             </div>
+                            <?php endif; ?>
+                            <?php if (isset($order['current_amount_verified'])): ?>
                             <div class="verification-row">
                                 <div class="info-label">Amount Verified</div>
-                                <div class="info-value"><?php echo number_format($verificationDetails['amount_verified'], 0); ?> MMK</div>
+                                <div class="info-value"><?php echo number_format($order['current_amount_verified'], 0); ?> MMK</div>
                             </div>
-                            <?php if (!empty($verificationDetails['verification_notes'])): ?>
+                            <?php endif; ?>
+                            <?php if (!empty($order['current_verification_notes'])): ?>
                             <div class="verification-row">
                                 <div class="info-label">Notes</div>
-                                <div class="info-value"><?php echo htmlspecialchars($verificationDetails['verification_notes']); ?></div>
+                                <div class="info-value"><?php echo htmlspecialchars($order['current_verification_notes']); ?></div>
                             </div>
                             <?php endif; ?>
                         </div>
                         <?php endif; ?>
                         
                         <?php if ($order['payment_method'] !== 'Cash on Delivery'): ?>
-                        <div class="payment-actions mt-3">
-                            <?php if ($paymentStatus !== 1): // Not verified ?>
-                            <button type="button" class="btn btn-primary" onclick="showPaymentVerificationModal(<?php echo $order['order_id']; ?>)">
-                                <i class="bi bi-shield-check me-2"></i>Verify Payment
+                        <div class="payment-actions mt-3 d-flex flex-wrap gap-2">
+                            <?php 
+                            // Determine if this is a valid payment to verify
+                            $canVerifyPayment = false;
+                            $isProperResubmission = false;
+                            
+                            // Check if payment can be verified:
+                            // 1. Not already completed (status 1) or refunded (status 3)
+                            // 2. Either:
+                            //    a. Not previously failed (status 2)
+                            //    b. OR properly resubmitted by user (would be tracked in session or a DB flag)
+                            if ($currentPaymentStatusNumeric != 1 && $currentPaymentStatusNumeric != 3) {
+                                if ($currentPaymentStatusNumeric != 2) {
+                                    // Payment not failed, can be verified
+                                    $canVerifyPayment = true;
+                                } else {
+                                    // Payment was failed, check if properly resubmitted
+                                    // This would ideally check a database flag or some other indicator that
+                                    // the user has uploaded a new transfer slip after the failure
+                                    $isProperResubmission = false; // Change this based on your resubmission tracking
+                                    
+                                    // For now, we'll disable verification of failed payments unless we can confirm resubmission
+                                    $canVerifyPayment = $isProperResubmission;
+                                }
+                            }
+                            
+                            // Show verify payment button only if allowed
+                            if ($canVerifyPayment): ?>
+                            <button type="button" class="btn btn-primary" onclick="verifyPayment(<?php echo $order['order_id']; ?>, <?php echo $order['current_payment_verified'] == 1 ? 'true' : 'false'; ?>, <?php echo $order['total_amount']; ?>)">
+                                <i class="bi bi-shield-check me-2"></i><?php echo ($order['current_payment_verified'] == 1) ? 'Update Verification' : 'Verify Payment'; ?>
+                            </button>
+                            <?php elseif ($currentPaymentStatusNumeric == 2 && !$isProperResubmission): ?>
+                            <button type="button" class="btn btn-secondary" disabled title="Payment was marked as failed. User must resubmit payment before verification.">
+                                <i class="bi bi-x-circle me-2"></i>Awaiting New Payment
                             </button>
                             <?php endif; ?>
                             
-                            <button type="button" class="btn btn-outline-secondary" onclick="showPaymentHistoryModal(<?php echo $order['order_id']; ?>)">
+                            <button type="button" class="btn btn-outline-secondary" onclick="showPaymentHistory(<?php echo $order['order_id']; ?>)">
                                 <i class="bi bi-clock-history me-2"></i>Verification History
                             </button>
                             
@@ -720,11 +828,21 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
                         <?php endif; ?>
                     </div>
                     
-                    <div class="order-item-price">
-                        <?php echo number_format($item['price_per_unit'], 0); ?> MMK × <?php echo $item['quantity']; ?>
+                    <div class="order-item-pricing">
+                        <div class="order-item-price">
+                            <div class="price-label">Unit Price:</div>
+                            <div class="price-value"><?php echo number_format($item['price_per_unit'], 0); ?> MMK</div>
                         </div>
+                        
+                        <div class="order-item-quantity">
+                            <div class="price-label">Quantity:</div>
+                            <div class="price-value"><?php echo $item['quantity']; ?></div>
+                        </div>
+                        
                         <div class="order-item-total">
-                        <?php echo number_format($item['price_per_unit'] * $item['quantity'], 0); ?> MMK
+                            <div class="price-label">Subtotal:</div>
+                            <div class="price-value"><?php echo number_format($item['price_per_unit'] * $item['quantity'], 0); ?> MMK</div>
+                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -944,30 +1062,111 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
     
     // Function to synchronize payment records
     function syncPaymentRecords(orderId) {
-        if (!confirm('This will synchronize payment records for this order. Continue?')) {
-            return;
-        }
-        
-        fetch('/hm/api/orders/sync_payment_records.php?order_id=' + orderId)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    if (data.no_changes) {
-                        alert('Payment records are already in sync.');
-                    } else {
-                        alert('Payment records synchronized successfully. Fixed ' + data.fixed_issues.length + ' issues.');
-                        // Reload the page to show updated data
-                        window.location.reload();
-                    }
-                } else {
-                    alert('Error: ' + (data.message || 'Failed to synchronize payment records'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while synchronizing payment records.');
-        });
+        showGenericConfirmModal(
+            'Confirm Sync', 
+            'This will synchronize payment records for this order. This action attempts to align payment history and verification statuses. Continue?',
+            'warning',
+            () => { // onConfirm
+                fetch('/hm/api/orders/sync_payment_records.php?order_id=' + orderId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            let message = 'Payment records synchronized successfully.';
+                            if (data.no_changes) {
+                                message = 'Payment records are already in sync. No changes were made.';
+                            } else if (data.fixed_issues && data.fixed_issues.length > 0) {
+                                message = 'Payment records synchronized. Fixed ' + data.fixed_issues.length + ' issues. The page will now reload.';
+                            } else {
+                                message = 'Payment records synchronized. The page will now reload.';
+                            }
+                            showGenericAlertModal('Sync Result', message, data.no_changes ? 'info' : 'success', () => {
+                                if (!data.no_changes) window.location.reload();
+                            });
+                        } else {
+                            showGenericAlertModal('Sync Error', data.message || 'Failed to synchronize payment records.', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showGenericAlertModal('Sync Error', 'An error occurred while synchronizing payment records.', 'danger');
+                });
+            }
+        );
     }
+
+    // Generic Confirmation Modal
+    function showGenericConfirmModal(title, bodyText, type = 'primary', onConfirm, onCancel) {
+        $('#genericConfirmModal').remove(); // Remove previous modal
+        const modalHtml = `
+        <div class="modal fade" id="genericConfirmModal" tabindex="-1" aria-labelledby="genericConfirmLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-${type}-subtle">
+                <h5 class="modal-title" id="genericConfirmLabel">
+                    <i class="bi bi-${type === 'danger' ? 'exclamation-triangle-fill text-danger' : (type === 'warning' ? 'exclamation-triangle-fill text-warning' : 'question-circle-fill text-primary')} me-2"></i>
+                    ${title}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                ${bodyText}
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="genericConfirmCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-${type}" id="genericConfirmOkBtn">Yes, Proceed</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        $('body').append(modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('genericConfirmModal'));
+        
+        $('#genericConfirmOkBtn').on('click', function() {
+            if (onConfirm) onConfirm();
+            modal.hide();
+        });
+        $('#genericConfirmCancelBtn').on('click', function() {
+            if (onCancel) onCancel();
+        });
+         $('#genericConfirmModal').on('hidden.bs.modal', function () {
+            // if (onCancel && !confirmed) onCancel(); // Be careful with multiple onCancel calls
+            $(this).remove();
+        });
+        modal.show();
+    }
+
+    // Generic Alert Modal
+    function showGenericAlertModal(title, bodyText, type = 'info', onHidden) {
+        $('#genericAlertModal').remove(); // Remove previous modal
+        const modalHtml = `
+        <div class="modal fade" id="genericAlertModal" tabindex="-1" aria-labelledby="genericAlertLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-${type}-subtle">
+                <h5 class="modal-title" id="genericAlertLabel">
+                    <i class="bi bi-${type === 'danger' ? 'x-octagon-fill text-danger' : (type === 'warning' ? 'exclamation-triangle-fill text-warning' : (type === 'success' ? 'check-circle-fill text-success' : 'info-circle-fill text-info'))} me-2"></i>
+                    ${title}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                ${bodyText}
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        $('body').append(modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('genericAlertModal'));
+        $('#genericAlertModal').on('hidden.bs.modal', function () {
+            if (onHidden) onHidden();
+            $(this).remove();
+        });
+        modal.show();
+    }
+
 </script>
 
 </body>

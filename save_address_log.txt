@@ -1,0 +1,168 @@
+Request received at 2025-05-25 10:02:11
+POST data: {"address_name":"dfs","full_address":"432432","city":"342432","postal_code":"342432","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:08:15
+POST data: {"address_id":"6","address_name":"Home","full_address":"Street","city":"City","postal_code":"Zip","is_default":"true"}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:08:28
+POST data: {"address_id":"","address_name":"A","full_address":"A","city":"A","postal_code":"A","is_default":"true"}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:09:39
+POST data: {"address_id":"","address_name":"B","full_address":"B","city":"B","postal_code":"B","is_default":"false"}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:10:56
+POST data: {"address_id":"8","address_name":"A","full_address":"AA","city":"A","postal_code":"A","is_default":"false"}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:14:28
+POST data: {"address_name":"AAA","full_address":"EEE","city":"RR","postal_code":"DDD","is_default":"false"}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:22:17
+POST data: {"address_name":"53454","full_address":"fgsgser4","city":"st4sf","postal_code":"sgrs","is_default":"false"}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:22:35
+POST data: {"address_name":"faeafef","full_address":"aefafea","city":"efafea","postal_code":"fafa","is_default":"true"}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:23:04
+POST data: {"address_name":"eafeaf","full_address":"eafea","city":"feafe","postal_code":"afea","is_default":"false"}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+Request received at 2025-05-25 10:27:15
+POST data: {"address_name":"12312","full_address":"32312","city":"312312","postal_code":"312321","is_default":false}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: false
+Final is_default value: 0
+
+Request received at 2025-05-25 10:42:14
+POST data: {"address_name":"affeae","full_address":"afeae","city":"afea","postal_code":"feaf","is_default":false}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: false
+Final is_default value: 0
+
+Request received at 2025-05-25 11:26:50
+POST data: {"address_name":"1","full_address":"11","city":"22","postal_code":"33","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+
+Request received at 2025-05-25 11:36:22
+POST data: {"address_name":"121","full_address":"12","city":"12","postal_code":"12","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+

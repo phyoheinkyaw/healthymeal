@@ -498,6 +498,17 @@ $user = $userStmt->get_result()->fetch_assoc();
                                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                     </div>
                                     
+                                    <!-- Success alert (initially hidden) -->
+                                    <div class="alert alert-success alert-dismissible fade show d-none" id="successAlert" role="alert">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-check-circle-fill fs-4 me-2"></i>
+                                            <div>
+                                                <strong>Success!</strong> <span id="successMessage">Your payment slip has been resubmitted.</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                    
                                     <div class="upload-container border border-2 border-dashed rounded-3 p-4 text-center mb-4" 
                                         style="border-color: rgba(0, 123, 255, 0.3); background: rgba(0, 123, 255, 0.03);">
                                         
@@ -512,8 +523,13 @@ $user = $userStmt->get_result()->fetch_assoc();
                                         <div id="previewContainer" class="text-center d-none mt-3">
                                             <!-- Image preview -->
                                             <div id="imagePreview" class="d-none">
-                                                <img src="" id="previewImg" class="img-fluid rounded mx-auto d-block shadow-sm" 
-                                                    style="max-height: 200px; max-width: 100%; border: 1px solid #dee2e6;">
+                                                <div class="position-relative mb-2">
+                                                    <img src="" id="previewImg" class="img-fluid rounded mx-auto d-block shadow-sm" 
+                                                        style="max-height: 250px; max-width: 100%; border: 1px solid #dee2e6;">
+                                                    <span class="position-absolute top-0 end-0 badge rounded-pill bg-primary m-2" id="previewBadge">
+                                                        <i class="bi bi-arrow-repeat me-1"></i>Resubmission
+                                                    </span>
+                                                </div>
                                                 <div class="mt-2 small text-muted">Image preview</div>
                                             </div>
                                             
@@ -521,13 +537,22 @@ $user = $userStmt->get_result()->fetch_assoc();
                                             <div id="pdfPreview" class="d-none py-4 bg-white rounded border shadow-sm" style="max-width: 200px; margin: 0 auto;">
                                                 <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 48px;"></i>
                                                 <p class="mt-2 mb-0 fw-semibold">PDF Document</p>
+                                                <span class="badge rounded-pill bg-primary my-2" id="pdfPreviewBadge">
+                                                    <i class="bi bi-arrow-repeat me-1"></i>Resubmission
+                                                </span>
                                                 <div class="mt-1 small text-muted">PDF selected</div>
                                             </div>
                                             
-                                            <!-- Remove button -->
-                                            <button type="button" class="btn btn-sm btn-outline-danger mt-3" id="removeFileBtn">
-                                                <i class="bi bi-trash"></i> Remove
-                                            </button>
+                                            <div class="d-flex justify-content-center gap-2 mt-3">
+                                                <!-- View button for images -->
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="viewImageBtn">
+                                                    <i class="bi bi-fullscreen"></i> View Larger
+                                                </button>
+                                                <!-- Remove button -->
+                                                <button type="button" class="btn btn-sm btn-outline-danger" id="removeFileBtn">
+                                                    <i class="bi bi-trash"></i> Remove
+                                                </button>
+                                            </div>
                                         </div>
                                         
                                         <div id="fileHint" class="form-text mt-2">Only JPEG, PNG or PDF files are accepted (max 5MB)</div>
@@ -540,7 +565,7 @@ $user = $userStmt->get_result()->fetch_assoc();
                                             </a>
                                         </div>
                                         <div class="col-md-6">
-                                            <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+                                            <button type="button" class="btn btn-primary w-100" id="submitBtn" onclick="submitWithAjax()">
                                                 <i class="bi bi-send me-2"></i>Submit Payment
                                             </button>
                                         </div>
@@ -729,6 +754,70 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
+        return true;
+    };
+
+    // View Image Button handler
+    const viewImageBtn = document.getElementById('viewImageBtn');
+    if (viewImageBtn) {
+        viewImageBtn.addEventListener('click', function() {
+            const previewImg = document.getElementById('previewImg');
+            if (previewImg && previewImg.src) {
+                // Create a modal dynamically
+                createImagePreviewModal(previewImg.src);
+            }
+        });
+    }
+
+    // Create image preview modal
+    function createImagePreviewModal(imgSrc) {
+        // Remove any existing modal
+        const existingModal = document.getElementById('imagePreviewModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal HTML
+        const modalHTML = `
+            <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Payment Slip Preview</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="${imgSrc}" class="img-fluid rounded" alt="Payment slip preview" style="max-height: 70vh;">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to the document
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+        modal.show();
+    }
+    
+    // AJAX submission function
+    window.submitWithAjax = function() {
+        // Validate form first
+        if (!validateForm()) {
+            return false;
+        }
+        
+        const form = document.getElementById('paymentForm');
+        const formData = new FormData(form);
+        
+        // Add order_id to the form data
+        formData.append('order_id', <?= $order_id ?>);
+        
         // Show loading state on button
         const submitBtn = document.getElementById('submitBtn');
         if (submitBtn) {
@@ -736,7 +825,65 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading...';
         }
         
-        return true;
+        // Hide any visible alerts
+        document.getElementById('clientErrorAlert').classList.add('d-none');
+        document.getElementById('successAlert').classList.add('d-none');
+        
+        // Send AJAX request
+        fetch('api/orders/resubmit_payment.php', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const successAlert = document.getElementById('successAlert');
+                const successMessage = document.getElementById('successMessage');
+                successMessage.textContent = data.message || 'Payment slip resubmitted successfully.';
+                successAlert.classList.remove('d-none');
+                successAlert.classList.add('animate__animated', 'animate__fadeIn');
+                
+                // Scroll to success message
+                successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Reset form and preview
+                document.getElementById('removeFileBtn').click();
+                
+                // Redirect after a delay
+                setTimeout(() => {
+                    window.location.href = 'orders.php?success=1&message=' + encodeURIComponent('Your payment has been resubmitted successfully.');
+                }, 3000);
+            } else {
+                // Show error message
+                const errorAlert = document.getElementById('clientErrorAlert');
+                const errorMessage = document.getElementById('clientErrorMessage');
+                errorMessage.textContent = data.message || 'An error occurred. Please try again.';
+                errorAlert.classList.remove('d-none');
+                errorAlert.classList.add('animate__animated', 'animate__shakeX');
+                
+                // Reset button
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Payment';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            // Show error message
+            const errorAlert = document.getElementById('clientErrorAlert');
+            const errorMessage = document.getElementById('clientErrorMessage');
+            errorMessage.textContent = 'Network error. Please check your connection and try again.';
+            errorAlert.classList.remove('d-none');
+            
+            // Reset button
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Payment';
+            }
+        });
     };
 });
 </script>

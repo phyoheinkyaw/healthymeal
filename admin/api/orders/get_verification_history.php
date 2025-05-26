@@ -94,14 +94,42 @@ try {
                         $paymentStatusText = "Refunded";
                         $paymentStatusClass = "info";
                         break;
+                    case 4:
+                        $paymentStatusText = "Partial Payment";
+                        $paymentStatusClass = "primary";
+                        break;
                 }
             }
             
+            // Get resubmission status badge
+            $resubmissionBadge = '';
+            if (isset($item['resubmission_status'])) {
+                switch($item['resubmission_status']) {
+                    case 0:
+                        // Original submission, no badge needed
+                        break;
+                    case 1:
+                        $resubmissionBadge = '<span class="badge bg-primary ms-2">Resubmitted</span>';
+                        break;
+                    case 2:
+                        $resubmissionBadge = '<span class="badge bg-warning text-dark ms-2">Pending Resubmission</span>';
+                        break;
+                }
+            }
+            
+            // Apply different styling based on resubmission status
+            $itemClass = '';
+            $headerClass = '';
+            if (isset($item['resubmission_status']) && $item['resubmission_status'] > 0) {
+                $itemClass = 'border-start border-4 border-primary';
+                $headerClass = 'bg-primary-subtle';
+            }
+            
             $html .= '
-            <div class="list-group-item list-group-item-action flex-column align-items-start">
-                <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+            <div class="list-group-item list-group-item-action flex-column align-items-start ' . $itemClass . '">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-1 ' . $headerClass . ' px-2">
                     <h6 class="mb-0 text-primary">
-                        <i class="bi bi-shield-check me-1"></i> Verification #' . $item['verification_id'] . '
+                        <i class="bi bi-shield-check me-1"></i> Verification #' . $item['verification_id'] . $resubmissionBadge . '
                     </h6>
                     <small class="text-muted">' . $dateTime . '</small>
                 </div>
@@ -112,7 +140,8 @@ try {
                 <div class="row mb-2">
                     <div class="col-md-6">
                         <p class="mb-1"><strong>Transaction ID:</strong> ' . htmlspecialchars($item['transaction_id']) . '</p>
-                        <p class="mb-1"><strong>Amount Verified:</strong> $' . number_format($item['amount_verified'], 2) . '</p>';
+                        <p class="mb-1"><strong>Amount Verified:</strong> ' . number_format($item['amount_verified']) . ' MMK</p>
+                        <p class="mb-1"><strong>Attempt:</strong> ' . $item['verification_attempt'] . '</p>';
                         
             $html .= '
                     </div>

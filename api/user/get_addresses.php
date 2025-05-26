@@ -10,28 +10,23 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Get user ID
+$user_id = $_SESSION['user_id'];
+
 try {
     // Fetch user's saved addresses
     $stmt = $mysqli->prepare("
-        SELECT address_id, address_name, full_address, city, postal_code, is_default
-        FROM user_addresses
-        WHERE user_id = ?
+        SELECT * FROM user_addresses 
+        WHERE user_id = ? 
         ORDER BY is_default DESC, address_name ASC
     ");
-    $stmt->bind_param("i", $_SESSION['user_id']);
+    $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
     
     $addresses = [];
     while ($address = $result->fetch_assoc()) {
-        $addresses[] = [
-            'id' => $address['address_id'],
-            'name' => $address['address_name'],
-            'full_address' => $address['full_address'],
-            'city' => $address['city'],
-            'postal_code' => $address['postal_code'],
-            'is_default' => (bool)$address['is_default']
-        ];
+        $addresses[] = $address;
     }
     
     echo json_encode([
@@ -44,4 +39,7 @@ try {
         'success' => false,
         'message' => 'Error fetching addresses: ' . $e->getMessage()
     ]);
-} 
+}
+
+// Close the database connection
+$mysqli->close(); 

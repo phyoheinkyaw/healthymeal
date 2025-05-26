@@ -370,14 +370,13 @@ try {
             INSERT INTO payment_verifications (
                 order_id, payment_id, transaction_id, transfer_slip, amount_verified, 
                 payment_status, verification_notes, verified_by_id
-            ) VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, 0, ?, NULL)
         ");
         $verification_notes = "Awaiting verification by admin";
-        $admin_id = 1; // Default admin ID
         $verification_stmt->bind_param(
-            "iissisi", 
+            "iissis", 
             $order_id, $payment_id, $transaction_id, $transfer_slip, $total_amount, 
-            $verification_notes, $admin_id
+            $verification_notes
         );
         $verification_stmt->execute();
     }
