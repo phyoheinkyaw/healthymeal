@@ -98,15 +98,6 @@ try {
     // Start transaction
     $mysqli->begin_transaction();
     
-    // Update order with new payment slip
-    $update_stmt = $mysqli->prepare("
-        UPDATE orders 
-        SET transfer_slip = ? 
-        WHERE order_id = ?
-    ");
-    $update_stmt->bind_param("si", $relative_path, $order_id);
-    $update_stmt->execute();
-    
     // Generate a new transaction ID
     $transaction_id = 'RESUBMIT-' . time() . '-' . rand(1000, 9999);
     
@@ -124,7 +115,7 @@ try {
         ) VALUES (?, ?, ?, ?, 0)
     ");
     $payment_stmt->bind_param(
-        "iids", 
+        "iiis", 
         $order_id,
         $order['payment_method_id'],
         $order['total_amount'],
@@ -143,20 +134,22 @@ try {
             payment_status,
             verification_notes,
             verified_by_id,
-            verification_attempt
-        ) VALUES (?, ?, ?, ?, 0, ?, 1, ?)
+            verification_attempt,
+            transfer_slip
+        ) VALUES (?, ?, ?, ?, 0, ?, NULL, ?, ?)
     ");
     
     $notes = "Payment slip resubmitted by user. Verification attempt #$attempt_count.";
     
     $verification_stmt->bind_param(
-        "iisdsi",
+        "iisdsis",
         $payment_id,
         $order_id,
         $transaction_id,
         $order['total_amount'],
         $notes,
-        $attempt_count
+        $attempt_count,
+        $relative_path
     );
     $verification_stmt->execute();
     
@@ -176,6 +169,23 @@ try {
 } catch (Exception $e) {
     // Rollback on error
     $mysqli->rollback();
+    
+    // Log the error for debugging
+    error_log("Resubmit payment error for order $order_id: " . $e->getMessage());
+    
+    // Check for mysqli error
+    if (isset($mysqli->error) && !empty($mysqli->error)) {
+        error_log("MySQL error: " . $mysqli->error);
+    }
+    
+    // Check for specific statement errors
+    if (isset($payment_stmt) && $payment_stmt) {
+        error_log("Payment statement error: " . $payment_stmt->error);
+    }
+    
+    if (isset($verification_stmt) && $verification_stmt) {
+        error_log("Verification statement error: " . $verification_stmt->error);
+    }
     
     http_response_code(500);
     echo json_encode([

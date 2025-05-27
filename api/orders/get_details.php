@@ -22,14 +22,45 @@ if (!$order_id) {
 
 // Check if the order belongs to the user
 $stmt = $mysqli->prepare("
-    SELECT o.*, os.status_name, do.name as shipping_method, do.fee as delivery_fee, ps.payment_method
+    SELECT 
+        o.*,
+        os.status_name,
+        u.full_name as customer_name,
+        u.email as customer_email,
+        ps.payment_method,
+        ps.account_phone as company_account,
+        ph.payment_id,
+        ph.transaction_id,
+        ph.amount as payment_amount,
+        COALESCE(latest_pv.payment_status, 0) as payment_status,
+        COALESCE(latest_pv.payment_verified, 0) as payment_verified,
+        COALESCE(latest_pv.verification_attempt, 0) as verification_attempt,
+        latest_pv.verification_notes,
+        latest_pv.amount_verified,
+        latest_pv.created_at as verification_date,
+        latest_pv.transfer_slip
     FROM orders o
-    LEFT JOIN order_status os ON o.status_id = os.status_id
-    LEFT JOIN delivery_options do ON o.delivery_option_id = do.delivery_option_id
+    JOIN users u ON o.user_id = u.user_id
+    JOIN order_status os ON o.status_id = os.status_id
     LEFT JOIN payment_settings ps ON o.payment_method_id = ps.id
-    WHERE o.order_id = ? AND o.user_id = ?
+    LEFT JOIN (
+        SELECT ph1.* 
+        FROM payment_history ph1
+        LEFT JOIN payment_history ph2 ON ph1.order_id = ph2.order_id AND ph1.payment_id < ph2.payment_id
+        WHERE ph2.payment_id IS NULL
+    ) ph ON o.order_id = ph.order_id
+    LEFT JOIN (
+        SELECT pv.* 
+        FROM payment_verifications pv
+        JOIN (
+            SELECT order_id, MAX(verification_id) as latest_verification_id
+            FROM payment_verifications
+            GROUP BY order_id
+        ) latest ON pv.verification_id = latest.latest_verification_id
+    ) latest_pv ON o.order_id = latest_pv.order_id
+    WHERE o.order_id = ?
 ");
-$stmt->bind_param("ii", $order_id, $_SESSION['user_id']);
+$stmt->bind_param("i", $order_id);
 $stmt->execute();
 $order = $stmt->get_result()->fetch_assoc();
 
@@ -68,10 +99,19 @@ while ($item = $items->fetch_assoc()) {
 
 // Get payment history
 $payment_stmt = $mysqli->prepare("
-    SELECT ph.*, ps.payment_method, COALESCE(pv.payment_status, 0) as payment_status, pv.verification_notes 
+    SELECT ph.*, ps.payment_method, COALESCE(latest_pv.payment_status, 0) as payment_status, latest_pv.verification_notes 
     FROM payment_history ph
     LEFT JOIN payment_settings ps ON ph.payment_method_id = ps.id
-    LEFT JOIN payment_verifications pv ON ph.payment_id = pv.payment_id 
+    LEFT JOIN (
+        SELECT pv.* 
+        FROM payment_verifications pv
+        JOIN (
+            SELECT payment_id, MAX(verification_id) as latest_verification_id
+            FROM payment_verifications
+            WHERE payment_id IS NOT NULL
+            GROUP BY payment_id
+        ) latest ON pv.verification_id = latest.latest_verification_id
+    ) latest_pv ON ph.payment_id = latest_pv.payment_id
     WHERE ph.order_id = ?
     ORDER BY ph.created_at DESC
 ");
@@ -176,6 +216,16 @@ $html .= "<p class='mb-1'><strong>Date:</strong> <span style='color:#0288d1;'>" 
 $html .= "<p class='mb-1'><strong>Status:</strong> <span class='badge bg-" . $statusClass . " fw-bold px-3 py-2 rounded-pill' style='font-size:1em;min-width:110px;letter-spacing:0.5px;'>" . htmlspecialchars($order['status_name'] ?? $order['status'] ?? '') . "</span></p>";
 $html .= "<p class='mb-1'><strong>Payment Method:</strong> <span style='color:#388e3c;'>" . htmlspecialchars($order['payment_method']) . "</span></p>";
 $html .= "<p class='mb-1'><strong>Payment Status:</strong> <span class='badge bg-" . $paymentStatusClass . " fw-bold px-3 py-2 rounded-pill' style='font-size:1em;min-width:110px;letter-spacing:0.5px;'>" . $paymentStatusText . "</span></p>";
+
+// Display refund message if payment was refunded
+if ($order['payment_status'] == 3) {
+    $html .= "<div class='alert alert-info mt-3'>
+        <i class='bi bi-info-circle-fill me-2'></i>
+        <strong>Payment Refunded</strong>
+        <p class='mb-0 mt-1'>This order has been cancelled and the payment has been refunded.</p>
+        " . (!empty($order['verification_notes']) ? "<p class='mt-2 mb-0'><strong>Reason:</strong> " . htmlspecialchars($order['verification_notes']) . "</p>" : "") . "
+    </div>";
+}
 
 if (isset($verificationAttempt) && $verificationAttempt > 1) {
     $html .= "<p class='mb-1 mt-2 text-info'><i class='bi bi-info-circle'></i> <small>Verification attempt: " . $verificationAttempt . "</small></p>";
@@ -341,44 +391,9 @@ if (!empty($payment_history)) {
     $html .= "<tbody>";
     
     foreach ($payment_history as $payment) {
-        // Get the latest verification status for this payment
-        $verificationStmt = $mysqli->prepare("
-            SELECT payment_status 
-            FROM payment_verifications 
-            WHERE payment_id = ? OR (payment_id IS NULL AND order_id = ?)
-            ORDER BY created_at DESC 
-            LIMIT 1
-        ");
-        
-        $paymentStatusText = "Pending";  // Default to Pending instead of Not Available
-        $paymentStatusClass = "warning";
-        
-        if ($verificationStmt) {
-            $verificationStmt->bind_param("ii", $payment['payment_id'], $order_id);
-            $verificationStmt->execute();
-            $verificationResult = $verificationStmt->get_result();
-            if ($verificationRow = $verificationResult->fetch_assoc()) {
-                switch($verificationRow['payment_status']) {
-                    case 0:
-                        $paymentStatusText = "Pending";
-                        $paymentStatusClass = "warning";
-                        break;
-                    case 1:
-                        $paymentStatusText = "Completed";
-                        $paymentStatusClass = "success";
-                        break;
-                    case 2:
-                        $paymentStatusText = "Failed";
-                        $paymentStatusClass = "danger";
-                        break;
-                    case 3:
-                        $paymentStatusText = "Refunded";
-                        $paymentStatusClass = "info";
-                        break;
-                }
-            }
-            $verificationStmt->close();
-        }
+        // We already have the latest verification status from our updated query
+        $paymentStatusText = getPaymentStatusText($payment['payment_status']);
+        $paymentStatusClass = getPaymentStatusClass($payment['payment_status']);
         
         $html .= "<tr>";
         $html .= "<td>" . date('M d, Y', strtotime($payment['created_at'])) . "</td>";
@@ -416,6 +431,8 @@ $is_payment_verified = $latest_verification['payment_verified'] ?? 0;
 // Add payment slip upload section if needed - Allow resubmission if payment failed
 if ($order['payment_method'] !== 'Cash on Delivery' && 
     (!$has_payment_slip || $latest_payment_status == 2) && 
+    $latest_payment_status != 3 &&  // Don't allow resubmission for refunded payments
+    $is_payment_verified == 0 && 
     in_array($order['status_name'], ['pending', 'confirmed', 'processing'])) {
     
     $upload_title = !$has_payment_slip ? 'Upload Payment Slip' : 'Resubmit Payment Slip';
@@ -429,10 +446,14 @@ if ($order['payment_method'] !== 'Cash on Delivery' &&
     if ($latest_payment_status == 2) {
         $html .= "<div class='alert alert-{$warning_class} mb-3'>
             <i class='bi {$warning_icon} me-2'></i> 
-            <strong>Payment Verification Failed</strong><br>
-            Your previous payment verification failed. " . 
-            (!empty($payment_notes) ? "Reason: " . htmlspecialchars($payment_notes) : '') . "
-            Please resubmit your payment slip.
+            <strong>Payment Verification Failed</strong>";
+        
+        // Show verification notes if available
+        if (!empty($order['verification_notes'])) {
+            $html .= "<p class='mt-2 mb-1'><strong>Reason:</strong> " . htmlspecialchars($order['verification_notes']) . "</p>";
+        }
+        
+        $html .= "<p class='mb-0 mt-1'>Please resubmit your payment slip.</p>
         </div>";
     } else if (!$has_payment_slip) {
         $html .= "<div class='alert alert-{$warning_class} mb-3'>

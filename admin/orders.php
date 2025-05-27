@@ -241,6 +241,7 @@ if ($status_result) {
                                                 <i class="bi bi-clock-history"></i>
                                             </button>
                                             <?php endif; ?>
+                                            
                                             <button type="button" class="btn btn-sm btn-outline-danger" 
                                                     onclick="deleteOrder(<?php echo $order['order_id']; ?>)">
                                                 <i class="bi bi-trash"></i>
@@ -349,9 +350,11 @@ if ($status_result) {
             </div>
             <div class="modal-footer border-0 bg-light p-3">
                 <div class="d-flex w-100 justify-content-between align-items-center">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle me-2"></i>Cancel
-                    </button>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                    </div>
                     <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" onclick="submitPaymentVerification()">
                         <i class="bi bi-shield-check me-2"></i>Verify Payment
                     </button>
@@ -414,6 +417,7 @@ if ($status_result) {
 <!-- Custom JS -->
 <script src="assets/js/admin.js"></script>
 <script src="assets/js/orders.js"></script>
+<script src="assets/js/console.js"></script> <!-- Debug console -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -464,48 +468,80 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Function to verify Cash on Delivery payment without requiring a payment slip
 function verifyCODPayment(orderId) {
-    if (!confirm('Are you sure you want to mark this Cash on Delivery payment as verified?')) {
-        return;
-    }
-    
-    const verificationData = {
-        order_id: orderId,
-        verify: true,
-        verification_details: {
-            transaction_id: 'COD-' + orderId, // Generate a pseudo transaction ID
-            amount_verified: document.querySelector(`tr[data-order-id="${orderId}"]`).dataset.amount,
-            verification_notes: 'Cash on Delivery payment marked as verified by admin',
-            payment_status: 1 // Completed
+    showGenericConfirmModal(
+        'Verify Cash on Delivery',
+        'Are you sure you want to mark this Cash on Delivery payment as verified?',
+        'success',
+        () => {
+            const verificationData = {
+                order_id: orderId,
+                verify: true,
+                verification_details: {
+                    transaction_id: 'COD-' + orderId, // Generate a pseudo transaction ID
+                    amount_verified: document.querySelector(`tr[data-order-id="${orderId}"]`).dataset.amount,
+                    verification_notes: 'Cash on Delivery payment marked as verified by admin',
+                    payment_status: 1 // Completed
+                }
+            };
+            
+            // Show loading toast
+            showToast('info', 'Verifying payment...');
+            
+            // Call the verification API
+            fetch('/hm/api/orders/verify_payment.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(verificationData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showToast('success', 'Cash on Delivery payment verified successfully');
+                    
+                    // Store success message for after reload
+                    localStorage.setItem('orderMessage', 'Cash on Delivery payment verified successfully');
+                    localStorage.setItem('orderMessageType', 'success');
+                    
+                    // Reload page to reflect changes
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('error', data.message || 'Failed to verify payment');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'An error occurred while verifying payment');
+            });
         }
-    };
-    
-    // Call the verification API
-    fetch('/hm/api/orders/verify_payment.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(verificationData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Show success message
-            showToast('success', 'Cash on Delivery payment verified successfully');
-            // Reload page to reflect changes
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        } else {
-            showToast('error', data.message || 'Failed to verify payment');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('error', 'An error occurred while verifying payment');
-    });
+    );
 }
-</script>
 
-</body>
-</html> 
+// Generic Confirmation Modal
+function showGenericConfirmModal(title, bodyText, type = 'primary', onConfirm, onCancel) {
+    $('#genericConfirmModal').remove(); // Remove previous modal
+    const modalHtml = `
+    <div class="modal fade" id="genericConfirmModal" tabindex="-1" aria-labelledby="genericConfirmLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-${type}-subtle">
+            <h5 class="modal-title" id="genericConfirmLabel">
+                <i class="bi bi-${type === 'danger' ? 'exclamation-triangle-fill text-danger' : (type === 'warning' ? 'exclamation-triangle-fill text-warning' : 'question-circle-fill text-primary')} me-2"></i>
+                ${title}
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            ${bodyText}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="genericConfirmCancelBtn">Cancel</button>
+            <button type="button" class="btn btn-${type}" id="genericConfirmOkBtn">Yes, Proceed</button>
+          </div>
+        </div>
+      </div>
+    </div>`

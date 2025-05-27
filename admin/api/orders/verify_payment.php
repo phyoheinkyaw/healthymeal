@@ -16,9 +16,45 @@ if (!$role || $role != 1) {
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
+// Basic logging function for payment verification
+function logVerification($message, $data = null) {
+    try {
+        $log_dir = $_SERVER['DOCUMENT_ROOT'] . '/hm/uploads/logs/';
+        
+        if (!file_exists($log_dir)) {
+            if (!mkdir($log_dir, 0777, true)) {
+                error_log("Failed to create log directory: " . $log_dir);
+                return false;
+            }
+        }
+        
+        $log_file = $log_dir . 'payment_verification.log';
+        $timestamp = date('Y-m-d H:i:s');
+        $log_message = "[{$timestamp}] {$message}";
+        
+        if ($data !== null) {
+            if (is_array($data) || is_object($data)) {
+                $log_message .= ": " . print_r($data, true);
+            } else {
+                $log_message .= ": " . $data;
+            }
+        }
+
+        file_put_contents($log_file, $log_message . PHP_EOL, FILE_APPEND);
+        return true;
+    } catch (Exception $e) {
+        error_log("Exception in logVerification: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Log the initial request
+logVerification("=== NEW PAYMENT VERIFICATION REQUEST ===");
+
 // Validate required fields
 if (!isset($data['order_id']) || !is_numeric($data['order_id'])) {
     http_response_code(400);
+    logVerification("ERROR: Invalid order ID");
     echo json_encode(['success' => false, 'message' => 'Invalid order ID']);
     exit();
 }
@@ -126,6 +162,134 @@ try {
     $transaction_id = $data['verification_details']['transaction_id'] ?? '';
     $is_resubmission = isset($data['verification_details']['is_resubmission']) ? 
         (bool)$data['verification_details']['is_resubmission'] : false;
+    $is_refund = isset($data['verification_details']['is_refund']) ? 
+        (bool)$data['verification_details']['is_refund'] : false;
+
+    // ===========================================================================
+    // REFUND PROCESS HANDLING
+    // ===========================================================================
+    
+    // If is_refund flag is set or payment status is 3, process as refund
+    if ($is_refund || $payment_status == 3) {
+        $payment_status = 3; // Force refund status
+        
+        // If no verification notes provided for refund, set a default
+        if (empty($verification_notes)) {
+            $verification_notes = "Payment refunded by admin.";
+        }
+        
+        // Force auto-generation of transaction ID if empty for refunds
+        if (empty($transaction_id)) {
+            $transaction_id = 'REFUND-' . $order_id . '-' . time();
+        }
+        
+        // Process the refund (update order status, payment status, create verification)
+        try {
+            // 1. Update order status to cancelled (7)
+            $updateOrderStmt = $mysqli->prepare("UPDATE orders SET status_id = 7, updated_at = NOW() WHERE order_id = ?");
+            $updateOrderStmt->bind_param("i", $order_id);
+            $updateOrderResult = $updateOrderStmt->execute();
+            $updateOrderStmt->close();
+            
+            if (!$updateOrderResult) {
+                throw new Exception("Failed to update order status: " . $mysqli->error);
+            }
+            
+            // 2. Update payment history
+            $updatePaymentStmt = $mysqli->prepare("UPDATE payment_history SET payment_status = 3, updated_at = NOW() 
+                              WHERE order_id = ? ORDER BY payment_id DESC LIMIT 1");
+            $updatePaymentStmt->bind_param("i", $order_id);
+            $updatePaymentResult = $updatePaymentStmt->execute();
+            $updatePaymentStmt->close();
+            
+            if (!$updatePaymentResult) {
+                throw new Exception("Failed to update payment status: " . $mysqli->error);
+            }
+            
+            // 3. Create or update payment verification record
+            if ($has_previous_verification) {
+                $lastVerification = $verifications_result->fetch_assoc();
+                $verification_id = $lastVerification['verification_id'];
+                
+                // Update existing verification
+                $updateVerificationStmt = $mysqli->prepare("
+                    UPDATE payment_verifications SET 
+                    payment_status = ?,
+                    payment_verified = 1,
+                    payment_verified_at = NOW(),
+                    transaction_id = ?,
+                    verification_notes = ?,
+                    updated_at = NOW() 
+                    WHERE verification_id = ?
+                ");
+                $updateVerificationStmt->bind_param("issi", $payment_status, $transaction_id, $verification_notes, $verification_id);
+                $updateVerificationStmt->execute();
+                $updateVerificationStmt->close();
+            } else {
+                // Insert new verification
+                $insertVerificationStmt = $mysqli->prepare("
+                    INSERT INTO payment_verifications (
+                    payment_id, order_id, verified_by_id, payment_status,
+                    verification_notes, transaction_id, payment_verified,
+                    payment_verified_at, verification_attempt, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), ?, NOW(), NOW())
+                ");
+                $insertVerificationStmt->bind_param("iiisisi", $payment_id, $order_id, $adminId, 
+                    $payment_status, $verification_notes, $transaction_id, $attempt_count);
+                $insertVerificationStmt->execute();
+                $verification_id = $mysqli->insert_id;
+                $insertVerificationStmt->close();
+            }
+            
+            // 4. Create notification for user about the refund
+            $userStmt = $mysqli->prepare("SELECT user_id FROM orders WHERE order_id = ?");
+            $userStmt->bind_param("i", $order_id);
+            $userStmt->execute();
+            $userResult = $userStmt->get_result();
+            
+            if ($userResult && $userResult->num_rows > 0) {
+                $userRow = $userResult->fetch_assoc();
+                $user_id = $userRow['user_id'];
+                
+                $message = "Your payment for order #{$order_id} has been refunded and your order has been cancelled.";
+                
+                $insertNotificationStmt = $mysqli->prepare("
+                    INSERT INTO order_notifications (
+                    order_id, user_id, message, note, is_read, created_at
+                    ) VALUES (?, ?, ?, ?, 0, NOW())
+                ");
+                $insertNotificationStmt->bind_param("iiss", $order_id, $user_id, $message, $verification_notes);
+                $insertNotificationStmt->execute();
+                $insertNotificationStmt->close();
+            }
+            $userStmt->close();
+            
+            // Commit transaction
+            $mysqli->commit();
+            
+            // Send success response for refund
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Payment has been refunded and order has been cancelled.'
+            ]);
+            exit;
+        }
+        catch (Exception $e) {
+            $mysqli->rollback();
+            logVerification("Refund failed: " . $e->getMessage());
+            
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Refund failed: ' . $e->getMessage()
+            ]);
+            exit;
+        }
+    }
+
+    // ===========================================================================
+    // STANDARD PAYMENT VERIFICATION
+    // ===========================================================================
     
     // Ensure amount_verified is a whole number (MMK)
     $amount_verified = isset($data['verification_details']['amount_verified']) ? 
@@ -196,236 +360,162 @@ try {
         $updateOrderStmt->execute();
         $updateOrderStmt->close();
     }
-
+    
     // Update or insert verification details
     $existing_verification_id = null;
-    $should_update = false;
     
-    if ($payment_id) {
-        // Check if a verification record already exists for this payment
-        $check_existing = $mysqli->prepare("
-            SELECT verification_id
-            FROM payment_verifications
-            WHERE payment_id = ?
-            ORDER BY created_at DESC
-            LIMIT 1
-        ");
-        $check_existing->bind_param("i", $payment_id);
-        $check_existing->execute();
-        $check_result = $check_existing->get_result();
+    // If there's already a verification record, update it
+    if ($has_previous_verification) {
+        $verification = $verifications_result->fetch_assoc();
+        $existing_verification_id = $verification['verification_id'];
         
-        if ($check_result->num_rows > 0) {
-            $existing_data = $check_result->fetch_assoc();
-            $existing_verification_id = $existing_data['verification_id'];
-            $should_update = true;
-        }
-        $check_existing->close();
-    }
-    
-    if ($should_update) {
-        // Update existing verification record
-        $verificationStmt = $mysqli->prepare("
-            UPDATE payment_verifications SET
-                verified_by_id = ?,
-                payment_status = ?,
+        $updateVerificationStmt = $mysqli->prepare("
+            UPDATE payment_verifications 
+            SET payment_status = ?,
+                payment_verified = ?,
                 verification_notes = ?,
                 transaction_id = ?,
                 amount_verified = ?,
-                payment_verified = ?,
-                payment_verified_at = ?,
-                verification_attempt = verification_attempt + 1,
-                resubmission_status = ?,
                 updated_at = NOW()
+                " . ($verify ? ", payment_verified_at = NOW()" : "") . "
             WHERE verification_id = ?
         ");
-
-        if ($verificationStmt) {
-            $payment_verified = ($payment_status_to_set == 1) ? 1 : 0;
-            $payment_verified_at = ($payment_status_to_set == 1) ? date('Y-m-d H:i:s') : null;
-            
-            // Set resubmission status:
-            // - Use existing is_resubmission flag if provided
-            // - Set to "pending resubmission" (2) when payment fails (status 2)
-            // - Otherwise set to 0 (original)
-            $resubmission_status = $is_resubmission ? 1 : 0;
-            if ($payment_status_to_set == 2) {
-                $resubmission_status = 2; // Set to "pending resubmission" when payment fails
-            }
-            
-            $verificationStmt->bind_param("iississii", 
-                $adminId,
-                $payment_status_to_set,
-                $verification_notes,
-                $transaction_id,
-                $amount_verified,
-                $payment_verified,
-                $payment_verified_at,
-                $resubmission_status,
-                $existing_verification_id
-            );
-            
-            if (!$verificationStmt->execute()) {
-                throw new Exception('Failed to update payment verification: ' . $verificationStmt->error);
-            }
-            
-            $verification_id = $existing_verification_id;
-        } else {
-            throw new Exception('Database error when preparing update: ' . $mysqli->error);
-        }
-    } else {
-        // Insert new verification record if no existing record found
-        $verificationStmt = $mysqli->prepare("
-            INSERT INTO payment_verifications (
-                payment_id, 
-                order_id, 
-                verified_by_id, 
-                payment_status, 
-                verification_notes, 
-                transaction_id,
-                amount_verified,
-                payment_verified,
-                payment_verified_at,
-                verification_attempt,
-                resubmission_status,
-                transfer_slip
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-
-        if ($verificationStmt) {
-            $payment_verified = ($payment_status_to_set == 1) ? 1 : 0;
-            $payment_verified_at = ($payment_status_to_set == 1) ? date('Y-m-d H:i:s') : null;
-            $transfer_slip = $order['transfer_slip'] ?? null;
-            
-            // Set resubmission status:
-            // - Use existing is_resubmission flag if provided
-            // - Set to "pending resubmission" (2) when payment fails (status 2)
-            // - Otherwise set to 0 (original)
-            $resubmission_status = $is_resubmission ? 1 : 0;
-            if ($payment_status_to_set == 2) {
-                $resubmission_status = 2; // Set to "pending resubmission" when payment fails
-            }
-            
-            $verificationStmt->bind_param("iiisissiisss", 
-                $payment_id,
-                $order_id,
-                $adminId,
-                $payment_status_to_set,
-                $verification_notes,
-                $transaction_id,
-                $amount_verified,
-                $payment_verified,
-                $payment_verified_at,
-                $attempt_count,
-                $resubmission_status,
-                $transfer_slip
-            );
-            
-            if (!$verificationStmt->execute()) {
-                throw new Exception('Failed to create payment verification: ' . $verificationStmt->error);
-            }
-            
-            $verification_id = $mysqli->insert_id;
-        } else {
-            throw new Exception('Database error when preparing insert: ' . $mysqli->error);
-        }
-    }
-    
-    // Add a log entry for this verification action
-    $logStmt = $mysqli->prepare("
-        INSERT INTO payment_verification_logs (
-            verification_id,
-            order_id,
-            status_changed_from,
-            status_changed_to,
-            amount,
-            admin_notes,
-            verified_by_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
-    
-    if ($logStmt) {
-        // Use the actual status from before this operation
-        $previous_status = $currentPaymentStatus;
         
-        $logStmt->bind_param("iiiiisi",
-            $verification_id,
-            $order_id,
-            $previous_status,
+        $payment_verified = $verify ? 1 : 0;
+        
+        $updateVerificationStmt->bind_param(
+            "iissdi",
             $payment_status_to_set,
-            $amount_verified,
+            $payment_verified,
             $verification_notes,
-            $adminId
+            $transaction_id,
+            $amount_verified,
+            $existing_verification_id
         );
         
-        $logStmt->execute();
-        $logStmt->close();
+        $updateVerificationStmt->execute();
+        $updateVerificationStmt->close();
+    } else {
+        // Create a new verification record
+        $insertVerificationStmt = $mysqli->prepare("
+            INSERT INTO payment_verifications (
+                payment_id,
+                order_id,
+                verified_by_id,
+                payment_status,
+                payment_verified,
+                payment_verified_at,
+                verification_notes,
+                transaction_id,
+                amount_verified,
+                verification_attempt,
+                resubmission_status,
+                created_at,
+                updated_at
+            ) VALUES (
+                ?, ?, ?, ?, ?, " . 
+                ($verify ? "NOW()" : "NULL") . 
+                ", ?, ?, ?, ?, ?, NOW(), NOW()
+            )
+        ");
+        
+        $payment_verified = $verify ? 1 : 0;
+        $resubmission_status = $is_resubmission ? 1 : 0;
+        
+        $insertVerificationStmt->bind_param(
+            "iiiissdii",
+            $payment_id,
+            $order_id,
+            $adminId,
+            $payment_status_to_set,
+            $payment_verified,
+            $verification_notes,
+            $transaction_id,
+            $amount_verified,
+            $attempt_count,
+            $resubmission_status
+        );
+        
+        $insertVerificationStmt->execute();
+        $existing_verification_id = $mysqli->insert_id;
+        $insertVerificationStmt->close();
+    }
+
+    // Create notification for success or failure
+    $notificationMessage = '';
+    
+    if ($verify) {
+        if ($payment_status_to_set == 1) {
+            $notificationMessage = "Your payment has been verified successfully!";
+        } else if ($payment_status_to_set == 2) {
+            $notificationMessage = "Your payment verification has failed. Please check your payment details.";
+        } else if ($payment_status_to_set == 3) {
+            $notificationMessage = "Your payment has been refunded and your order has been cancelled.";
+        } else if ($payment_status_to_set == 4) {
+            $notificationMessage = "Your payment has been partially verified. Please check payment details.";
+        }
+    } else {
+        $notificationMessage = "Your payment verification status has been reset.";
     }
     
-    // Add notification with appropriate message
-    $statusMessages = [
-        0 => "Payment verification is pending",
-        1 => "Payment has been verified successfully",
-        2 => "Payment verification has been rejected",
-        3 => "Payment has been refunded",
-        4 => "Partial payment has been verified"
-    ];
-    
-    $notificationMessage = $statusMessages[$payment_status_to_set] ?? "Payment status has been updated";
-    
-    // Get the user_id from the orders table
-    $userIdStmt = $mysqli->prepare("SELECT user_id FROM orders WHERE order_id = ?");
-    if ($userIdStmt) {
-        $userIdStmt->bind_param("i", $order_id);
-        $userIdStmt->execute();
-        $userIdResult = $userIdStmt->get_result();
-        if ($userIdRow = $userIdResult->fetch_assoc()) {
-            $userId = $userIdRow['user_id'];
+    // Insert notification
+    if (!empty($notificationMessage)) {
+        $userStmt = $mysqli->prepare("SELECT user_id FROM orders WHERE order_id = ?");
+        $userStmt->bind_param("i", $order_id);
+        $userStmt->execute();
+        $userResult = $userStmt->get_result();
+        
+        if ($userResult->num_rows > 0) {
+            $user = $userResult->fetch_assoc();
+            $user_id = $user['user_id'];
             
-            // Insert notification
-            $notificationStmt = $mysqli->prepare("
+            $insertNotificationStmt = $mysqli->prepare("
                 INSERT INTO order_notifications (
-                    order_id, 
+                    order_id,
                     user_id,
-                    message, 
-                    note
-                ) VALUES (?, ?, ?, ?)
+                    message,
+                    note,
+                    is_read,
+                    created_at
+                ) VALUES (
+                    ?, ?, ?, ?, 0, NOW()
+                )
             ");
             
-            if ($notificationStmt) {
-                $notificationStmt->bind_param("iiss", 
-                    $order_id,
-                    $userId,
-                    $notificationMessage,
-                    $verification_notes
-                );
-                $notificationStmt->execute();
-                $notificationStmt->close();
-            }
+            $insertNotificationStmt->bind_param(
+                "iiss",
+                $order_id,
+                $user_id,
+                $notificationMessage,
+                $verification_notes
+            );
+            
+            $insertNotificationStmt->execute();
+            $insertNotificationStmt->close();
         }
-        $userIdStmt->close();
+        $userStmt->close();
     }
     
-    // Close verification statement if it's still open
-    if (isset($verificationStmt) && $verificationStmt) {
-        $verificationStmt->close();
-    }
+    // Commit transaction
+    $mysqli->commit();
     
+    // Send response
     echo json_encode([
         'success' => true, 
-        'message' => $notificationMessage,
-        'is_update' => $should_update
+        'message' => $notificationMessage
     ]);
 
-    // If everything is successful, commit the transaction
-    $mysqli->commit();
-
 } catch (Exception $e) {
-    // Something went wrong, rollback the transaction
-    $mysqli->rollback();
+    // Rollback transaction on error
+    if ($mysqli->inTransaction()) {
+        $mysqli->rollback();
+    }
+    
+    logVerification("ERROR: " . $e->getMessage());
     
     http_response_code(400);
     echo json_encode([
-        'success' => false,
+        'success' => false, 
         'message' => $e->getMessage()
     ]);
 } 

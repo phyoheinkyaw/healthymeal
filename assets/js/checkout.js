@@ -461,7 +461,7 @@ function submitOrder() {
         
         if (!transactionIdInput || !transactionIdInput.value) {
             hideLoadingOverlay();
-            showAlert('danger', 'Please wait for the payment slip to be scanned or enter the transaction ID manually');
+            showAlert('danger', 'According to your slip, the transaction ID is not found. Please check your slip again.');
             placeOrderBtn.disabled = false;
             return;
         }

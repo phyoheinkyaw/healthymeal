@@ -25,9 +25,10 @@ $stmt = $mysqli->prepare("
         o.*,
         os.status_name,
         ps.payment_method,
-        COALESCE(pv.payment_status, 0) as payment_status,
-        COALESCE(pv.payment_verified, 0) as payment_verified,
-        COALESCE(pv.transfer_slip, '') as transfer_slip,
+        COALESCE(latest_pv.payment_status, 0) as payment_status,
+        COALESCE(latest_pv.payment_verified, 0) as payment_verified,
+        COALESCE(latest_pv.transfer_slip, '') as transfer_slip,
+        COALESCE(latest_pv.verification_notes, '') as verification_notes,
         COUNT(oi.order_item_id) as items_count,
         SUM(oi.price_per_unit * oi.quantity) as subtotal,
         (SELECT COUNT(*) FROM order_notifications 
@@ -43,14 +44,24 @@ $stmt = $mysqli->prepare("
         LEFT JOIN payment_history ph2 ON ph1.order_id = ph2.order_id AND ph1.payment_id < ph2.payment_id
         WHERE ph2.payment_id IS NULL
     ) ph ON o.order_id = ph.order_id
-    LEFT JOIN payment_verifications pv ON ph.payment_id = pv.payment_id
+    LEFT JOIN (
+        SELECT pv.* 
+        FROM payment_verifications pv
+        JOIN (
+            SELECT order_id, MAX(verification_id) as latest_verification_id
+            FROM payment_verifications
+            GROUP BY order_id
+        ) latest ON pv.verification_id = latest.latest_verification_id
+    ) latest_pv ON o.order_id = latest_pv.order_id
     LEFT JOIN order_items oi ON o.order_id = oi.order_id
     WHERE o.user_id = ?
     GROUP BY o.order_id, o.user_id, o.status_id, o.created_at, o.updated_at, os.status_name, ps.payment_method, 
              o.delivery_address, o.contact_number, o.customer_phone, o.delivery_notes, o.payment_method_id, 
              o.account_phone, o.delivery_fee, o.delivery_option_id, o.expected_delivery_date, 
              o.preferred_delivery_time, o.subtotal, o.tax, o.total_amount,
-             pv.payment_status, pv.payment_verified, pv.transfer_slip
+             latest_pv.payment_status, latest_pv.payment_verified, latest_pv.transfer_slip, 
+             latest_pv.verification_notes, latest_pv.verification_attempt, latest_pv.amount_verified,
+             latest_pv.created_at
     ORDER BY o.created_at DESC
 ");
 $stmt->bind_param("ii", $_SESSION['user_id'], $_SESSION['user_id']);
@@ -295,12 +306,12 @@ $user = $userStmt->get_result()->fetch_assoc();
                     <span>Favorites</span>
                 </a>
             </li>
-            <li>
+            <!-- <li>
                 <a href="meal_plans.php" class="d-flex align-items-center">
                     <i class="bi bi-calendar-check"></i>
                     <span>Meal Plans</span>
                 </a>
-            </li>
+            </li> -->
             <li>
                 <a href="api/auth/logout.php" class="d-flex align-items-center">
                     <i class="bi bi-box-arrow-right"></i>
@@ -605,13 +616,20 @@ $user = $userStmt->get_result()->fetch_assoc();
                                 </td>
                                 <td>
                                     <?php if ($order['payment_method'] != 'Cash on Delivery'): ?>
-                                        <?php if ($order['payment_verified'] == 1): ?>
-                                            <span class="badge bg-success">Verified</span>
+                                        <?php if ($order['payment_status'] == 3): ?>
+                                            <span class="badge bg-info" 
+                                                  title="<?php echo !empty($order['verification_notes']) ? htmlspecialchars($order['verification_notes']) : 'Payment has been refunded'; ?>">
+                                                  Refunded
+                                            </span>
                                         <?php elseif ($order['payment_status'] == 2): ?>
                                             <span class="badge bg-danger">Payment Failed</span>
                                             <a href="#" class="small d-block mt-1 text-danger fw-bold" 
-                                               onclick="viewOrderDetails(<?php echo $order['order_id']; ?>); return false;">
+                                               onclick="viewOrderDetails(<?php echo $order['order_id']; ?>); return false;"
+                                               title="<?php echo !empty($order['verification_notes']) ? htmlspecialchars($order['verification_notes']) : 'Payment verification failed. Please resubmit.'; ?>">
                                                 <i class="bi bi-exclamation-triangle"></i> Action Required
+                                                <?php if (!empty($order['verification_notes'])): ?>
+                                                <span class="d-none"><?php echo htmlspecialchars($order['verification_notes']); ?></span>
+                                                <?php endif; ?>
                                             </a>
                                         <?php elseif ($order['payment_status'] == 4): ?>
                                             <span class="badge bg-warning text-dark">Partial Payment</span>
@@ -619,8 +637,8 @@ $user = $userStmt->get_result()->fetch_assoc();
                                                onclick="viewOrderDetails(<?php echo $order['order_id']; ?>); return false;">
                                                 <i class="bi bi-info-circle"></i> View Details
                                             </a>
-                                        <?php elseif ($order['payment_status'] == 3): ?>
-                                            <span class="badge bg-info">Refunded</span>
+                                        <?php elseif ($order['payment_verified'] == 1): ?>
+                                            <span class="badge bg-success">Verified</span>
                                         <?php else: ?>
                                             <span class="badge bg-warning text-dark">Pending Verification</span>
                                         <?php endif; ?>

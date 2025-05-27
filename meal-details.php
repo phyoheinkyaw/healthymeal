@@ -19,12 +19,45 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+$user_id = $_SESSION['user_id'];
+
 // Get meal kit ID
 $meal_kit_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
 if (!$meal_kit_id) {
     header("Location: meal-kits.php");
     exit();
 }
+
+// Handle add/remove favorite action via AJAX
+if (isset($_POST['favorite_action'])) {
+    $action = $_POST['favorite_action'];
+    
+    if ($action === 'add') {
+        // Add to favorites
+        $insert_query = "INSERT IGNORE INTO user_favorites (user_id, meal_kit_id) VALUES (?, ?)";
+        $stmt = $mysqli->prepare($insert_query);
+        $stmt->bind_param("ii", $user_id, $meal_kit_id);
+        $stmt->execute();
+        echo json_encode(['success' => true, 'is_favorite' => true]);
+    } elseif ($action === 'remove') {
+        // Remove from favorites
+        $delete_query = "DELETE FROM user_favorites WHERE user_id = ? AND meal_kit_id = ?";
+        $stmt = $mysqli->prepare($delete_query);
+        $stmt->bind_param("ii", $user_id, $meal_kit_id);
+        $stmt->execute();
+        echo json_encode(['success' => true, 'is_favorite' => false]);
+    }
+    
+    exit;
+}
+
+// Check if meal kit is in user's favorites
+$favorite_query = "SELECT 1 FROM user_favorites WHERE user_id = ? AND meal_kit_id = ?";
+$favorite_stmt = $mysqli->prepare($favorite_query);
+$favorite_stmt->bind_param("ii", $user_id, $meal_kit_id);
+$favorite_stmt->execute();
+$is_favorite = $favorite_stmt->get_result()->num_rows > 0;
+$favorite_stmt->close();
 
 // Fetch meal kit details
 $stmt = $mysqli->prepare("
@@ -108,6 +141,47 @@ while ($ingredient = $ingredients->fetch_assoc()) {
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- Include meal-customization.js in the head -->
     <script src="assets/js/meal-customization.js"></script>
+    <style>
+        .favorite-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        
+        .favorite-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .favorite-btn i {
+            font-size: 20px;
+            color: #FF6B35;
+        }
+        
+        .favorite-btn.active {
+            background-color: #FF6B35;
+        }
+        
+        .favorite-btn.active i {
+            color: white;
+        }
+        
+        .meal-img-container {
+            position: relative;
+        }
+    </style>
 </head>
 
 <body>
@@ -118,8 +192,14 @@ while ($ingredient = $ingredients->fetch_assoc()) {
         <div class="row">
             <!-- Meal Kit Image and Basic Info -->
             <div class="col-lg-6 mb-4">
-                <?php $img_url = get_meal_kit_image_url($meal_kit['image_url'], $meal_kit['name']); ?>
-                <img src="<?php echo htmlspecialchars($img_url); ?>" class="img-fluid rounded mb-4" alt="Meal Kit Image">
+                <div class="meal-img-container">
+                    <?php $img_url = get_meal_kit_image_url($meal_kit['image_url'], $meal_kit['name']); ?>
+                    <img src="<?php echo htmlspecialchars($img_url); ?>" class="img-fluid rounded mb-4" alt="Meal Kit Image">
+                    
+                    <button id="favoriteBtn" class="favorite-btn <?php echo $is_favorite ? 'active' : ''; ?>" data-meal-kit-id="<?php echo $meal_kit_id; ?>" data-is-favorite="<?php echo $is_favorite ? 'true' : 'false'; ?>">
+                        <i class="bi <?php echo $is_favorite ? 'bi-heart-fill' : 'bi-heart'; ?>"></i>
+                    </button>
+                </div>
 
                 <div class="card mb-4">
                     <div class="card-body">
@@ -574,6 +654,53 @@ while ($ingredient = $ingredients->fetch_assoc()) {
                         }
                     }
                 ]
+            });
+            
+            // Favorite button functionality
+            $('#favoriteBtn').on('click', function() {
+                const btn = $(this);
+                const mealKitId = btn.data('meal-kit-id');
+                const isFavorite = btn.data('is-favorite') === true || btn.data('is-favorite') === 'true';
+                const action = isFavorite ? 'remove' : 'add';
+                
+                $.ajax({
+                    url: 'meal-details.php?id=' + mealKitId,
+                    type: 'POST',
+                    data: {
+                        favorite_action: action
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Update button state
+                            if (response.is_favorite) {
+                                btn.addClass('active');
+                                btn.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
+                                btn.data('is-favorite', true);
+                                
+                                // Show success toast
+                                $('#successToastMessage').text('Added to favorites!');
+                                const toast = new bootstrap.Toast(document.getElementById('successToast'));
+                                toast.show();
+                            } else {
+                                btn.removeClass('active');
+                                btn.find('i').removeClass('bi-heart-fill').addClass('bi-heart');
+                                btn.data('is-favorite', false);
+                                
+                                // Show info toast
+                                $('#infoToastMessage').text('Removed from favorites');
+                                const toast = new bootstrap.Toast(document.getElementById('infoToast'));
+                                toast.show();
+                            }
+                        }
+                    },
+                    error: function() {
+                        // Show error toast
+                        $('#errorToastMessage').text('Failed to update favorites');
+                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                        toast.show();
+                    }
+                });
             });
         });
     </script>

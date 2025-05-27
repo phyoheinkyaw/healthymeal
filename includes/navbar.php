@@ -172,6 +172,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="profile.php">My Profile</a></li>
                             <li><a class="dropdown-item" href="orders.php">My Orders</a></li>
+                            <li><a class="dropdown-item" href="favorites.php">Favorites <span class="badge bg-primary" id="favoritesCount">0</span></a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="api/auth/logout.php">Logout</a></li>
                         </ul>
@@ -198,6 +199,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 </nav>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Fetch cart count
     fetch('/hm/api/cart/get_cart_count.php')
         .then(response => response.json())
         .then(data => {
@@ -206,6 +208,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 cartBadge.textContent = data.count;
                 // Always show the badge
                 cartBadge.style.display = 'inline-block';
+            }
+        });
+        
+    // Fetch favorites count
+    fetch('/hm/api/favorites/get_favorites_count.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const favoritesBadge = document.getElementById('favoritesCount');
+                favoritesBadge.textContent = data.count;
+                // Only show the badge if there are favorites
+                favoritesBadge.style.display = data.count > 0 ? 'inline-block' : 'none';
             }
         });
 });

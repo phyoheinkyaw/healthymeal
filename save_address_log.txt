@@ -166,3 +166,138 @@ Session data: Array
 is_default value: true
 Final is_default value: 1
 
+Request received at 2025-05-26 08:40:43
+POST data: {"address_name":"fgs","full_address":"fgsgfsfg","city":"sgfsfg","postal_code":"sgfs","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+
+Request received at 2025-05-26 08:44:43
+POST data: {"address_name":"s","full_address":"sfdsdf","city":"sfsde","postal_code":"fsfd","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+
+Request received at 2025-05-26 16:30:30
+POST data: {"address_name":"32132","full_address":"3123213","city":"1232132","postal_code":"312312","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+
+Request received at 2025-05-26 16:40:27
+POST data: {"address_name":"a","full_address":"a","city":"a","postal_code":"a","is_default":false}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: false
+Final is_default value: 0
+
+Request received at 2025-05-26 16:40:32
+POST data: {"address_name":"b","full_address":"b","city":"b","postal_code":"b","is_default":false}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: false
+Final is_default value: 0
+
+Request received at 2025-05-26 16:40:40
+POST data: {"address_name":"c","full_address":"c","city":"c","postal_code":"c","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+
+Request received at 2025-05-26 16:40:55
+POST data: {"address_name":"d","full_address":"d","city":"d","postal_code":"d","is_default":false}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: false
+Final is_default value: 0
+
+Request received at 2025-05-26 16:41:00
+POST data: {"address_name":"e","full_address":"e","city":"e","postal_code":"e","is_default":false}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: false
+Final is_default value: 0
+
+Request received at 2025-05-26 16:42:26
+POST data: {"address_name":"e1","full_address":"e1","city":"e","postal_code":"e","is_default":false}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: false
+Final is_default value: 0
+

@@ -174,6 +174,15 @@ document.addEventListener('DOMContentLoaded', function() {
     $(document).on('click', '#scanTransactionBtn', function() {
         scanTransactionId();
     });
+
+    // Add event listener for payment status select box
+    $(document).on('change', '#payment_status', function() {
+        const selectedValue = $(this).val();
+        if (selectedValue == 3) { // 3 = Refunded
+            // Show warning about refund action
+            showToast('warning', 'Refund selected. This will cancel the order and notify the customer.');
+        }
+    });
 });
 
 // Function to view order details - REMOVED (using dedicated page instead)
@@ -181,43 +190,61 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Function to update order status
 function updateOrderStatus(orderId, newStatus, originalStatus, selectElement) {
-    if (!confirm('Are you sure you want to change the order status?')) {
-        // Reset to original value if canceled
-        $(selectElement).val(originalStatus);
-        return;
-    }
-
-    // Show loading state
-    $(selectElement).prop('disabled', true);
-    
-    // Update status via AJAX
-    $.ajax({
-        url: '/hm/api/orders/update_status.php',
-        type: 'POST',
-        data: JSON.stringify({
-            order_id: orderId,
-            status_id: newStatus
-        }),
-        contentType: 'application/json',
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                showToast('success', 'Order status updated successfully');
-                $(selectElement).data('original-status', newStatus);
-            } else {
-                showToast('error', response.message || 'Failed to update order status');
-                $(selectElement).val(originalStatus);
-            }
+    showGenericConfirmModal(
+        'Update Order Status',
+        'Are you sure you want to change the order status?',
+        'primary',
+        () => {
+            // Show loading state
+            $(selectElement).prop('disabled', true);
+            showToast('info', 'Updating order status...');
+            
+            // Update status via AJAX
+            $.ajax({
+                url: '/hm/api/orders/update_status.php',
+                type: 'POST',
+                data: JSON.stringify({
+                    order_id: orderId,
+                    status_id: newStatus
+                }),
+                contentType: 'application/json',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        showToast('success', 'Order status updated successfully');
+                        $(selectElement).data('original-status', newStatus);
+                        
+                        // If this was a cancellation/refund, we might need to refresh the page
+                        if (newStatus == 7) { // Assuming 7 is cancelled status
+                            // Store success message for after reload
+                            localStorage.setItem('orderMessage', 'Order cancelled and payment refunded successfully.');
+                            localStorage.setItem('orderMessageType', 'success');
+                            
+                            // Reload the page after a short delay
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+                        }
+                    } else {
+                        showToast('error', response.message || 'Failed to update order status');
+                        $(selectElement).val(originalStatus);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showToast('error', 'An error occurred while updating the order status');
+                    console.error('Error:', error, xhr.responseText);
+                    $(selectElement).val(originalStatus);
+                },
+                complete: function() {
+                    $(selectElement).prop('disabled', false);
+                }
+            });
         },
-        error: function(xhr, status, error) {
-            showToast('error', 'An error occurred while updating the order status');
+        () => {
+            // Reset to original value if canceled
             $(selectElement).val(originalStatus);
-            console.error('Error:', error);
-        },
-        complete: function() {
-            $(selectElement).prop('disabled', false);
         }
-    });
+    );
 }
 
 // Custom confirm modal for order status change
@@ -560,59 +587,99 @@ function submitPaymentVerification() {
         '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...'
     );
     
+    // Check if this is a refund operation (payment status = 3)
+    const isRefund = (paymentStatus == 3);
+    
+    // If it's a refund operation, use a standard transaction ID prefix if none provided
+    let finalTransactionId = transactionId;
+    if (isRefund && (!finalTransactionId || finalTransactionId.trim() === '')) {
+        finalTransactionId = 'REFUND-' + orderId + '-' + Date.now();
+    }
+    
+    // Set a default note for refunds if none provided
+    let finalNotes = verificationNotes;
+    if (isRefund && (!finalNotes || finalNotes.trim() === '')) {
+        finalNotes = 'Payment refunded by admin.';
+    }
+    
     const verificationData = {
         order_id: orderId,
         verify: true,
         verification_details: {
-            transaction_id: transactionId,
-            verification_notes: verificationNotes,
+            transaction_id: finalTransactionId,
+            verification_notes: finalNotes,
             payment_status: paymentStatus,
             amount_verified: amountVerified || 0,
-            is_resubmission: isResubmission
+            is_resubmission: isResubmission,
+            is_refund: isRefund
         }
     };
     
-    fetch('/hm/api/orders/verify_payment.php', {
+    // Direct API call
+    $.ajax({
+        url: '/hm/api/orders/verify_payment.php',
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
+        contentType: 'application/json',
+        data: JSON.stringify(verificationData),
+        success: function(data) {
+            // Process response
+            let responseData = data;
+            if (typeof data === 'string') {
+                try {
+                    responseData = JSON.parse(data);
+                } catch (e) {
+                    console.error('Failed to parse response:', e);
+                }
+            }
+            
+            if (responseData && responseData.success) {
+                let message = responseData.message || 'Payment verification completed successfully';
+                
+                // If it was a refund, make sure the success message reflects that
+                if (isRefund) {
+                    message = 'Payment refunded successfully. Order has been cancelled.';
+                }
+                
+                showToast('success', message);
+                
+                // Hide modal
+                bootstrap.Modal.getInstance(document.getElementById('paymentVerificationModal')).hide();
+                
+                // Store success message for after reload
+                localStorage.setItem('orderMessage', message);
+                localStorage.setItem('orderMessageType', 'success');
+                
+                // Reload page after a short delay
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+            } else {
+                console.error('API reported failure:', responseData ? responseData.message : 'Unknown error');
+                showToast('error', responseData && responseData.message ? responseData.message : 'Failed to verify payment');
+                
+                // Re-enable buttons
+                $('#paymentVerificationModal .modal-footer button').prop('disabled', false);
+                $('#paymentVerificationModal .modal-footer button:last-child').html(
+                    '<i class="bi bi-shield-check me-2"></i>Verify Payment'
+                );
+            }
         },
-        body: JSON.stringify(verificationData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+        error: function(xhr, status, errorThrown) {
+            console.error('AJAX Error:', status, errorThrown);
+            
+            try {
+                const errorData = JSON.parse(xhr.responseText);
+                showToast('error', errorData.message || 'An error occurred during verification');
+            } catch(e) {
+                showToast('error', 'An unexpected error occurred during verification');
+            }
+            
+            // Re-enable buttons
+            $('#paymentVerificationModal .modal-footer button').prop('disabled', false);
+            $('#paymentVerificationModal .modal-footer button:last-child').html(
+                '<i class="bi bi-shield-check me-2"></i>Verify Payment'
+            );
         }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            showToast('success', data.message || 'Payment verification completed successfully');
-            
-            // Hide modal
-            bootstrap.Modal.getInstance(document.getElementById('paymentVerificationModal')).hide();
-            
-            // Store success message for after reload
-            localStorage.setItem('orderMessage', data.message || 'Payment verification completed successfully');
-            localStorage.setItem('orderMessageType', 'success');
-            
-            // Reload page after a short delay
-            setTimeout(() => {
-                location.reload();
-            }, 500);
-        } else {
-            throw new Error(data.message || 'Failed to verify payment');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('error', error.message || 'An error occurred during verification');
-        
-        // Re-enable buttons
-        $('#paymentVerificationModal .modal-footer button').prop('disabled', false);
-        $('#paymentVerificationModal .modal-footer button:last-child').html(
-            '<i class="bi bi-shield-check me-2"></i>Verify Payment'
-        );
     });
 }
 
@@ -1063,3 +1130,109 @@ style.innerHTML = `
 }
 `;
 document.head.appendChild(style);
+
+/**
+ * Process payment refund
+ */
+function refundPayment(orderId, orderAmount) {
+    // Show confirmation dialog
+    showGenericConfirmModal(
+        'Confirm Refund',
+        'Are you sure you want to refund this payment? This will cancel the order and notify the customer.',
+        'warning',
+        function() {
+            // Show loading toast
+            showToast('info', 'Processing refund request...');
+            
+            // Prepare verification data with refund flag
+            const verificationData = {
+                order_id: orderId,
+                verify: true,
+                verification_details: {
+                    transaction_id: 'REFUND-' + orderId + '-' + Date.now(),
+                    verification_notes: 'Payment refunded by admin.',
+                    payment_status: 3, // 3 = Refunded
+                    amount_verified: orderAmount || 0,
+                    is_refund: true
+                }
+            };
+            
+            // Call verification API
+            $.ajax({
+                url: '/hm/api/orders/verify_payment.php',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(verificationData),
+                success: function(data) {
+                    let responseData = typeof data === 'string' ? JSON.parse(data) : data;
+                    
+                    if (responseData && responseData.success) {
+                        showToast('success', 'Payment refunded successfully. Order has been cancelled.');
+                        
+                        // Reload page after a short delay
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showToast('error', responseData && responseData.message ? responseData.message : 'Failed to process refund');
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Failed to process refund';
+                    try {
+                        const errorData = JSON.parse(xhr.responseText);
+                        errorMessage = errorData.message || errorMessage;
+                    } catch(e) {}
+                    
+                    showToast('error', errorMessage);
+                }
+            });
+        }
+    );
+}
+
+// Add a generic confirmation modal for various operations
+function showGenericConfirmModal(title, message, type, onConfirm, onCancel) {
+    // Remove any existing modal
+    $('#genericConfirmModal').remove();
+    
+    // Set the appropriate color based on type
+    const headerClass = `bg-${type}-subtle`;
+    const buttonClass = `btn-${type}`;
+    const iconClass = type === 'danger' ? 'bi-exclamation-triangle-fill' : 
+                     type === 'warning' ? 'bi-exclamation-circle-fill' :
+                     type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+    
+    const modalHtml = `
+    <div class="modal fade" id="genericConfirmModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header ${headerClass}">
+            <h5 class="modal-title"><i class="${iconClass} me-2 text-${type}"></i>${title}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            ${message}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn ${buttonClass}" id="genericConfirmBtn">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    
+    $('body').append(modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('genericConfirmModal'));
+    modal.show();
+    
+    $('#genericConfirmBtn').on('click', function() {
+        modal.hide();
+        if (onConfirm) onConfirm();
+    });
+    
+    $('#genericConfirmModal').on('hidden.bs.modal', function() {
+        $('#genericConfirmModal').remove();
+        if (onCancel) onCancel();
+    });
+}

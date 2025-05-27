@@ -327,6 +327,17 @@ CREATE TABLE cart_item_ingredients (
     FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id) ON DELETE CASCADE
 );
 
+-- User Favorites table
+CREATE TABLE user_favorites (
+    favorite_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    meal_kit_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (meal_kit_id) REFERENCES meal_kits(meal_kit_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_favorite (user_id, meal_kit_id)
+);
+
 -- =============================================
 -- CREATE INDEXES
 -- =============================================

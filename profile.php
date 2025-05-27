@@ -218,12 +218,12 @@ $user = $result->fetch_assoc();
                         <span>Favorites</span>
                     </a>
                 </li>
-                <li>
+                <!-- <li>
                     <a href="meal_plans.php" class="d-flex align-items-center">
                         <i class="bi bi-calendar-check"></i>
                         <span>Meal Plans</span>
                     </a>
-                </li>
+                </li> -->
                 <li>
                     <a href="api/auth/logout.php" class="d-flex align-items-center">
                         <i class="bi bi-box-arrow-right"></i>

@@ -154,8 +154,32 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                 data-calories="<?php echo $mealKit['base_calories']; ?>"
                 data-price="<?php echo $mealKit['preparation_price']+$mealKit['ingredients_price']; ?>">
                 <div class="card h-100">
-                    <?php $img_url = get_meal_kit_image_url($mealKit['image_url'], $mealKit['name']); ?>
-                    <img src="<?php echo htmlspecialchars($img_url); ?>" class="card-img-top" alt="Meal Kit Image">
+                    <div class="position-relative">
+                        <?php $img_url = get_meal_kit_image_url($mealKit['image_url'], $mealKit['name']); ?>
+                        <img src="<?php echo htmlspecialchars($img_url); ?>" class="card-img-top" alt="Meal Kit Image">
+                        
+                        <?php
+                        // Check if meal kit is in user's favorites
+                        $is_favorite = false;
+                        if (isset($_SESSION['user_id'])) {
+                            $favorite_query = "SELECT 1 FROM user_favorites WHERE user_id = ? AND meal_kit_id = ?";
+                            $favorite_stmt = $mysqli->prepare($favorite_query);
+                            $favorite_stmt->bind_param("ii", $_SESSION['user_id'], $mealKit['meal_kit_id']);
+                            $favorite_stmt->execute();
+                            $is_favorite = $favorite_stmt->get_result()->num_rows > 0;
+                            $favorite_stmt->close();
+                        }
+                        ?>
+                        
+                        <button class="favorite-btn position-absolute top-0 end-0 m-2 rounded-circle p-0 border-0 <?php echo $is_favorite ? 'active' : ''; ?>" 
+                                style="width: 36px; height: 36px; background-color: <?php echo $is_favorite ? '#FF6B35' : 'rgba(255,255,255,0.9)'; ?>; 
+                                       box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;"
+                                data-meal-kit-id="<?php echo $mealKit['meal_kit_id']; ?>" 
+                                data-is-favorite="<?php echo $is_favorite ? 'true' : 'false'; ?>">
+                            <i class="bi <?php echo $is_favorite ? 'bi-heart-fill' : 'bi-heart'; ?>" 
+                               style="font-size: 18px; color: <?php echo $is_favorite ? 'white' : '#FF6B35'; ?>;"></i>
+                        </button>
+                    </div>
 
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($mealKit['name']); ?></h5>
@@ -225,7 +249,84 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             
             // Apply any default filters (from user preferences)
             applyFilters();
+            
+            // Add favorite button event listeners
+            initializeFavoriteButtons();
         });
+        
+        // Initialize favorite buttons
+        function initializeFavoriteButtons() {
+            $('.favorite-btn').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const btn = $(this);
+                const mealKitId = btn.data('meal-kit-id');
+                const isFavorite = btn.data('is-favorite') === true || btn.data('is-favorite') === 'true';
+                const action = isFavorite ? 'remove' : 'add';
+                
+                // Send AJAX request to favorites.php
+                $.ajax({
+                    url: 'favorites.php',
+                    type: 'POST',
+                    data: {
+                        action: action,
+                        meal_kit_id: mealKitId
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Update button state
+                            if (action === 'add') {
+                                btn.addClass('active');
+                                btn.css('background-color', '#FF6B35');
+                                btn.find('i').removeClass('bi-heart').addClass('bi-heart-fill').css('color', 'white');
+                                btn.data('is-favorite', true);
+                                
+                                // Show toast
+                                $('#successToastMessage').text('Added to favorites!');
+                                const toast = new bootstrap.Toast(document.getElementById('successToast'));
+                                toast.show();
+                            } else {
+                                btn.removeClass('active');
+                                btn.css('background-color', 'rgba(255,255,255,0.9)');
+                                btn.find('i').removeClass('bi-heart-fill').addClass('bi-heart').css('color', '#FF6B35');
+                                btn.data('is-favorite', false);
+                                
+                                // Show toast
+                                $('#infoToastMessage').text('Removed from favorites');
+                                const toast = new bootstrap.Toast(document.getElementById('infoToast'));
+                                toast.show();
+                            }
+                            
+                            // Update favorites count in navbar
+                            updateFavoritesCount();
+                        }
+                    },
+                    error: function() {
+                        // Show error toast
+                        $('#errorToastMessage').text('Failed to update favorites');
+                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                        toast.show();
+                    }
+                });
+            });
+        }
+        
+        // Function to update favorites count in navbar
+        function updateFavoritesCount() {
+            fetch('api/favorites/get_favorites_count.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const favoritesBadge = document.getElementById('favoritesCount');
+                        if (favoritesBadge) {
+                            favoritesBadge.textContent = data.count;
+                            favoritesBadge.style.display = data.count > 0 ? 'inline-block' : 'none';
+                        }
+                    }
+                });
+        }
         
         // Function to fetch cart count from database
         function fetchCartCountFromDatabase() {
@@ -307,7 +408,7 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                         // Update the grid with server-filtered results
                         document.getElementById('mealKitsGrid').innerHTML = data.html;
                         
-                        // Re-initialize any needed components
+                        // Re-initialize components after filtering
                         initializeComponents();
                     } else {
                         // Show error
@@ -328,6 +429,9 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             tooltipTriggerList.map(function(tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+            
+            // Re-initialize favorite buttons
+            initializeFavoriteButtons();
         }
         
         // Update cart count from localStorage as fallback

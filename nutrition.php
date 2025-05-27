@@ -246,7 +246,19 @@ $ingredients_result = $mysqli->query($ingredients_query);
             </div>
 
             <div class="row" id="ingredientsContainer">
-                <?php while($ingredient = $ingredients_result->fetch_assoc()): ?>
+                <?php 
+                $ingredients = [];
+                while($ingredient = $ingredients_result->fetch_assoc()) {
+                    $ingredients[] = $ingredient;
+                }
+                
+                // Display only first 3 ingredients initially
+                $total_ingredients = count($ingredients);
+                $visible_count = min(3, $total_ingredients);
+                
+                for($i = 0; $i < $visible_count; $i++): 
+                    $ingredient = $ingredients[$i];
+                ?>
                 <div class="col-md-4 mb-4 ingredient-item">
                     <div class="nutrition-card">
                         <div class="nutrition-header">
@@ -299,8 +311,78 @@ $ingredients_result = $mysqli->query($ingredients_query);
                         </div>
                     </div>
                 </div>
-                <?php endwhile; ?>
+                <?php endfor; ?>
             </div>
+            
+            <?php if($total_ingredients > 3): ?>
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <button id="loadMoreBtn" class="btn btn-primary" data-visible="3" data-total="<?php echo $total_ingredients; ?>">
+                        Load More
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Hidden template for remaining ingredients -->
+            <div id="remainingIngredients" style="display: none;">
+                <?php for($i = 3; $i < $total_ingredients; $i++): 
+                    $ingredient = $ingredients[$i];
+                ?>
+                <div class="col-md-4 mb-4 ingredient-item" data-index="<?php echo $i; ?>">
+                    <div class="nutrition-card">
+                        <div class="nutrition-header">
+                            <h5 class="mb-0"><?php echo htmlspecialchars($ingredient['name']); ?></h5>
+                        </div>
+                        <div class="nutrition-body">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="nutrition-label">Calories</div>
+                                    <div class="nutrition-value"><?php echo $ingredient['calories_per_100g']; ?> cal
+                                    </div>
+                                    <div class="small text-muted">per 100g</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="nutrition-label">Price</div>
+                                    <div class="nutrition-value">
+                                        $<?php echo number_format($ingredient['price_per_100g'], 2); ?></div>
+                                    <div class="small text-muted">per 100g</div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-4">
+                                    <div class="nutrition-label">Protein</div>
+                                    <div class="nutrition-value"><?php echo $ingredient['protein_per_100g']; ?>g</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="nutrition-label">Carbs</div>
+                                    <div class="nutrition-value"><?php echo $ingredient['carbs_per_100g']; ?>g</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="nutrition-label">Fat</div>
+                                    <div class="nutrition-value"><?php echo $ingredient['fat_per_100g']; ?>g</div>
+                                </div>
+                            </div>
+
+                            <div class="dietary-tags mt-3">
+                            <?php if($ingredient['is_vegetarian'] == 1): ?>
+                                <span class="dietary-tag tag-vegetarian">Vegetarian</span>
+                            <?php endif; ?>
+                            
+                            <?php if($ingredient['is_vegan'] == 1): ?>
+                                <span class="dietary-tag tag-vegan">Vegan</span>
+                            <?php endif; ?>
+                            
+                            <?php if($ingredient['is_halal'] == 1): ?>
+                                <span class="dietary-tag tag-halal">Halal</span>
+                            <?php endif; ?>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endfor; ?>
+            </div>
+            <?php endif; ?>
         </div>
     </section>
 
@@ -421,6 +503,34 @@ $ingredients_result = $mysqli->query($ingredients_query);
             $('.ingredient-item').filter(function() {
                 $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
             });
+        });
+
+        // Load More Ingredients
+        $('#loadMoreBtn').on('click', function() {
+            var visibleCount = parseInt($(this).data('visible'));
+            var totalIngredients = parseInt($(this).data('total'));
+            var toLoad = Math.min(3, totalIngredients - visibleCount);
+            
+            if (toLoad > 0) {
+                // Get the next batch of ingredients to show
+                for (var i = 0; i < toLoad; i++) {
+                    var index = visibleCount + i;
+                    var item = $('#remainingIngredients').find('[data-index="' + index + '"]').clone();
+                    item.appendTo('#ingredientsContainer');
+                }
+                
+                // Update visible count
+                var newVisibleCount = visibleCount + toLoad;
+                $(this).data('visible', newVisibleCount);
+                
+                // Update button text
+                var remaining = totalIngredients - newVisibleCount;
+                if (remaining > 0) {
+                    $(this).text('Load More (' + remaining + ' remaining)');
+                } else {
+                    $(this).text('All ingredients loaded').addClass('disabled');
+                }
+            }
         });
     });
     </script>
