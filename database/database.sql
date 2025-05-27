@@ -376,8 +376,8 @@ INSERT INTO delivery_options (name, description, fee, time_slot, cutoff_time, ma
 -- Users (1372004zinlaimon)
 INSERT INTO users (username, email, password, full_name, role) VALUES
 ('admin', 'admin@healthymeal.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Admin User', 1),
-('john_doe', 'john@example.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'John Doe', 0),
-('jane_smith', 'jane@example.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Jane Smith', 0),
+('a_mon', 'amonpooh@gmail.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'A Mon', 0),
+('zin_lai', 'zinlai@example.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Zin_Lai', 0),
 ('mike_wilson', 'mike@example.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Mike Wilson', 0),
 ('sarah_brown', 'sarah@example.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Sarah Brown', 0);
 

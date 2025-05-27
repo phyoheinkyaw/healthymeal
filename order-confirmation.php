@@ -211,8 +211,6 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
 
     <?php include 'includes/footer.php'; ?>
 
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html> 

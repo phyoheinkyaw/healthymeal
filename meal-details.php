@@ -580,9 +580,8 @@ while ($ingredient = $ingredients->fetch_assoc()) {
     <!-- Include Toast Notifications -->
     <?php include 'includes/toast-notifications.php'; ?>
 
-    <!-- Bootstrap JS -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
-    
+    <!-- jQuery first, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>   
     <!-- Custom JS -->
     <script>
     // Initialize cart count from localStorage
@@ -618,7 +617,7 @@ while ($ingredient = $ingredients->fetch_assoc()) {
     </script>
 
     <!-- Slick Carousel JS -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- jQuery already included above -->
     <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
     <script>
         $(document).ready(function(){
@@ -680,8 +679,8 @@ while ($ingredient = $ingredients->fetch_assoc()) {
                                 
                                 // Show success toast
                                 $('#successToastMessage').text('Added to favorites!');
-                                const toast = new bootstrap.Toast(document.getElementById('successToast'));
-                                toast.show();
+                                const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+                                successToast.show();
                             } else {
                                 btn.removeClass('active');
                                 btn.find('i').removeClass('bi-heart-fill').addClass('bi-heart');
@@ -689,16 +688,16 @@ while ($ingredient = $ingredients->fetch_assoc()) {
                                 
                                 // Show info toast
                                 $('#infoToastMessage').text('Removed from favorites');
-                                const toast = new bootstrap.Toast(document.getElementById('infoToast'));
-                                toast.show();
+                                const infoToast = new bootstrap.Toast(document.getElementById('infoToast'));
+                                infoToast.show();
                             }
                         }
                     },
                     error: function() {
                         // Show error toast
                         $('#errorToastMessage').text('Failed to update favorites');
-                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
-                        toast.show();
+                        const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+                        errorToast.show();
                     }
                 });
             });

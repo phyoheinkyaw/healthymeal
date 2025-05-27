@@ -31,6 +31,85 @@ if (!$userPrefs) {
 // Fetch categories for filter
 $categories = $mysqli->query("SELECT * FROM categories ORDER BY name");
 
+// Get meal kits stats for dynamic filters
+$mealKitStats = $mysqli->query("
+    SELECT 
+        MIN(mk.base_calories) as min_calories,
+        MAX(mk.base_calories) as max_calories,
+        MIN(mk.preparation_price + COALESCE(ingredient_prices.total_price, 0)) as min_price,
+        MAX(mk.preparation_price + COALESCE(ingredient_prices.total_price, 0)) as max_price
+    FROM meal_kits mk
+    LEFT JOIN (
+        SELECT 
+            mki.meal_kit_id,
+            SUM(i.price_per_100g * mki.default_quantity / 100) as total_price
+        FROM meal_kit_ingredients mki
+        JOIN ingredients i ON mki.ingredient_id = i.ingredient_id
+        GROUP BY mki.meal_kit_id
+    ) as ingredient_prices ON mk.meal_kit_id = ingredient_prices.meal_kit_id
+    WHERE mk.is_active = 1
+")->fetch_assoc();
+
+// Set dynamic calorie ranges based on actual data
+$calorieRanges = [];
+if ($mealKitStats) {
+    $min_cal = floor($mealKitStats['min_calories'] / 100) * 100; // Round down to nearest 100
+    $max_cal = ceil($mealKitStats['max_calories'] / 100) * 100;  // Round up to nearest 100
+    
+    if ($max_cal - $min_cal > 600) {
+        $mid_cal = $min_cal + round(($max_cal - $min_cal) / 2 / 100) * 100;
+        $calorieRanges = [
+            "under{$mid_cal}" => "Under {$mid_cal} cal",
+            "{$mid_cal}-{$max_cal}" => "{$mid_cal}-{$max_cal} cal",
+            "over{$max_cal}" => "Over {$max_cal} cal"
+        ];
+    } else {
+        $mid_cal = $min_cal + 300;
+        $calorieRanges = [
+            "under{$mid_cal}" => "Under {$mid_cal} cal",
+            "over{$mid_cal}" => "Over {$mid_cal} cal"
+        ];
+    }
+}
+// Fallback if no stats available
+if (empty($calorieRanges)) {
+    $calorieRanges = [
+        "under500" => "Under 500 cal",
+        "500-800" => "500-800 cal",
+        "over800" => "Over 800 cal"
+    ];
+}
+
+// Set dynamic price ranges based on actual data
+$priceRanges = [];
+if ($mealKitStats) {
+    $min_price = floor($mealKitStats['min_price'] / 5000) * 5000; // Round down to nearest 5000
+    $max_price = ceil($mealKitStats['max_price'] / 5000) * 5000;  // Round up to nearest 5000
+    
+    if ($max_price - $min_price > 20000) {
+        $mid_price = $min_price + round(($max_price - $min_price) / 2 / 5000) * 5000;
+        $priceRanges = [
+            "under{$mid_price}" => "Under " . number_format($mid_price) . " MMK",
+            "{$mid_price}-{$max_price}" => number_format($mid_price) . " - " . number_format($max_price) . " MMK",
+            "over{$max_price}" => "Over " . number_format($max_price) . " MMK"
+        ];
+    } else {
+        $mid_price = $min_price + 10000;
+        $priceRanges = [
+            "under{$mid_price}" => "Under " . number_format($mid_price) . " MMK",
+            "over{$mid_price}" => "Over " . number_format($mid_price) . " MMK"
+        ];
+    }
+}
+// Fallback if no stats available
+if (empty($priceRanges)) {
+    $priceRanges = [
+        "under20000" => "Under 20,000 MMK",
+        "20000-40000" => "20,000 - 40,000 MMK",
+        "over40000" => "Over 40,000 MMK"
+    ];
+}
+
 // Fetch all meal kits with their base calories and ingredient prices
 $mealKits = $mysqli->query("
     SELECT mk.*, c.name as category_name,
@@ -72,6 +151,43 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- Include meal-customization.js in the head -->
     <script src="assets/js/meal-customization.js"></script>
+    <style>
+        .favorite-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        
+        .favorite-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .favorite-btn i {
+            font-size: 20px;
+            color: #FF6B35;
+        }
+        
+        .favorite-btn.active {
+            background-color: #FF6B35;
+        }
+        
+        .favorite-btn.active i {
+            color: white;
+        }
+    </style>
 </head>
 
 <body>
@@ -101,6 +217,9 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                                 <label class="form-label">Dietary Restriction</label>
                                 <select class="form-select" id="dietaryFilter">
                                     <option value="">All</option>
+                                    <option value="meat"
+                                        <?php echo ($userPrefs['dietary_restrictions'] == 'meat') ? 'selected' : ''; ?>>
+                                        Contains Meat</option>
                                     <option value="vegetarian"
                                         <?php echo ($userPrefs['dietary_restrictions'] == 'vegetarian') ? 'selected' : ''; ?>>
                                         Vegetarian</option>
@@ -116,18 +235,18 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                                 <label class="form-label">Calorie Range</label>
                                 <select class="form-select" id="calorieFilter">
                                     <option value="">All</option>
-                                    <option value="under500">Under 500 cal</option>
-                                    <option value="500-800">500-800 cal</option>
-                                    <option value="over800">Over 800 cal</option>
+                                    <?php foreach ($calorieRanges as $value => $label): ?>
+                                    <option value="<?php echo $value; ?>"><?php echo $label; ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Price Range</label>
                                 <select class="form-select" id="priceFilter">
                                     <option value="">All Prices</option>
-                                    <option value="under10">Under 20,000 MMK</option>
-                                    <option value="10-20">20,000 - 40,000 MMK</option>
-                                    <option value="over20">Over 40,000 MMK</option>
+                                    <?php foreach ($priceRanges as $value => $label): ?>
+                                    <option value="<?php echo $value; ?>"><?php echo $label; ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -171,13 +290,10 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                         }
                         ?>
                         
-                        <button class="favorite-btn position-absolute top-0 end-0 m-2 rounded-circle p-0 border-0 <?php echo $is_favorite ? 'active' : ''; ?>" 
-                                style="width: 36px; height: 36px; background-color: <?php echo $is_favorite ? '#FF6B35' : 'rgba(255,255,255,0.9)'; ?>; 
-                                       box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;"
+                        <button class="favorite-btn <?php echo $is_favorite ? 'active' : ''; ?>" 
                                 data-meal-kit-id="<?php echo $mealKit['meal_kit_id']; ?>" 
                                 data-is-favorite="<?php echo $is_favorite ? 'true' : 'false'; ?>">
-                            <i class="bi <?php echo $is_favorite ? 'bi-heart-fill' : 'bi-heart'; ?>" 
-                               style="font-size: 18px; color: <?php echo $is_favorite ? 'white' : '#FF6B35'; ?>;"></i>
+                            <i class="bi <?php echo $is_favorite ? 'bi-heart-fill' : 'bi-heart'; ?>"></i>
                         </button>
                     </div>
 
@@ -233,9 +349,12 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
     <!-- Include Toast Notifications -->
     <?php include 'includes/toast-notifications.php'; ?>
 
+    <!-- jQuery first, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Wait for document to be ready before initializing
         $(document).ready(function(){
             // First try to get cart count from database via API
             fetchCartCountFromDatabase();
@@ -247,11 +366,11 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             document.getElementById('priceFilter').addEventListener('change', applyFilters);
             document.getElementById('sortBy').addEventListener('change', applyFilters);
             
+            // Initialize favorite buttons BEFORE applying filters
+            initializeFavoriteButtons();
+            
             // Apply any default filters (from user preferences)
             applyFilters();
-            
-            // Add favorite button event listeners
-            initializeFavoriteButtons();
         });
         
         // Initialize favorite buttons
@@ -279,24 +398,22 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                             // Update button state
                             if (action === 'add') {
                                 btn.addClass('active');
-                                btn.css('background-color', '#FF6B35');
-                                btn.find('i').removeClass('bi-heart').addClass('bi-heart-fill').css('color', 'white');
+                                btn.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
                                 btn.data('is-favorite', true);
                                 
                                 // Show toast
                                 $('#successToastMessage').text('Added to favorites!');
-                                const toast = new bootstrap.Toast(document.getElementById('successToast'));
-                                toast.show();
+                                const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+                                successToast.show();
                             } else {
                                 btn.removeClass('active');
-                                btn.css('background-color', 'rgba(255,255,255,0.9)');
-                                btn.find('i').removeClass('bi-heart-fill').addClass('bi-heart').css('color', '#FF6B35');
+                                btn.find('i').removeClass('bi-heart-fill').addClass('bi-heart');
                                 btn.data('is-favorite', false);
                                 
                                 // Show toast
                                 $('#infoToastMessage').text('Removed from favorites');
-                                const toast = new bootstrap.Toast(document.getElementById('infoToast'));
-                                toast.show();
+                                const infoToast = new bootstrap.Toast(document.getElementById('infoToast'));
+                                infoToast.show();
                             }
                             
                             // Update favorites count in navbar
@@ -306,8 +423,8 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                     error: function() {
                         // Show error toast
                         $('#errorToastMessage').text('Failed to update favorites');
-                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
-                        toast.show();
+                        const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+                        errorToast.show();
                     }
                 });
             });
@@ -387,7 +504,7 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Loading meal kits...</p></div>';
 
             // Validate dietary value to prevent issues
-            const validDietary = ['', 'vegetarian', 'vegan', 'halal'].includes(dietary) ? dietary : '';
+            const validDietary = ['', 'vegetarian', 'vegan', 'halal', 'meat'].includes(dietary) ? dietary : '';
 
             fetch('api/meal-kits/filter.php', {
                     method: 'POST',
@@ -429,6 +546,9 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             tooltipTriggerList.map(function(tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+            
+            // Make sure favorite buttons are visible and properly initialized
+            $('.favorite-btn').css('display', 'flex');
             
             // Re-initialize favorite buttons
             initializeFavoriteButtons();

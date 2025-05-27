@@ -201,6 +201,12 @@ if ($status_result) {
                                             <?php elseif(!empty($order['transfer_slip']) && ($order['payment_verified'] == 0 || $order['payment_status'] == 2)): ?>
                                             <div class="mt-1">
                                                 <?php
+                                                // Don't show verify button for refunded payments
+                                                if ($order['payment_status'] == 3): ?>
+                                                    <span class="badge bg-info w-100" data-bs-toggle="tooltip" title="This payment has been refunded">
+                                                        <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-lg-inline">Refunded</span>
+                                                    </span>
+                                                <?php else:
                                                 // Allow verification only if:
                                                 // 1. Not verified yet ($order['payment_verified'] == 0) AND payment status is not failed (status 2)
                                                 // OR 2. This is a proper resubmission (tracked via resubmitted flag or resubmission_status)
@@ -218,6 +224,7 @@ if ($status_result) {
                                                 <span class="badge bg-secondary w-100" data-bs-toggle="tooltip" title="Payment marked as failed. User must resubmit payment.">
                                                     <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">Awaiting Resubmit</span>
                                                 </span>
+                                                <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                             <?php endif; ?>

@@ -613,7 +613,14 @@ $user = $userStmt->get_result()->fetch_assoc();
 </div>
 <?php endif; ?>
 
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jQuery (required for file input validation) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Search functionality -->
+<script src="assets/js/search.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // File upload preview

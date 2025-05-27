@@ -179,8 +179,46 @@ document.addEventListener('DOMContentLoaded', function() {
     $(document).on('change', '#payment_status', function() {
         const selectedValue = $(this).val();
         if (selectedValue == 3) { // 3 = Refunded
+            // Change UI for refund operation
+            $('#paymentVerificationModal .modal-header').removeClass('bg-primary').addClass('bg-info');
+            $('#paymentVerificationModal .modal-title').html('<i class="bi bi-arrow-counterclockwise me-2"></i>Process Refund');
+            
+            // Only target the submit button, not the cancel button
+            $('#paymentVerificationModal .modal-footer button[type="button"]:not([data-bs-dismiss="modal"])')
+                .removeClass('btn-primary')
+                .addClass('btn-info')
+                .html('<i class="bi bi-arrow-counterclockwise me-2"></i>Process Refund');
+                
             // Show warning about refund action
-            showToast('warning', 'Refund selected. This will cancel the order and notify the customer.');
+            if (!$('#refundWarning').length) {
+                $('#verificationForm').prepend(`
+                    <div id="refundWarning" class="alert alert-warning mb-4">
+                        <div class="d-flex">
+                            <div class="me-3 fs-3">
+                                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                            </div>
+                            <div>
+                                <h5>Processing a Refund</h5>
+                                <p class="mb-0">This will mark the payment as refunded and update the order status to cancelled. 
+                                The customer will be notified automatically.</p>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+        } else {
+            // Restore standard UI
+            $('#paymentVerificationModal .modal-header').removeClass('bg-info').addClass('bg-primary');
+            $('#paymentVerificationModal .modal-title').html('<i class="bi bi-shield-check me-2"></i>Verify Payment');
+            
+            // Only target the submit button, not the cancel button
+            $('#paymentVerificationModal .modal-footer button[type="button"]:not([data-bs-dismiss="modal"])')
+                .removeClass('btn-info')
+                .addClass('btn-primary')
+                .html('<i class="bi bi-shield-check me-2"></i>Verify Payment');
+                
+            // Remove refund warning
+            $('#refundWarning').remove();
         }
     });
 });

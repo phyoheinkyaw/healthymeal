@@ -1178,6 +1178,9 @@ $user = $result->fetch_assoc();
     });
     </script>
 
+    <!-- Search functionality -->
+    <script src="assets/js/search.js"></script>
+
 </body>
 
 </html>

@@ -9,6 +9,18 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// Helper function to get image URL from DB value (same as in meal-kits.php)
+function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
+    if (!$image_url_db) return 'https://placehold.co/600x400/FFF3E6/FF6B35?text=' . urlencode($meal_kit_name);
+    if (preg_match('/^https?:\/\//i', $image_url_db)) {
+        return $image_url_db;
+    }
+    // Get the base URL up to the project root (e.g. /hm or /yourproject)
+    $parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+    $projectBase = '/' . $parts[0]; // e.g. '/hm'
+    return $projectBase . '/uploads/meal-kits/' . $image_url_db;
+}
+
 // Handle add/remove favorite action
 if (isset($_POST['action']) && isset($_POST['meal_kit_id'])) {
     $meal_kit_id = $_POST['meal_kit_id'];
@@ -340,14 +352,13 @@ $user = $userStmt->get_result()->fetch_assoc();
                     <?php foreach ($favorites as $meal_kit): ?>
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card favorite-card">
-                            <?php if (!empty($meal_kit['image_url'])): ?>
-                            <img src="<?php echo htmlspecialchars($meal_kit['image_url']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($meal_kit['name']); ?>">
-                            <?php else: ?>
-                            <img src="assets/images/placeholder-meal.jpg" class="card-img-top" alt="<?php echo htmlspecialchars($meal_kit['name']); ?>">
-                            <?php endif; ?>
-                            
-                            <div class="favorite-badge remove-favorite" data-meal-kit-id="<?php echo $meal_kit['meal_kit_id']; ?>">
-                                <i class="bi bi-heart-fill"></i>
+                            <div class="position-relative">
+                                <?php $img_url = get_meal_kit_image_url($meal_kit['image_url'], $meal_kit['name']); ?>
+                                <img src="<?php echo htmlspecialchars($img_url); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($meal_kit['name']); ?>">
+                                
+                                <div class="favorite-badge remove-favorite" data-meal-kit-id="<?php echo $meal_kit['meal_kit_id']; ?>">
+                                    <i class="bi bi-heart-fill"></i>
+                                </div>
                             </div>
                             
                             <div class="card-body">
@@ -385,9 +396,6 @@ $user = $userStmt->get_result()->fetch_assoc();
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
     // Toggle Sidebar
     function toggleSidebar() {
@@ -425,56 +433,6 @@ $user = $userStmt->get_result()->fetch_assoc();
                             updateFavoritesCount();
                         });
                     }
-                }
-            });
-        });
-        
-        // Add to cart functionality
-        $('.add-to-cart').on('click', function() {
-            const mealKitId = $(this).data('meal-kit-id');
-            const button = $(this);
-            
-            button.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Adding...');
-            
-            $.ajax({
-                url: 'cart.php',
-                type: 'POST',
-                data: {
-                    action: 'add',
-                    meal_kit_id: mealKitId,
-                    quantity: 1
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        button.html('<i class="bi bi-check-circle"></i> Added!').addClass('btn-success').removeClass('btn-primary');
-                        
-                        // Update cart count in navbar if it exists
-                        if ($('#cart-count').length) {
-                            $('#cart-count').text(response.cart_count);
-                        }
-                        
-                        // Show success toast
-                        $('#successToastMessage').text('Added to cart successfully!');
-                        const toast = new bootstrap.Toast(document.getElementById('successToast'));
-                        toast.show();
-                        
-                        setTimeout(function() {
-                            button.prop('disabled', false).html('<i class="bi bi-cart-plus"></i> Add to Cart').addClass('btn-primary').removeClass('btn-success');
-                        }, 2000);
-                    }
-                },
-                error: function() {
-                    button.prop('disabled', false).html('<i class="bi bi-exclamation-circle"></i> Try Again').addClass('btn-danger').removeClass('btn-primary');
-                    
-                    // Show error toast
-                    $('#errorToastMessage').text('Failed to add to cart');
-                    const toast = new bootstrap.Toast(document.getElementById('errorToast'));
-                    toast.show();
-                    
-                    setTimeout(function() {
-                        button.html('<i class="bi bi-cart-plus"></i> Add to Cart').addClass('btn-primary').removeClass('btn-danger');
-                    }, 2000);
                 }
             });
         });

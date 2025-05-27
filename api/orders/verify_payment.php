@@ -148,7 +148,7 @@ try {
         
         if ($payment_verified) {
             // If payment is verified, include payment_verified_at with timestamp
-            $payment_verified_at = date('Y-m-d H:i:s');
+            $payment_verified_at = date('Y-m-d H:i:s'); // Ensure proper datetime format
             
             $query = "
                 INSERT INTO payment_verifications (
@@ -161,7 +161,7 @@ try {
             
             $stmt = $mysqli->prepare($query);
             $stmt->bind_param(
-                "iisiisisiis", 
+                "iisiisisiss", 
                 $order_id, $payment_id, $transaction_id, $amount_verified, 
                 $payment_status, $verification_notes, $admin_id, 
                 $transfer_slip, $payment_verified, $payment_verified_at, $verification_attempt
@@ -274,6 +274,26 @@ try {
             $stmt->bind_param("iis", $order_id, $user_id, $message);
             $stmt->execute();
         } 
+        else if ($payment_status === 3) { // Refunded
+            // Mark the order as refunded and cancelled
+            $query = "UPDATE orders SET status_id = 7 WHERE order_id = ?"; // Assuming 7 is the cancelled status ID
+            $stmt = $mysqli->prepare($query);
+            $stmt->bind_param("i", $order_id);
+            $stmt->execute();
+            
+            // Add notification about refund
+            $user_id = $order['user_id'];
+            $message = "Your payment for order #{$order_id} has been refunded. The order has been cancelled.";
+            $note = "Payment refunded: " . $verification_notes;
+            
+            $query = "
+                INSERT INTO order_notifications (order_id, user_id, message, note, is_read) 
+                VALUES (?, ?, ?, ?, 0)
+            ";
+            $stmt = $mysqli->prepare($query);
+            $stmt->bind_param("iiss", $order_id, $user_id, $message, $note);
+            $stmt->execute();
+        }
         else if ($payment_status === 2) { // Failed
             // Add notification asking for payment resubmission
             $user_id = $order['user_id'];
