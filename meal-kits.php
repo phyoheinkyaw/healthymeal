@@ -267,7 +267,20 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
 
         <!-- Meal Kits Grid -->
         <div class="row g-4" id="mealKitsGrid">
-            <?php while ($mealKit = $mealKits->fetch_assoc()): ?>
+            <?php 
+            // Store all meal kits in an array
+            $meal_kits_array = [];
+            while ($mealKit = $mealKits->fetch_assoc()) {
+                $meal_kits_array[] = $mealKit;
+            }
+            
+            // Display only first 9 meal kits initially
+            $total_meal_kits = count($meal_kits_array);
+            $visible_count = min(9, $total_meal_kits);
+            
+            for($i = 0; $i < $visible_count; $i++): 
+                $mealKit = $meal_kits_array[$i];
+            ?>
             <div class="col-md-6 col-lg-4 meal-kit-card" 
                 data-category="<?php echo $mealKit['category_id']; ?>"
                 data-calories="<?php echo $mealKit['base_calories']; ?>"
@@ -323,8 +336,82 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                     </div>
                 </div>
             </div>
-            <?php endwhile; ?>
+            <?php endfor; ?>
         </div>
+
+        <?php if($total_meal_kits > 9): ?>
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <button id="loadMoreBtn" class="btn btn-primary" data-visible="9" data-total="<?php echo $total_meal_kits; ?>">
+                    Load More
+                </button>
+            </div>
+        </div>
+            
+        <!-- Hidden template for remaining meal kits -->
+        <div id="remainingMealKits" style="display: none;">
+            <?php for($i = 9; $i < $total_meal_kits; $i++): 
+                $mealKit = $meal_kits_array[$i];
+            ?>
+            <div class="col-md-6 col-lg-4 meal-kit-card" 
+                data-index="<?php echo $i; ?>"
+                data-category="<?php echo $mealKit['category_id']; ?>"
+                data-calories="<?php echo $mealKit['base_calories']; ?>"
+                data-price="<?php echo $mealKit['preparation_price']+$mealKit['ingredients_price']; ?>">
+                <div class="card h-100">
+                    <div class="position-relative">
+                        <?php $img_url = get_meal_kit_image_url($mealKit['image_url'], $mealKit['name']); ?>
+                        <img src="<?php echo htmlspecialchars($img_url); ?>" class="card-img-top" alt="Meal Kit Image">
+                        
+                        <?php
+                        // Check if meal kit is in user's favorites
+                        $is_favorite = false;
+                        if (isset($_SESSION['user_id'])) {
+                            $favorite_query = "SELECT 1 FROM user_favorites WHERE user_id = ? AND meal_kit_id = ?";
+                            $favorite_stmt = $mysqli->prepare($favorite_query);
+                            $favorite_stmt->bind_param("ii", $_SESSION['user_id'], $mealKit['meal_kit_id']);
+                            $favorite_stmt->execute();
+                            $is_favorite = $favorite_stmt->get_result()->num_rows > 0;
+                            $favorite_stmt->close();
+                        }
+                        ?>
+                        
+                        <button class="favorite-btn <?php echo $is_favorite ? 'active' : ''; ?>" 
+                                data-meal-kit-id="<?php echo $mealKit['meal_kit_id']; ?>" 
+                                data-is-favorite="<?php echo $is_favorite ? 'true' : 'false'; ?>">
+                            <i class="bi <?php echo $is_favorite ? 'bi-heart-fill' : 'bi-heart'; ?>"></i>
+                        </button>
+                    </div>
+
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo htmlspecialchars($mealKit['name']); ?></h5>
+                        <p class="card-text"><?php echo htmlspecialchars($mealKit['description']); ?></p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span
+                                class="badge bg-primary"><?php echo htmlspecialchars($mealKit['category_name']); ?></span>
+                            <span class="badge bg-info"><?php echo round($mealKit['base_calories']); ?> cal</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <?php echo number_format($mealKit['preparation_price']+$mealKit['ingredients_price'], 0); ?> MMK
+                            </h6>
+                            <div class="btn-group">
+                                <a href="meal-details.php?id=<?php echo $mealKit['meal_kit_id']; ?>"
+                                    class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                                <button class="btn btn-primary btn-sm"
+                                    onclick="customizeMealKit(<?php echo $mealKit['meal_kit_id']; ?>)">
+                                    <i class="bi bi-cart-plus"></i> Customize
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endfor; ?>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Customization Modal -->
@@ -354,28 +441,124 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Global variables to store filtered items and state
+        var filteredItems = [];
+        var currentFilters = {
+            category: '',
+            dietary: '',
+            calories: '',
+            price: '',
+            sort: 'name'
+        };
+        var itemsPerPage = 9; // Initial load
+        var loadMoreCount = 6; // Items to load on each "Load More" click
+        var currentlyDisplayed = 0;
+
         // Wait for document to be ready before initializing
         $(document).ready(function(){
             // First try to get cart count from database via API
             fetchCartCountFromDatabase();
             
             // Add event listeners to filters
-            document.getElementById('categoryFilter').addEventListener('change', applyFilters);
-            document.getElementById('dietaryFilter').addEventListener('change', applyFilters);
-            document.getElementById('calorieFilter').addEventListener('change', applyFilters);
-            document.getElementById('priceFilter').addEventListener('change', applyFilters);
-            document.getElementById('sortBy').addEventListener('change', applyFilters);
+            document.getElementById('categoryFilter').addEventListener('change', applyUserFilters);
+            document.getElementById('dietaryFilter').addEventListener('change', applyUserFilters);
+            document.getElementById('calorieFilter').addEventListener('change', applyUserFilters);
+            document.getElementById('priceFilter').addEventListener('change', applyUserFilters);
+            document.getElementById('sortBy').addEventListener('change', applyUserFilters);
             
-            // Initialize favorite buttons BEFORE applying filters
+            // Initialize favorite buttons
             initializeFavoriteButtons();
             
-            // Apply any default filters (from user preferences)
-            applyFilters();
+            // Initialize the filtered items with the initial meal kits in the DOM
+            initializeFilteredItems();
+            
+            // Initialize load more functionality if button exists
+            initializeLoadMore();
         });
+        
+        // Initialize filteredItems with the initial meal kits in the DOM
+        function initializeFilteredItems() {
+            // Get the initial visible items
+            currentlyDisplayed = $('#mealKitsGrid .meal-kit-card').length;
+            
+            // Get all items (visible and hidden)
+            filteredItems = $('#mealKitsGrid .meal-kit-card').toArray();
+            
+            // Add the hidden items from the remainingMealKits div
+            if ($('#remainingMealKits').length > 0) {
+                var hiddenItems = $('#remainingMealKits .meal-kit-card').toArray();
+                filteredItems = filteredItems.concat(hiddenItems);
+            }
+            
+            // Update the load more button state
+            updateLoadMoreButton();
+        }
+        
+        // Function to handle user-initiated filter changes
+        function applyUserFilters() {
+            applyFilters(true);
+        }
+        
+        // Initialize Load More Functionality
+        function initializeLoadMore() {
+            $('#loadMoreBtn').off('click').on('click', function() {
+                loadMoreItems();
+            });
+        }
+        
+        // Function to load more items from stored filtered items
+        function loadMoreItems() {
+            var totalItems = filteredItems.length;
+            var remainingItems = totalItems - currentlyDisplayed;
+            
+            if (remainingItems <= 0) return;
+            
+            var toLoad = Math.min(loadMoreCount, remainingItems);
+            var gridContainer = $('#mealKitsGrid');
+            
+            // Append the next batch of items
+            for (var i = 0; i < toLoad; i++) {
+                var itemIndex = currentlyDisplayed + i;
+                if (itemIndex < totalItems) {
+                    // Clone the item if it's from the hidden container
+                    var item = $(filteredItems[itemIndex]);
+                    if (item.parent().attr('id') === 'remainingMealKits') {
+                        item = item.clone();
+                    }
+                    gridContainer.append(item);
+                }
+            }
+            
+            // Update counters
+            currentlyDisplayed += toLoad;
+            
+            // Update button text and state
+            updateLoadMoreButton();
+            
+            // Re-initialize components for newly added items
+            initializeFavoriteButtons();
+        }
+        
+        // Update the Load More button state and text
+        function updateLoadMoreButton() {
+            var btn = $('#loadMoreBtn');
+            if (!btn.length) return;
+            
+            var totalItems = filteredItems.length;
+            var remaining = totalItems - currentlyDisplayed;
+            
+            if (remaining > 0) {
+                btn.text('Load More (' + remaining + ' remaining)');
+                btn.removeClass('disabled').show();
+            } else {
+                btn.text('All meal kits loaded');
+                btn.addClass('disabled');
+            }
+        }
         
         // Initialize favorite buttons
         function initializeFavoriteButtons() {
-            $('.favorite-btn').on('click', function(e) {
+            $('.favorite-btn').off('click').on('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 
@@ -492,19 +675,34 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                 });
         }
 
-        function applyFilters() {
-            const category = document.getElementById('categoryFilter').value;
-            const dietary = document.getElementById('dietaryFilter').value;
-            const calories = document.getElementById('calorieFilter').value;
-            const price = document.getElementById('priceFilter').value;
-            const sort = document.getElementById('sortBy').value;
+        function applyFilters(isUserInitiated = false) {
+            // Update currentFilters
+            currentFilters.category = document.getElementById('categoryFilter').value;
+            currentFilters.dietary = document.getElementById('dietaryFilter').value;
+            currentFilters.calories = document.getElementById('calorieFilter').value;
+            currentFilters.price = document.getElementById('priceFilter').value;
+            currentFilters.sort = document.getElementById('sortBy').value;
+            
+            // If all filters are default/empty and it's not a user-initiated filter,
+            // don't make the API call to avoid hiding the load more button on page load
+            if (!isUserInitiated && 
+                currentFilters.category === '' && 
+                currentFilters.dietary === '' && 
+                currentFilters.calories === '' && 
+                currentFilters.price === '' && 
+                currentFilters.sort === 'name') {
+                return;
+            }
             
             // Show loading state
             const grid = document.getElementById('mealKitsGrid');
             grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Loading meal kits...</p></div>';
 
+            // Hide load more button during loading
+            $('#loadMoreBtn').hide();
+
             // Validate dietary value to prevent issues
-            const validDietary = ['', 'vegetarian', 'vegan', 'halal', 'meat'].includes(dietary) ? dietary : '';
+            const validDietary = ['', 'vegetarian', 'vegan', 'halal', 'meat'].includes(currentFilters.dietary) ? currentFilters.dietary : '';
 
             fetch('api/meal-kits/filter.php', {
                     method: 'POST',
@@ -512,20 +710,37 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        category: category,
+                        category: currentFilters.category,
                         dietary: validDietary,
-                        calories: calories,
-                        price: price,
-                        sort: sort
+                        calories: currentFilters.calories,
+                        price: currentFilters.price,
+                        sort: currentFilters.sort
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update the grid with server-filtered results
-                        document.getElementById('mealKitsGrid').innerHTML = data.html;
+                        // Store all filtered items for pagination
+                        var tempContainer = $('<div>').html(data.html);
+                        filteredItems = tempContainer.children().get();
                         
-                        // Re-initialize components after filtering
+                        // Reset displayed count
+                        currentlyDisplayed = 0;
+                        
+                        // Clear the grid for new items
+                        $('#mealKitsGrid').empty();
+                        
+                        // Display first batch of items
+                        var initialCount = Math.min(itemsPerPage, filteredItems.length);
+                        for (var i = 0; i < initialCount; i++) {
+                            $('#mealKitsGrid').append(filteredItems[i]);
+                        }
+                        currentlyDisplayed = initialCount;
+                        
+                        // Update the load more button
+                        updateLoadMoreButton();
+                        
+                        // Re-initialize components for newly added items
                         initializeComponents();
                     } else {
                         // Show error
@@ -552,6 +767,9 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
             
             // Re-initialize favorite buttons
             initializeFavoriteButtons();
+            
+            // Re-initialize load more button
+            initializeLoadMore();
         }
         
         // Update cart count from localStorage as fallback

@@ -393,12 +393,16 @@ while ($ingredient = $ingredients->fetch_assoc()) {
     $is_vegetarian = ($dietary_result['non_vegetarian_count'] == 0);
     $is_vegan = ($dietary_result['non_vegan_count'] == 0);
     $is_halal = ($dietary_result['non_halal_count'] == 0);
+
+    // Get current meal calorie count to find similar calorie content
+    $current_meal_calories = $total_calories;
     
-    // Build query to find similar meal kits based on dietary preferences
+    // Build query to find similar meal kits based only on current meal attributes
     $query = "
         SELECT mk.*, c.name as category_name,
                SUM(i.calories_per_100g * mki.default_quantity / 100) as base_calories,
-               SUM(i.price_per_100g * mki.default_quantity / 100) as ingredients_price
+               SUM(i.price_per_100g * mki.default_quantity / 100) as ingredients_price,
+               ABS(SUM(i.calories_per_100g * mki.default_quantity / 100) - ?) as calorie_difference
         FROM meal_kits mk
         LEFT JOIN categories c ON mk.category_id = c.category_id
         LEFT JOIN meal_kit_ingredients mki ON mk.meal_kit_id = mki.meal_kit_id
@@ -407,32 +411,28 @@ while ($ingredient = $ingredients->fetch_assoc()) {
         AND mk.meal_kit_id != ?
     ";
     
-    $params = [$meal_kit_id];
-    $types = "i";
+    $params = [$current_meal_calories, $meal_kit_id];
+    $types = "ii";
     
-    // Add dietary conditions
-    $conditions = [];
-    
-    if ($is_vegetarian) {
-        $conditions[] = "NOT EXISTS (
-            SELECT 1 FROM meal_kit_ingredients mki2
-            JOIN ingredients i2 ON mki2.ingredient_id = i2.ingredient_id
-            WHERE mki2.meal_kit_id = mk.meal_kit_id
-            AND i2.is_vegetarian = 0
-        )";
-    }
+    // Add dietary conditions based only on current meal
+    $dietary_conditions = [];
     
     if ($is_vegan) {
-        $conditions[] = "NOT EXISTS (
+        $dietary_conditions[] = "NOT EXISTS (
             SELECT 1 FROM meal_kit_ingredients mki2
             JOIN ingredients i2 ON mki2.ingredient_id = i2.ingredient_id
             WHERE mki2.meal_kit_id = mk.meal_kit_id
             AND i2.is_vegan = 0
         )";
-    }
-    
-    if ($is_halal) {
-        $conditions[] = "NOT EXISTS (
+    } elseif ($is_vegetarian) {
+        $dietary_conditions[] = "NOT EXISTS (
+            SELECT 1 FROM meal_kit_ingredients mki2
+            JOIN ingredients i2 ON mki2.ingredient_id = i2.ingredient_id
+            WHERE mki2.meal_kit_id = mk.meal_kit_id
+            AND i2.is_vegetarian = 0
+        )";
+    } elseif ($is_halal) {
+        $dietary_conditions[] = "NOT EXISTS (
             SELECT 1 FROM meal_kit_ingredients mki2
             JOIN ingredients i2 ON mki2.ingredient_id = i2.ingredient_id
             WHERE mki2.meal_kit_id = mk.meal_kit_id
@@ -440,16 +440,32 @@ while ($ingredient = $ingredients->fetch_assoc()) {
         )";
     }
     
-    // Also add condition for same category
-    $conditions[] = "mk.category_id = ?";
+    // Calorie target range (within 20% of current meal's calories)
+    $calorie_min = $current_meal_calories * 0.8;
+    $calorie_max = $current_meal_calories * 1.2;
+    
+    // Add category condition - prefer same category
+    $query .= " AND mk.category_id = ? ";
     $params[] = $meal_kit['category_id'];
     $types .= "i";
     
-    if (!empty($conditions)) {
-        $query .= " AND (" . implode(" OR ", $conditions) . ")";
+    $query .= " GROUP BY mk.meal_kit_id";
+    
+    if (!empty($dietary_conditions)) {
+        $query .= " HAVING (" . implode(" OR ", $dietary_conditions) . ")";
+        $query .= " AND base_calories BETWEEN ? AND ?";
+        $params[] = $calorie_min;
+        $params[] = $calorie_max;
+        $types .= "dd";
+    } else {
+        $query .= " HAVING base_calories BETWEEN ? AND ?";
+        $params[] = $calorie_min;
+        $params[] = $calorie_max;
+        $types .= "dd";
     }
     
-    $query .= " GROUP BY mk.meal_kit_id ORDER BY RAND() LIMIT 10";
+    // Order by calorie similarity
+    $query .= " ORDER BY calorie_difference ASC LIMIT 10";
     
     $stmt = $mysqli->prepare($query);
     $stmt->bind_param($types, ...$params);
@@ -466,7 +482,7 @@ while ($ingredient = $ingredients->fetch_assoc()) {
         $similar_title = "Similar Halal Meal Kits";
     }
     
-    // If we have similar meal kits, display them
+    // Only display the section if we have similar meal kits
     if ($similar_meal_kits->num_rows > 0):
     ?>
     <section class="py-5 bg-light">
@@ -476,6 +492,24 @@ while ($ingredient = $ingredients->fetch_assoc()) {
             <div class="similar-meal-kits-slider">
                 <?php while ($similar = $similar_meal_kits->fetch_assoc()): 
                     $total_price = $similar['preparation_price'] + ($similar['ingredients_price'] ?? 0);
+                    
+                    // Check meal kit's dietary properties
+                    $check_dietary_query = $mysqli->prepare("
+                        SELECT 
+                            MIN(i.is_vegetarian) as is_vegetarian,
+                            MIN(i.is_vegan) as is_vegan,
+                            MIN(i.is_halal) as is_halal
+                        FROM meal_kit_ingredients mki
+                        JOIN ingredients i ON mki.ingredient_id = i.ingredient_id
+                        WHERE mki.meal_kit_id = ?
+                    ");
+                    $check_dietary_query->bind_param("i", $similar['meal_kit_id']);
+                    $check_dietary_query->execute();
+                    $dietary_info = $check_dietary_query->get_result()->fetch_assoc();
+                    
+                    $is_meal_vegetarian = $dietary_info ? $dietary_info['is_vegetarian'] == 1 : false;
+                    $is_meal_vegan = $dietary_info ? $dietary_info['is_vegan'] == 1 : false;
+                    $is_meal_halal = $dietary_info ? $dietary_info['is_halal'] == 1 : false;
                 ?>
                 <div class="px-2">
                     <div class="card h-100 shadow-sm">
@@ -484,15 +518,16 @@ while ($ingredient = $ingredients->fetch_assoc()) {
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title"><?php echo htmlspecialchars($similar['name']); ?></h5>
                             <div class="mb-2">
-                                <?php if ($is_vegetarian): ?>
+                                <?php if ($is_meal_vegetarian): ?>
                                 <span class="badge bg-success me-1">Vegetarian</span>
                                 <?php endif; ?>
-                                <?php if ($is_vegan): ?>
+                                <?php if ($is_meal_vegan): ?>
                                 <span class="badge bg-info me-1">Vegan</span>
                                 <?php endif; ?>
-                                <?php if ($is_halal): ?>
-                                <span class="badge bg-primary">Halal</span>
+                                <?php if ($is_meal_halal): ?>
+                                <span class="badge bg-primary me-1">Halal</span>
                                 <?php endif; ?>
+                                <span class="badge bg-secondary"><?php echo round($similar['base_calories']); ?> cal</span>
                             </div>
                             <p class="card-text small mb-3"><?php echo mb_strimwidth(htmlspecialchars($similar['description']), 0, 80, "..."); ?></p>
                             <div class="d-flex justify-content-between align-items-center mt-auto">

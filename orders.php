@@ -179,6 +179,25 @@ $user = $userStmt->get_result()->fetch_assoc();
             border-radius: 50rem;
         }
         
+        /* Notification styles */
+        .unread-indicator {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            background-color: #dc3545;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transform: translate(40%, -40%);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        }
+        
+        .list-group-item-action:hover .unread-indicator {
+            transform: translate(40%, -40%) scale(1.2);
+            transition: transform 0.2s ease;
+        }
+        
         @media (max-width: 768px) {
             .sidebar {
                 margin-left: -250px;
@@ -343,7 +362,7 @@ $user = $userStmt->get_result()->fetch_assoc();
         <?php 
         // Fetch recent order notifications
         $notification_stmt = $mysqli->prepare("
-            SELECT notif.message, notif.created_at, o.order_id, os.status_name 
+            SELECT notif.message, notif.created_at, notif.is_read, o.order_id, os.status_name 
             FROM order_notifications notif
             JOIN orders o ON notif.order_id = o.order_id
             JOIN order_status os ON o.status_id = os.status_id
@@ -358,7 +377,7 @@ $user = $userStmt->get_result()->fetch_assoc();
         if ($recent_notifications->num_rows > 0):
         ?>
         <div class="container-fluid mb-4">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm recent-order-updates">
                 <div class="card-header bg-primary text-white py-3">
                     <h5 class="mb-0"><i class="bi bi-bell me-2"></i>Recent Order Updates</h5>
                 </div>
@@ -379,12 +398,19 @@ $user = $userStmt->get_result()->fetch_assoc();
                                 $icon = 'bi-credit-card text-info';
                             }
                         ?>
-                        <div class="list-group-item list-group-item-action">
+                        <div class="list-group-item list-group-item-action" style="cursor: pointer;" onclick="viewOrderDetails(<?php echo $notification['order_id']; ?>)">
                             <div class="d-flex w-100 justify-content-between align-items-center">
                                 <div class="d-flex align-items-center">
-                                    <i class="bi <?php echo $icon; ?> fs-4 me-3"></i>
+                                    <div class="position-relative me-3">
+                                        <i class="bi <?php echo $icon; ?> fs-4"></i>
+                                        <?php if ($notification['is_read'] == 0): ?>
+                                        <span class="unread-indicator" title="Unread notification"></span>
+                                        <?php endif; ?>
+                                    </div>
                                     <div>
-                                        <h6 class="mb-1"><?php echo htmlspecialchars($notification['message']); ?></h6>
+                                        <h6 class="mb-1 <?php echo $notification['is_read'] == 0 ? 'fw-bold' : ''; ?>">
+                                            <?php echo htmlspecialchars($notification['message']); ?>
+                                        </h6>
                                         <div class="d-flex align-items-center">
                                             <span class="badge 
                                                 <?php echo match($notification['status_name']) {
@@ -760,6 +786,14 @@ document.addEventListener('DOMContentLoaded', function() {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     
+    // Set up notification auto-refresh
+    refreshNotifications();
+    
+    // Refresh notifications every 60 seconds
+    setInterval(function() {
+        refreshNotifications();
+    }, 60000);
+    
     // Initialize DataTable
     const table = $('#ordersTable').DataTable({
         order: [[1, 'desc']], // Sort by date by default
@@ -841,6 +875,34 @@ function toggleSidebar() {
 
 // View Order Details
 function viewOrderDetails(orderId) {
+    // Mark notifications as read if any
+    const notificationItem = document.querySelector(`.list-group-item[onclick*="viewOrderDetails(${orderId})"]`);
+    if (notificationItem) {
+        const unreadDot = notificationItem.querySelector('.unread-indicator');
+        const notificationText = notificationItem.querySelector('h6.fw-bold');
+        
+        if (unreadDot) {
+            // Mark as read in UI
+            unreadDot.remove();
+            if (notificationText) notificationText.classList.remove('fw-bold');
+            
+            // Mark as read in database
+            fetch(`api/notifications/mark_as_read.php?order_id=${orderId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update notification count in navbar
+                    updateNotificationCount();
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        }
+    }
+
     fetch(`api/orders/get_details.php?id=${orderId}`)
         .then(response => response.json())
         .then(data => {
@@ -1310,6 +1372,150 @@ function uploadPaymentSlip() {
         console.error("Error:", error);
         alert("An error occurred while uploading the payment slip. Please try again.");
     });
+}
+
+// Update notification count in navbar
+function updateNotificationCount() {
+    fetch('/hm/api/notifications/get_count.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const notificationBadge = document.getElementById('notificationCount');
+                if (notificationBadge) {
+                    notificationBadge.textContent = data.count;
+                    notificationBadge.style.display = data.count > 0 ? 'inline-block' : 'none';
+                    
+                    // Update bell icon animation
+                    const bellIcon = document.querySelector('#notificationBell i');
+                    if (bellIcon) {
+                        if (data.count > 0) {
+                            bellIcon.classList.add('text-danger');
+                        } else {
+                            bellIcon.classList.remove('text-danger');
+                        }
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating notification count:', error);
+        });
+}
+
+// Refresh notifications (both count and recent updates)
+function refreshNotifications() {
+    // Update notification count in navbar
+    updateNotificationCount();
+    
+    // Update recent order updates section if it exists
+    const recentUpdatesContainer = document.querySelector('.recent-order-updates');
+    if (recentUpdatesContainer) {
+        // Add loading indicator to the header
+        const headerElement = recentUpdatesContainer.querySelector('.card-header');
+        if (headerElement) {
+            const loadingSpinner = document.createElement('span');
+            loadingSpinner.className = 'spinner-border spinner-border-sm text-light ms-2';
+            loadingSpinner.setAttribute('role', 'status');
+            loadingSpinner.style.width = '1rem';
+            loadingSpinner.style.height = '1rem';
+            loadingSpinner.id = 'notificationRefreshSpinner';
+            
+            // Remove existing spinner if any
+            const existingSpinner = headerElement.querySelector('#notificationRefreshSpinner');
+            if (existingSpinner) {
+                existingSpinner.remove();
+            }
+            
+            headerElement.appendChild(loadingSpinner);
+        }
+        
+        fetch('/hm/api/notifications/get_recent.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.notifications) {
+                    updateRecentNotifications(data.notifications);
+                }
+            })
+            .catch(error => {
+                console.error('Error refreshing recent notifications:', error);
+            })
+            .finally(() => {
+                // Remove the loading spinner
+                const spinner = recentUpdatesContainer.querySelector('#notificationRefreshSpinner');
+                if (spinner) {
+                    spinner.remove();
+                }
+            });
+    }
+}
+
+// Update the recent notifications list in the UI
+function updateRecentNotifications(notifications) {
+    const listGroup = document.querySelector('.recent-order-updates .list-group');
+    if (!listGroup || !notifications.length) return;
+    
+    // Create HTML for each notification
+    const notificationsHtml = notifications.map(notification => {
+        // Determine icon based on message content
+        let icon = 'bi-info-circle';
+        if (notification.message.includes('delivered')) {
+            icon = 'bi-check-circle-fill text-success';
+        } else if (notification.message.includes('verified')) {
+            icon = 'bi-shield-check text-success';
+        } else if (notification.message.includes('processing')) {
+            icon = 'bi-gear text-primary';
+        } else if (notification.message.includes('cancelled')) {
+            icon = 'bi-x-circle text-danger';
+        } else if (notification.message.includes('payment')) {
+            icon = 'bi-credit-card text-info';
+        }
+        
+        // Get badge class based on status
+        let badgeClass = 'bg-secondary';
+        switch(notification.status_name) {
+            case 'Pending': badgeClass = 'bg-warning text-dark'; break;
+            case 'Processing': badgeClass = 'bg-info text-dark'; break;
+            case 'Shipped': badgeClass = 'bg-primary'; break;
+            case 'Delivered': badgeClass = 'bg-success'; break;
+            case 'Cancelled': badgeClass = 'bg-danger'; break;
+        }
+        
+        // Format date
+        const date = new Date(notification.created_at);
+        const formattedDate = date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+        });
+        
+        return `
+        <div class="list-group-item list-group-item-action" style="cursor: pointer;" onclick="viewOrderDetails(${notification.order_id})">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="position-relative me-3">
+                        <i class="bi ${icon} fs-4"></i>
+                        ${notification.is_read == 0 ? '<span class="unread-indicator" title="Unread notification"></span>' : ''}
+                    </div>
+                    <div>
+                        <h6 class="mb-1 ${notification.is_read == 0 ? 'fw-bold' : ''}">
+                            ${notification.message}
+                        </h6>
+                        <div class="d-flex align-items-center">
+                            <span class="badge ${badgeClass} me-2">${notification.status_name}</span>
+                            <small class="text-muted">Order #${notification.order_id}</small>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted">${formattedDate}</small>
+            </div>
+        </div>
+        `;
+    }).join('');
+    
+    // Update the list
+    listGroup.innerHTML = notificationsHtml;
 }
 
 </script>

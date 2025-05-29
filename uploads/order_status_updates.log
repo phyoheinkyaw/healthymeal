@@ -1,0 +1,6 @@
+[2025-05-29 22:14:27] Received update request: {"order_id":6,"status_id":"3"}
+[2025-05-29 22:14:27] Successfully updated order 6 to status 3 (preparing)
+[2025-05-29 22:20:04] Received update request: {"order_id":6,"status_id":"4"}
+[2025-05-29 22:20:04] Successfully updated order 6 to status 4 (out_for_delivery)
+[2025-05-29 22:23:34] Received update request: {"order_id":6,"status_id":"5"}
+[2025-05-29 22:23:34] Successfully updated order 6 to status 5 (delivered)

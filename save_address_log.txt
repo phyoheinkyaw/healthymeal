@@ -1,0 +1,45 @@
+Request received at 2025-05-29 21:30:41
+POST data: {"address_name":"21332","full_address":"21332","city":"2131","postal_code":"32132","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+
+Request received at 2025-05-29 21:46:10
+POST data: {"address_name":"132123","full_address":"321","city":"12313","postal_code":"312231","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+
+Request received at 2025-05-29 21:55:22
+POST data: {"address_name":"njnkn","full_address":"kjnjk","city":"jnjk","postal_code":"jkn","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+

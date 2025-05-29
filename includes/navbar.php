@@ -106,6 +106,51 @@ $current_page = basename($_SERVER['PHP_SELF']);
     text-decoration: none;
 }
 
+/* Notification bell styles */
+#notificationBell {
+    position: relative;
+}
+
+#notificationBell i {
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+}
+
+#notificationBell .badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.65rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 50%;
+    transform: translate(25%, -25%);
+}
+
+#notificationBell i.text-danger {
+    animation: bellPulse 2s infinite;
+}
+
+@keyframes bellPulse {
+    0% {
+        transform: scale(1);
+    }
+    15% {
+        transform: scale(1.25) rotate(15deg);
+    }
+    30% {
+        transform: scale(1) rotate(-10deg);
+    }
+    45% {
+        transform: scale(1.15) rotate(5deg);
+    }
+    60% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 @media (max-width: 768px) {
     .search-results-wrapper {
         position: fixed;
@@ -178,6 +223,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         </ul>
                     </li>
                     <li class="nav-item ms-2">
+                        <a class="nav-link" href="orders.php" id="notificationBell">
+                            <i class="bi bi-bell"></i>
+                            <span class="badge bg-danger" id="notificationCount" style="display:none;">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item ms-2">
                         <a class="nav-link" href="cart.php">
                             <i class="bi bi-cart3"></i>
                             <span class="badge bg-primary" id="cartCount">0</span>
@@ -222,5 +273,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 favoritesBadge.style.display = data.count > 0 ? 'inline-block' : 'none';
             }
         });
+        
+    // Fetch unread notifications count
+    fetchNotificationCount();
+    
+    // Set up auto-refresh for notifications every 60 seconds
+    setInterval(fetchNotificationCount, 60000);
 });
+
+// Function to fetch notification count
+function fetchNotificationCount() {
+    fetch('/hm/api/notifications/get_count.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const notificationBadge = document.getElementById('notificationCount');
+                notificationBadge.textContent = data.count;
+                // Only show the badge if there are unread notifications
+                notificationBadge.style.display = data.count > 0 ? 'inline-block' : 'none';
+                
+                // If there are notifications, add a pulse animation to the bell
+                if (data.count > 0) {
+                    const bellIcon = document.querySelector('#notificationBell i');
+                    bellIcon.classList.add('text-danger');
+                } else {
+                    const bellIcon = document.querySelector('#notificationBell i');
+                    if (bellIcon) {
+                        bellIcon.classList.remove('text-danger');
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching notification count:', error);
+        });
+}
 </script>

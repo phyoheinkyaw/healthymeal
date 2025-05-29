@@ -246,7 +246,7 @@ CREATE TABLE payment_verifications (
     payment_id INT NULL,
     transaction_id VARCHAR(100) NULL COMMENT 'Transaction ID from customer',
     amount_verified INT NOT NULL,
-    payment_status TINYINT(1) DEFAULT 0 COMMENT '0: pending, 1: completed, 2: failed, 3: refunded, 4: partial',
+    payment_status TINYINT(1) DEFAULT 0 COMMENT '0: pending, 1: completed, 2: failed, 3: refunded',
     verification_notes TEXT,
     verified_by_id INT NULL,
     transfer_slip VARCHAR(255) NULL COMMENT 'Path to uploaded payment proof image',
@@ -501,8 +501,8 @@ INSERT INTO payment_history (order_id, amount, payment_method_id, transaction_id
 (1, 159540, 1, 'TXN123456789', 'PAY-REF-001', 1),
 (2, 148540, 1, 'PP987654321', 'PAY-REF-002', 1),
 (3, 166140, 1, 'TXN567891234', 'PAY-REF-003', 1),
-(4, 92110, 1, 'PARTIAL-PAY', 'PAY-REF-004', 0), -- Half payment
-(5, 108960, 1, 'TXN456789123', 'PAY-REF-005', 3); -- Refunded
+(4, 92110, 1, 'PAYMENT-PENDING', 'PAY-REF-004', 0),
+(5, 108960, 1, 'TXN456789123', 'PAY-REF-005', 3);
 
 -- Insert order item ingredients
 INSERT INTO order_item_ingredients (order_item_id, ingredient_id, custom_grams) VALUES
@@ -535,3 +535,198 @@ INSERT INTO order_notifications (order_id, user_id, message, note, is_read) VALU
 (3, 2, 'Your order has been confirmed and is being prepared.', NULL, 0),
 (4, 2, 'Your order has been received and is pending payment confirmation.', NULL, 0),
 (5, 2, 'Your order has been delivered. Enjoy your meal!', NULL, 1);
+
+-- =============================================
+-- ADDITIONAL TEST DATA FOR SIMILAR MEAL KIT RECOMMENDATIONS
+-- =============================================
+
+-- Add more ingredients
+INSERT INTO ingredients (name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, price_per_100g, is_meat, is_vegetarian, is_vegan, is_halal) VALUES
+('Spinach', 23, 2.9, 3.6, 0.4, 1500, 0, 1, 1, 1),
+('Red Bell Pepper', 31, 1.0, 6.0, 0.3, 1900, 0, 1, 1, 1),
+('Brown Lentils', 116, 9.0, 20.0, 0.4, 1800, 0, 1, 1, 1),
+('Chickpeas', 164, 8.9, 27.0, 2.6, 1600, 0, 1, 1, 1),
+('Beef', 250, 26.0, 0.0, 17.0, 8000, 1, 0, 0, 1),
+('Lamb', 294, 25.0, 0.0, 21.0, 9500, 1, 0, 0, 1),
+('Pork', 242, 27.0, 0.0, 14.0, 7500, 1, 0, 0, 0),
+('Avocado', 160, 2.0, 8.5, 14.7, 6000, 0, 1, 1, 1),
+('Greek Yogurt', 59, 10.0, 3.6, 0.4, 3200, 0, 1, 0, 1),
+('Almonds', 576, 21.0, 22.0, 49.0, 7000, 0, 1, 1, 1);
+
+-- Add more meal kits for testing similar recommendations
+
+-- BREAKFAST CATEGORY (ID: 1)
+INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
+('Vegan Breakfast Bowl', 'A delicious plant-based breakfast with quinoa, avocado, and fresh vegetables', 1, 24980, 420, 15, 1, 1),
+('Protein-Packed Morning Start', 'High protein breakfast with eggs, greek yogurt, and lean meat', 1, 27980, 480, 20, 1, 1),
+('Vegetarian Breakfast Platter', 'Vegetarian breakfast with tofu scramble, sweet potatoes, and vegetables', 1, 25980, 440, 25, 1, 1),
+('Halal Breakfast Delight', 'Halal-friendly breakfast with chicken, brown rice, and vegetables', 1, 26980, 460, 20, 1, 1);
+
+-- LUNCH CATEGORY (ID: 2)
+INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
+('Vegan Lunch Bowl', 'Plant-based lunch with lentils, chickpeas, and fresh vegetables', 2, 29980, 580, 30, 1, 1),
+('High-Protein Lunch Box', 'Protein-rich lunch with beef, quinoa, and roasted vegetables', 2, 33980, 620, 35, 1, 1),
+('Vegetarian Lunch Delight', 'Vegetarian lunch with tofu, brown rice, and steamed vegetables', 2, 30980, 590, 25, 1, 1),
+('Halal Lunch Special', 'Halal-friendly lunch with lamb, couscous, and mixed vegetables', 2, 32980, 610, 30, 1, 1);
+
+-- DINNER CATEGORY (ID: 3)
+INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
+('Vegan Dinner Plate', 'Light vegan dinner with tofu, quinoa, and steamed vegetables', 3, 27980, 380, 25, 1, 1),
+('Protein Dinner Box', 'Protein-rich dinner with chicken breast, sweet potato, and broccoli', 3, 31980, 420, 30, 1, 1),
+('Vegetarian Dinner Special', 'Vegetarian dinner with plant protein, brown rice, and seasonal vegetables', 3, 28980, 390, 25, 1, 1),
+('Halal Dinner Delight', 'Halal-friendly dinner with beef, vegetables, and light sauce', 3, 30980, 410, 30, 1, 1);
+
+-- SNACKS CATEGORY (ID: 4)
+INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
+('Vegan Snack Pack', 'Plant-based snacks with nuts, dried fruits, and vegetable chips', 4, 16980, 190, 10, 1, 1),
+('Protein Snack Box', 'Protein-rich snacks with Greek yogurt, nuts, and lean meat jerky', 4, 18980, 210, 5, 1, 1),
+('Vegetarian Snack Delight', 'Vegetarian snacks with cheese, crackers, and fresh fruits', 4, 17980, 200, 5, 1, 1),
+('Halal Snack Special', 'Halal-friendly snacks with halal meat, dates, and nuts', 4, 17980, 205, 5, 1, 1);
+
+-- DESSERTS CATEGORY (ID: 5)
+INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
+('Vegan Sweet Treat', 'Plant-based dessert with fruit compote and nut toppings', 5, 20980, 280, 15, 1, 1),
+('Protein Dessert Box', 'Protein-enriched dessert with Greek yogurt and berries', 5, 22980, 320, 10, 1, 1),
+('Vegetarian Dessert Delight', 'Vegetarian dessert with honey, yogurt, and fresh fruits', 5, 21980, 290, 15, 1, 1),
+('Halal Dessert Special', 'Halal-friendly dessert with dates, nuts, and natural sweeteners', 5, 21980, 310, 10, 1, 1);
+
+-- Link meal kits with ingredients
+
+-- BREAKFAST MEAL KIT INGREDIENTS
+
+-- Vegan Breakfast Bowl (ID: 6)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(6, 7, 100),  -- Quinoa
+(6, 11, 50),  -- Spinach
+(6, 12, 50),  -- Red Bell Pepper
+(6, 18, 50);  -- Avocado
+
+-- Protein-Packed Morning Start (ID: 7)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(7, 1, 80),   -- Chicken Breast
+(7, 19, 100), -- Greek Yogurt
+(7, 2, 70),   -- Brown Rice
+(7, 3, 50);   -- Broccoli
+
+-- Vegetarian Breakfast Platter (ID: 8)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(8, 10, 100), -- Tofu
+(8, 8, 80),   -- Sweet Potato
+(8, 11, 40),  -- Spinach
+(8, 12, 40);  -- Red Bell Pepper
+
+-- Halal Breakfast Delight (ID: 9)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(9, 1, 80),   -- Chicken Breast (is_halal=1)
+(9, 2, 80),   -- Brown Rice
+(9, 3, 50),   -- Broccoli
+(9, 4, 50);   -- Carrots
+
+-- LUNCH MEAL KIT INGREDIENTS
+
+-- Vegan Lunch Bowl (ID: 10)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(10, 13, 100), -- Brown Lentils
+(10, 14, 100), -- Chickpeas
+(10, 11, 50),  -- Spinach
+(10, 12, 50);  -- Red Bell Pepper
+
+-- High-Protein Lunch Box (ID: 11)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(11, 15, 120), -- Beef
+(11, 7, 80),   -- Quinoa
+(11, 3, 60),   -- Broccoli
+(11, 4, 60);   -- Carrots
+
+-- Vegetarian Lunch Delight (ID: 12)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(12, 10, 120), -- Tofu
+(12, 2, 100),  -- Brown Rice
+(12, 3, 70),   -- Broccoli
+(12, 11, 50);  -- Spinach
+
+-- Halal Lunch Special (ID: 13)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(13, 16, 120), -- Lamb (is_halal=1)
+(13, 2, 100),  -- Brown Rice
+(13, 4, 60),   -- Carrots
+(13, 12, 60);  -- Red Bell Pepper
+
+-- DINNER MEAL KIT INGREDIENTS
+
+-- Vegan Dinner Plate (ID: 14)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(14, 10, 100), -- Tofu
+(14, 7, 70),   -- Quinoa
+(14, 11, 60),  -- Spinach
+(14, 18, 30);  -- Avocado
+
+-- Protein Dinner Box (ID: 15)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(15, 1, 120),  -- Chicken Breast
+(15, 8, 100),  -- Sweet Potato
+(15, 3, 80);   -- Broccoli
+
+-- Vegetarian Dinner Special (ID: 16)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(16, 10, 100), -- Tofu
+(16, 2, 80),   -- Brown Rice
+(16, 12, 60),  -- Red Bell Pepper
+(16, 11, 60);  -- Spinach
+
+-- Halal Dinner Delight (ID: 17)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(17, 15, 100), -- Beef (is_halal=1)
+(17, 3, 70),   -- Broccoli
+(17, 4, 70),   -- Carrots
+(17, 5, 10);   -- Olive Oil
+
+-- SNACKS MEAL KIT INGREDIENTS
+
+-- Vegan Snack Pack (ID: 18)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(18, 20, 30),  -- Almonds
+(18, 14, 40),  -- Chickpeas
+(18, 18, 20);  -- Avocado
+
+-- Protein Snack Box (ID: 19)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(19, 19, 60),  -- Greek Yogurt
+(19, 20, 30),  -- Almonds
+(19, 1, 20);   -- Chicken Breast
+
+-- Vegetarian Snack Delight (ID: 20)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(20, 19, 60),  -- Greek Yogurt
+(20, 20, 30),  -- Almonds
+(20, 18, 20);  -- Avocado
+
+-- Halal Snack Special (ID: 21)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(21, 1, 30),   -- Chicken Breast (is_halal=1)
+(21, 20, 40),  -- Almonds
+(21, 5, 5);    -- Olive Oil
+
+-- DESSERTS MEAL KIT INGREDIENTS
+
+-- Vegan Sweet Treat (ID: 22)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(22, 18, 50),  -- Avocado
+(22, 20, 30),  -- Almonds
+(22, 5, 5);    -- Olive Oil
+
+-- Protein Dessert Box (ID: 23)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(23, 19, 100), -- Greek Yogurt
+(23, 20, 30);  -- Almonds
+
+-- Vegetarian Dessert Delight (ID: 24)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(24, 19, 80),  -- Greek Yogurt
+(24, 20, 30),  -- Almonds
+(24, 18, 30);  -- Avocado
+
+-- Halal Dessert Special (ID: 25)
+INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
+(25, 20, 60),  -- Almonds
+(25, 5, 10);   -- Olive Oil
