@@ -425,15 +425,7 @@ function submitOrder() {
         header.classList.remove('has-error');
     });
     
-    // Validate the form
-    if (!form.checkValidity()) {
-        hideLoadingOverlay();
-        form.reportValidity();
-        placeOrderBtn.disabled = false; // Re-enable button on validation failure
-        return;
-    }
-    
-    // Get selected payment method
+    // Get selected payment method first to determine validation rules
     const paymentMethodRadio = document.querySelector('input[name="payment_method"]:checked');
     if (!paymentMethodRadio) {
         hideLoadingOverlay();
@@ -442,26 +434,53 @@ function submitOrder() {
         return;
     }
     
-    // Check payment slip for non-COD orders
-    if (paymentMethodRadio.id !== 'cashOnDelivery') {
+    // Check if this is Cash on Delivery
+    const isCashOnDelivery = (paymentMethodRadio.id === 'cashOnDelivery');
+    console.log('Is Cash on Delivery payment:', isCashOnDelivery);
+    
+    // Validate the form based on required fields
+    const requiredFields = [];
+    
+    // Always required fields
+    requiredFields.push(
+        document.getElementById('inputAddress'),
+        document.getElementById('inputCity'),
+        document.getElementById('inputZip'),
+        document.getElementById('customerPhone'),
+        document.getElementById('contactNumber'),
+        document.getElementById('deliveryDate')
+    );
+    
+    // Validate required fields
+    let hasError = false;
+    requiredFields.forEach(field => {
+        if (!field || !field.value.trim()) {
+            if (field) {
+                field.classList.add('is-invalid');
+            }
+            hasError = true;
+        }
+    });
+    
+    if (hasError) {
+        hideLoadingOverlay();
+        showAlert('danger', 'Please fill in all required fields');
+        placeOrderBtn.disabled = false;
+        return;
+    }
+    
+    // Validate payment-specific fields
+    if (!isCashOnDelivery) {
+        // For non-COD payments, check for payment slip
         const paymentId = paymentMethodRadio.dataset.paymentId;
         const transferSlipInput = document.getElementById(`transfer_slip_${paymentId}`);
-        const transactionIdInput = document.getElementById(`transaction_id_${paymentId}`);
         
         console.log('Checking payment slip for method:', paymentMethodRadio.id);
         console.log('Transfer slip input found:', !!transferSlipInput);
-        console.log('Transaction ID input found:', !!transactionIdInput);
         
         if (!transferSlipInput || !transferSlipInput.files || transferSlipInput.files.length === 0) {
             hideLoadingOverlay();
             showAlert('danger', 'Please upload a payment slip for ' + paymentMethodRadio.value);
-            placeOrderBtn.disabled = false;
-            return;
-        }
-        
-        if (!transactionIdInput || !transactionIdInput.value) {
-            hideLoadingOverlay();
-            showAlert('danger', 'According to your slip, the transaction ID is not found. Please check your slip again.');
             placeOrderBtn.disabled = false;
             return;
         }
@@ -657,7 +676,21 @@ function submitOrderAsJson(orderData) {
     // Start time for ensuring minimum loading time
     const startTime = new Date().getTime();
     
+    // Extra validation to ensure order type is correct for COD
+    const isCashOnDelivery = orderData.payment_method === 'Cash on Delivery';
+    
+    console.log('Is Cash on Delivery:', isCashOnDelivery);
+    
+    // For Cash on Delivery, make sure we don't send unnecessary fields
+    if (isCashOnDelivery) {
+        // Remove any slip-related fields for COD orders
+        delete orderData.transfer_slip;
+        delete orderData.transaction_id;
+    }
+    
     console.log('Sending POST request to place_order.php...');
+    console.log('Order data being sent:', JSON.stringify(orderData));
+    
     fetch('api/orders/place_order.php', {
         method: 'POST',
         headers: {

@@ -258,7 +258,6 @@ if ($ing_result) {
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <button type="button" class="btn btn-warning mb-3" id="fillDebugDataBtn">Fill With Random Data (Debug)</button>
             <form id="mealKitForm" autocomplete="off">
               <input type="hidden" id="mealKitId" name="mealKitId">
               <div class="form-grid">
@@ -590,7 +589,6 @@ if ($ing_result) {
 
     // Delete meal kit
     function deleteMealKit(mealKitId) {
-        console.log('Starting delete process for meal kit:', mealKitId);
         
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -599,17 +597,14 @@ if ($ing_result) {
         // Check for orders first
         fetch(`api/meal-kits/check-orders.php?id=${mealKitId}`)
             .then(response => {
-                console.log('Check orders response status:', response.status);
                 if (!response.ok) {
                     throw new Error('Failed to check meal kit status. Status: ' + response.status);
                 }
                 return response.text();
             })
             .then(text => {
-                console.log('Check orders raw response:', text);
                 try {
                     const data = JSON.parse(text);
-                    console.log('Check orders parsed data:', data);
                     
                     if (!data.success) {
                         throw new Error(data.message || 'Failed to check meal kit status');
@@ -620,37 +615,30 @@ if ($ing_result) {
                     
                     // If there are orders, we'll just deactivate instead of delete
                     if (data.has_orders) {
-                        console.log('Meal kit has orders, showing warning');
                         orderWarning.style.display = 'block';
                         confirmButton.textContent = 'Mark as Inactive';
                         confirmButton.addEventListener('click', () => {
-                            console.log('Marking meal kit as inactive');
                             // Mark as inactive
                             toggleMealKitStatus(mealKitId, false);
                             modal.hide();
                         });
                     } else {
-                        console.log('No orders found, showing delete confirmation');
                         orderWarning.style.display = 'none';
                         confirmButton.textContent = 'Delete';
                         confirmButton.addEventListener('click', () => {
-                            console.log('Deleting meal kit...');
                             // Delete meal kit
                             fetch(`api/meal-kits/delete.php?id=${mealKitId}`, {
                                 method: 'DELETE'
                             })
                             .then(response => {
-                                console.log('Delete response status:', response.status);
                                 if (!response.ok) {
                                     throw new Error('Failed to delete meal kit. Status: ' + response.status);
                                 }
                                 return response.text();
                             })
                             .then(text => {
-                                console.log('Delete raw response:', text);
                                 try {
                                     const data = JSON.parse(text);
-                                    console.log('Delete parsed data:', data);
                                     
                                     if (data.success) {
                                         // Show success alert

@@ -424,7 +424,6 @@ if ($status_result) {
 <!-- Custom JS -->
 <script src="assets/js/admin.js"></script>
 <script src="assets/js/orders.js"></script>
-<script src="assets/js/console.js"></script> <!-- Debug console -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

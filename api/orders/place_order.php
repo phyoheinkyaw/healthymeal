@@ -128,13 +128,25 @@ if (isset($_FILES['transfer_slip']) && isset($_POST['order_data'])) {
 }
 
 // Validate required fields
+if (!isset($data)) {
+    // Try to parse raw JSON input for COD orders or direct JSON submissions
+    $input = file_get_contents('php://input');
+    debug_log("Raw input: " . $input);
+    
+    if (!empty($input)) {
+        $data = json_decode($input, true);
+        debug_log("Parsed JSON from raw input: " . json_encode($data));
+    }
+}
+
+// Validate required fields
 if (!isset($data['delivery_address']) || empty($data['delivery_address']) ||
     !isset($data['customer_phone']) || empty($data['customer_phone']) ||
     !isset($data['contact_number']) || empty($data['contact_number']) ||
     !isset($data['payment_method']) || empty($data['payment_method']) ||
     !isset($data['delivery_date']) || empty($data['delivery_date']) ||
     !isset($data['delivery_option_id']) || !filter_var($data['delivery_option_id'], FILTER_VALIDATE_INT)) {
-    debug_log("Missing required fields");
+    debug_log("Missing required fields: " . json_encode($data));
     echo json_encode(['success' => false, 'message' => 'Missing required fields']);
     exit;
 }

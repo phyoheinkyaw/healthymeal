@@ -438,7 +438,6 @@ function get_meal_kit_image_url($image_url_db, $meal_kit_name) {
 
     <!-- jQuery first, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
         // Global variables to store filtered items and state

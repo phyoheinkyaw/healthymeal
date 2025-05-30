@@ -496,6 +496,52 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
                 width: 100%;
             }
         }
+        
+        /* Timeline styling for payment history */
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+        .timeline:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 24px;
+            width: 2px;
+            background: #e9ecef;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 60px;
+        }
+        .timeline-item.first:before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 24px;
+            width: 2px;
+            height: 20px;
+            background: white;
+        }
+        .timeline-badge {
+            position: absolute;
+            top: 0;
+            left: 14px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+        }
+        .timeline-badge i {
+            font-size: 12px;
+        }
+        .timeline-content {
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -778,6 +824,72 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
                                 <i class="bi bi-arrow-repeat me-2"></i>Sync Payment Records
                             </button>
                         </div>
+                        <?php else: // Cash on Delivery payment actions ?>
+                        <div class="order-section-divider mt-4 mb-4"></div>
+                        
+                        <div class="cod-verification-section">
+                            <h4 class="mb-3">Cash on Delivery Verification</h4>
+                            
+                            <?php 
+                            // Determine if COD payment is already verified
+                            $codVerified = ($currentPaymentStatusNumeric == 1);
+                            
+                            if ($codVerified): 
+                            ?>
+                                <div class="alert alert-success d-flex align-items-center" role="alert">
+                                    <i class="bi bi-cash-coin me-2 fs-4"></i>
+                                    <div>
+                                        <strong>Payment Received</strong><br>
+                                        This Cash on Delivery payment has been verified as received.
+                                        <?php if (!empty($order['current_verification_transaction_id'])): ?>
+                                            <div class="mt-1">Receipt #: <?php echo htmlspecialchars($order['current_verification_transaction_id']); ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($order['current_amount_verified'])): ?>
+                                            <div>Amount: <?php echo number_format($order['current_amount_verified'], 0); ?> MMK</div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <button type="button" class="btn btn-warning" onclick="verifyCODPayment(<?php echo $order['order_id']; ?>, false)">
+                                        <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Verification
+                                    </button>
+                                </div>
+                            <?php else: ?>
+                                <div class="alert alert-warning d-flex align-items-center" role="alert">
+                                    <i class="bi bi-exclamation-triangle me-2 fs-4"></i>
+                                    <div>
+                                        <strong>Payment Not Yet Verified</strong><br>
+                                        Please verify when payment has been received from the customer.
+                                    </div>
+                                </div>
+                                
+                                <form id="codVerificationForm" class="mt-3">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="codReceiptNumber" class="form-label">Receipt Number</label>
+                                            <input type="text" class="form-control" id="codReceiptNumber" placeholder="Enter receipt or reference number">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="codAmountCollected" class="form-label">Amount Collected</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="codAmountCollected" value="<?php echo $order['total_amount']; ?>">
+                                                <span class="input-group-text">MMK</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="codVerificationNotes" class="form-label">Verification Notes</label>
+                                            <textarea class="form-control" id="codVerificationNotes" rows="2" placeholder="Optional notes about this payment"></textarea>
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="button" class="btn btn-success" onclick="verifyCODPayment(<?php echo $order['order_id']; ?>, true)">
+                                                <i class="bi bi-cash-coin me-2"></i>Verify Cash Payment Received
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            <?php endif; ?>
+                        </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -884,99 +996,6 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
     </main>
 </div>
 
-<!-- Payment Verification Modal -->
-<div class="modal fade" id="paymentVerificationModal" tabindex="-1" aria-labelledby="paymentVerificationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
-            <div class="modal-header border-0 p-4" style="background: #f8f9fa;">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-shield-check fs-4 text-success me-2"></i>
-                    <h5 class="modal-title fs-4 fw-bold m-0" id="paymentVerificationModalLabel">Verify Payment</h5>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div id="paymentSlipPreview" class="text-center mb-4 p-3 bg-light rounded-3">
-                    <!-- Payment slip image will be shown here -->
-                </div>
-                <form id="verificationForm" class="bg-white p-4 rounded-3">
-                    <input type="hidden" id="verify_order_id" name="order_id" value="">
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <label for="account_number" class="form-label fw-semibold">Customer Account</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
-                                <input type="text" class="form-control bg-light" id="account_number" name="account_number" readonly>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold d-flex align-items-center">
-                                <span>Our KBZPay Account</span>
-                                <span class="badge bg-success ms-2 rounded-pill">For Verification</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-success-subtle"><i class="bi bi-building"></i></span>
-                                <input type="text" class="form-control bg-success-subtle text-success fw-bold" id="company_account" value="" readonly>
-                                <button class="btn btn-success" type="button" onclick="copyAccountNumber()">
-                                    <i class="bi bi-clipboard"></i>
-                                </button>
-                            </div>
-                            <div class="form-text small mt-1">Compare with the account number on the slip.</div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="payment_status" class="form-label fw-semibold">Payment Status</label>
-                        <select class="form-select" id="payment_status" name="payment_status">
-                            <option value="1">Completed</option>
-                            <option value="2">Failed</option>
-                            <option value="3">Refunded</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="transaction_id" class="form-label fw-semibold">Transaction ID</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="transaction_id" name="transaction_id" 
-                                   placeholder="Enter transaction ID from the slip" required>
-                            <button class="btn btn-primary" type="button" id="scanTransactionBtn" title="Scan Payment Slip">
-                                <i class="bi bi-upc-scan"></i>
-                            </button>
-                        </div>
-                        <div id="transaction_scan_status" class="small text-muted mt-1"></div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="amount_verified" class="form-label fw-semibold">Amount Verified</label>
-                        <div class="input-group">
-                            <span class="input-group-text">MMK</span>
-                            <input type="number" class="form-control" id="amount_verified" name="amount_verified" 
-                                   value="" step="1" required>
-                        </div>
-                        <div class="form-text small mt-1">Amount is pre-filled from order but can be modified if needed.</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="verification_notes" class="form-label fw-semibold">Notes</label>
-                        <textarea class="form-control" id="verification_notes" name="verification_notes" 
-                                  rows="3" placeholder="Add any verification notes here..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer border-0 bg-light p-3">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-success" onclick="submitPaymentVerification()">
-                    <i class="bi bi-shield-check me-2"></i>Verify Payment
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Payment Verification History Modal -->
 <div class="modal fade" id="paymentHistoryModal" tabindex="-1" aria-labelledby="paymentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1001,6 +1020,8 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
         </div>
     </div>
 </div>
+
+<!-- Payment Verification Modal - Will be generated dynamically by verifyPayment() function -->
 
 <!-- Bootstrap Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -1167,6 +1188,347 @@ $statusClass = $statusMap[$statusRaw] ?? 'secondary';
         modal.show();
     }
 
+    // Function to show payment verification modal (for non-COD payments)
+    function verifyPayment(orderId, hasVerification = false, orderAmount = 0) {
+        // Create and show the modal dynamically
+        $('#paymentVerificationModal').remove(); // Remove any existing modal
+        
+        // Get the modal title based on if we're updating or creating a verification
+        const modalTitle = hasVerification ? 'Update Payment Verification' : 'Verify Payment';
+        
+        // Define options for payment status radio buttons
+        const statusOptions = [
+            { value: 1, label: 'Completed', class: 'success', description: 'Payment verified and completed successfully.' },
+            { value: 2, label: 'Failed', class: 'danger', description: 'Payment verification failed. Will require customer to resubmit payment.' },
+            { value: 0, label: 'Pending', class: 'warning', description: 'Keep payment in pending state (verification in progress).' },
+            { value: 3, label: 'Refunded', class: 'info', description: 'Payment was refunded to the customer. Will cancel the order.' }
+        ];
+        
+        // Generate HTML for the status options
+        const statusOptionsHtml = statusOptions.map(option => `
+            <div class="form-check payment-status-option mb-2">
+                <input class="form-check-input" type="radio" name="paymentStatus" id="status${option.value}" value="${option.value}" ${option.value === 1 ? 'checked' : ''}>
+                <label class="form-check-label" for="status${option.value}">
+                    <span class="badge bg-${option.class} me-2">${option.label}</span>
+                    <span class="text-muted small">${option.description}</span>
+                </label>
+            </div>
+        `).join('');
+        
+        // Create the modal HTML
+        const modalHtml = `
+        <div class="modal fade" id="paymentVerificationModal" tabindex="-1" aria-labelledby="paymentVerificationModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                    <div class="modal-header border-0 p-4 bg-light">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-shield-check fs-4 text-primary me-2"></i>
+                            <h5 class="modal-title fs-4 fw-bold m-0" id="paymentVerificationModalLabel">${modalTitle}</h5>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <form id="paymentVerificationForm">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Payment Status</label>
+                                <div class="payment-status-options border rounded p-3 bg-light">
+                                    ${statusOptionsHtml}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 transaction-id-field">
+                                <label for="transactionId" class="form-label">Transaction ID (from payment slip)</label>
+                                <input type="text" class="form-control" id="transactionId" placeholder="Enter transaction ID">
+                                <div class="form-text">Enter the transaction ID from the payment slip.</div>
+                            </div>
+                            
+                            <div class="mb-3 amount-field">
+                                <label for="amountVerified" class="form-label">Amount Verified</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="amountVerified" value="${orderAmount}" min="0">
+                                    <span class="input-group-text">MMK</span>
+                                </div>
+                                <div class="form-text">Leave at 0 to use the full order amount.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="verificationNotes" class="form-label">Verification Notes</label>
+                                <textarea class="form-control" id="verificationNotes" rows="3" placeholder="Add notes about the verification"></textarea>
+                            </div>
+                            
+                            <div class="form-check mb-3 d-none resubmission-field">
+                                <input class="form-check-input" type="checkbox" id="isResubmission">
+                                <label class="form-check-label" for="isResubmission">
+                                    This is a resubmission of a previously failed payment
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3 d-none refund-field">
+                                <input class="form-check-input" type="checkbox" id="isRefund">
+                                <label class="form-check-label" for="isRefund">
+                                    This is a refund (will cancel the order)
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer border-0 bg-light p-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="submitVerificationBtn">
+                            <i class="bi bi-shield-check me-2"></i>Save Verification
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Add the modal to the DOM
+        $('body').append(modalHtml);
+        
+        // Initialize the modal
+        const modal = new bootstrap.Modal(document.getElementById('paymentVerificationModal'));
+        
+        // Show conditional fields based on status selection
+        $('input[name="paymentStatus"]').on('change', function() {
+            const selectedStatus = parseInt(this.value);
+            
+            // Show/hide resubmission field
+            $('.resubmission-field').toggleClass('d-none', selectedStatus !== 1);
+            
+            // Show/hide refund field
+            $('.refund-field').toggleClass('d-none', selectedStatus !== 3);
+            
+            // Disable amount and transaction ID for status "Failed" or "Pending"
+            $('.amount-field, .transaction-id-field').toggleClass('opacity-50', selectedStatus === 2 || selectedStatus === 0);
+            $('#amountVerified, #transactionId').prop('disabled', selectedStatus === 2 || selectedStatus === 0);
+            
+            // If status is "Failed" or "Pending", reset amount to 0
+            if (selectedStatus === 2 || selectedStatus === 0) {
+                $('#amountVerified').val(0);
+            } else if (selectedStatus === 1 || selectedStatus === 3) {
+                // For "Completed" or "Refunded", set to order amount
+                $('#amountVerified').val(orderAmount);
+            }
+        });
+        
+        // Handle form submission
+        $('#submitVerificationBtn').on('click', function() {
+            // Collect form data
+            const paymentStatus = parseInt($('input[name="paymentStatus"]:checked').val());
+            const transactionId = $('#transactionId').val().trim();
+            const amountVerified = parseFloat($('#amountVerified').val());
+            const verificationNotes = $('#verificationNotes').val().trim();
+            const isResubmission = $('#isResubmission').is(':checked');
+            const isRefund = $('#isRefund').is(':checked');
+            
+            // Validate the form data
+            let isValid = true;
+            let errorMessage = '';
+            
+            if (isNaN(paymentStatus)) {
+                isValid = false;
+                errorMessage = 'Please select a payment status.';
+            } else if (paymentStatus === 1 && !transactionId) {
+                isValid = false;
+                errorMessage = 'Please enter a transaction ID for completed payments.';
+            }
+            
+            if (!isValid) {
+                showGenericAlertModal('Validation Error', errorMessage, 'warning');
+                return;
+            }
+            
+            // Create the verification data
+            const verificationData = {
+                order_id: orderId,
+                verify: true,
+                verification_details: {
+                    payment_status: paymentStatus,
+                    transaction_id: transactionId,
+                    amount_verified: amountVerified,
+                    verification_notes: verificationNotes,
+                    is_resubmission: isResubmission,
+                    is_refund: isRefund
+                }
+            };
+            
+            // Submit the data
+            fetch('/hm/admin/api/orders/verify_payment.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(verificationData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    modal.hide();
+                    showGenericAlertModal('Success', data.message, 'success', () => {
+                        window.location.reload(); // Reload the page to reflect changes
+                    });
+                } else {
+                    showGenericAlertModal('Error', data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showGenericAlertModal('Error', 'An error occurred while processing your request.', 'danger');
+            });
+        });
+        
+        // Show the modal
+        modal.show();
+    }
+    
+    // Function to show payment history
+    function showPaymentHistory(orderId) {
+        // Show the existing payment history modal
+        const modal = new bootstrap.Modal(document.getElementById('paymentHistoryModal'));
+        
+        // Load the payment history content
+        $('#paymentHistoryContent').html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Loading payment history...</p></div>');
+        
+        fetch('/hm/admin/api/orders/get_payment_history.php?order_id=' + orderId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Render the payment history
+                    let historyHtml = '';
+                    
+                    if (data.history && data.history.length > 0) {
+                        historyHtml = '<div class="timeline">';
+                        
+                        data.history.forEach((item, index) => {
+                            const status = getStatusInfo(item.payment_status);
+                            
+                            historyHtml += `
+                                <div class="timeline-item ${index === 0 ? 'first' : ''}">
+                                    <div class="timeline-badge bg-${status.class}">
+                                        <i class="bi bi-${status.icon}"></i>
+                                    </div>
+                                    <div class="timeline-content p-3 border rounded">
+                                        <div class="d-flex justify-content-between">
+                                            <h6 class="timeline-title fw-bold">Payment ${status.label}</h6>
+                                            <span class="timeline-date text-muted">${formatDateTime(item.created_at)}</span>
+                                        </div>
+                                        <div class="timeline-body mt-2">
+                                            ${item.amount ? `<div><strong>Amount:</strong> ${formatAmount(item.amount)} MMK</div>` : ''}
+                                            ${item.transaction_id ? `<div><strong>Transaction ID:</strong> ${item.transaction_id}</div>` : ''}
+                                            ${item.verification_notes ? `<div class="mt-2 border-start border-3 ps-3 py-1 border-${status.class} bg-light"><strong>Notes:</strong> ${item.verification_notes}</div>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        historyHtml += '</div>';
+                    } else {
+                        historyHtml = '<div class="text-center p-5"><i class="bi bi-info-circle-fill fs-1 text-info"></i><p class="mt-3">No payment history records found.</p></div>';
+                    }
+                    
+                    $('#paymentHistoryContent').html(historyHtml);
+                } else {
+                    $('#paymentHistoryContent').html('<div class="text-center p-5"><i class="bi bi-exclamation-triangle-fill fs-1 text-warning"></i><p class="mt-3">Failed to load payment history: ' + (data.message || 'Unknown error') + '</p></div>');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                $('#paymentHistoryContent').html('<div class="text-center p-5"><i class="bi bi-x-circle-fill fs-1 text-danger"></i><p class="mt-3">Error loading payment history.</p></div>');
+            });
+        
+        modal.show();
+    }
+    
+    // Function to verify Cash on Delivery payment
+    function verifyCODPayment(orderId, verify = true) {
+        if (!verify) {
+            // If we're unsetting verification, confirm first
+            showGenericConfirmModal(
+                'Reset Payment Verification', 
+                'Are you sure you want to reset the Cash on Delivery payment verification? This will mark the payment as not received.',
+                'warning',
+                () => {
+                    submitCODVerification(orderId, false);
+                }
+            );
+            return;
+        }
+        
+        // Get form values
+        const receiptNumber = $('#codReceiptNumber').val().trim();
+        const amountCollected = parseFloat($('#codAmountCollected').val());
+        const verificationNotes = $('#codVerificationNotes').val().trim();
+        
+        // Basic validation
+        if (verify && !receiptNumber) {
+            showGenericAlertModal('Missing Information', 'Please enter a receipt number for this Cash on Delivery payment.', 'warning');
+            return;
+        }
+        
+        // Submit the verification
+        submitCODVerification(orderId, verify, receiptNumber, amountCollected, verificationNotes);
+    }
+    
+    // Helper function to submit COD verification data
+    function submitCODVerification(orderId, verify, receiptNumber = '', amountCollected = 0, verificationNotes = '') {
+        // Create the verification data
+        const verificationData = {
+            order_id: orderId,
+            verify: verify,
+            verification_notes: verificationNotes,
+            collected_amount: amountCollected,
+            payment_receipt_number: receiptNumber
+        };
+        
+        // Submit the data
+        fetch('/hm/admin/api/orders/verify_cod_payment.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(verificationData),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showGenericAlertModal('Success', data.message, 'success', () => {
+                    window.location.reload(); // Reload the page to reflect changes
+                });
+            } else {
+                showGenericAlertModal('Error', data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showGenericAlertModal('Error', 'An error occurred while processing your request.', 'danger');
+        });
+    }
+    
+    // Helper function to get status information
+    function getStatusInfo(statusCode) {
+        const statusMap = {
+            0: { label: 'Pending', class: 'warning', icon: 'hourglass-split' },
+            1: { label: 'Completed', class: 'success', icon: 'check-circle-fill' },
+            2: { label: 'Failed', class: 'danger', icon: 'x-circle-fill' },
+            3: { label: 'Refunded', class: 'info', icon: 'arrow-repeat' },
+            4: { label: 'Partial', class: 'warning', icon: 'exclamation-triangle-fill' }
+        };
+        
+        return statusMap[statusCode] || { label: 'Unknown', class: 'secondary', icon: 'question-circle-fill' };
+    }
+    
+    // Helper function to format date and time
+    function formatDateTime(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleString();
+    }
+    
+    // Helper function to format amount
+    function formatAmount(amount) {
+        return parseFloat(amount).toLocaleString();
+    }
 </script>
 
 </body>
