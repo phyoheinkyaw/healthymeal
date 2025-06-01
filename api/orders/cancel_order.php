@@ -42,8 +42,8 @@ try {
         exit;
     }
 
-    // Update order status to Cancelled (status_id = 4)
-    $stmt = $mysqli->prepare("UPDATE orders SET status_id = 4 WHERE order_id = ?");
+    // Update order status to Cancelled (status_id = 7)
+    $stmt = $mysqli->prepare("UPDATE orders SET status_id = 7 WHERE order_id = ?");
     $stmt->bind_param("i", $order_id);
 
     if ($stmt->execute()) {

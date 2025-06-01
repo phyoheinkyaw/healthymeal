@@ -368,9 +368,9 @@ VALUES
 
 -- Insert default delivery options
 INSERT INTO delivery_options (name, description, fee, time_slot, cutoff_time, max_orders_per_slot) VALUES
-('Morning Delivery', 'Morning delivery between 8:00 AM - 10:00 AM', 20000, '09:00:00', '18:00:00', 8),
-('Noon Delivery', 'Noon delivery between 11:30 AM - 1:30 PM', 16000, '12:00:00', '20:00:00', 10),
-('Evening Delivery', 'Evening delivery between 4:00 PM - 6:00 PM', 10000, '17:00:00', '12:00:00', 15);
+('Morning Delivery', 'Our delivery start at 7:00 AM and end at 10:00 AM', 20000, '07:00:00', '10:00:00', 8),
+('Noon Delivery', 'Our delivery start at 12:00 PM and end at 3:00 PM', 16000, '12:00:00', '15:00:00', 10),
+('Evening Delivery', 'Our delivery start at 5:00 PM and end at 8:00 PM', 10000, '17:00:00', '20:00:00', 15);
 
 -- Insert users
 -- Users (1372004zinlaimon)

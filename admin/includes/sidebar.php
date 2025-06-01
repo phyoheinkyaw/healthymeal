@@ -75,6 +75,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <span>Payment Settings</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="/hm/admin/delivery-options.php" class="nav-link <?php echo $current_page === 'delivery-options.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-truck"></i>
+                        <span>Delivery Options</span>
+                    </a>
+                </li>
             </ul>
         </nav>
         </div>

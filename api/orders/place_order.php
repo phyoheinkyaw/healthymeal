@@ -221,18 +221,35 @@ $delivery_time = $data['delivery_time'] ?? null;
 $transfer_slip = $data['transfer_slip'] ?? null;
 $transaction_id = $data['transaction_id'] ?? null; // Extract transaction_id from form data
 
-// Verify delivery option exists
-$delivery_stmt = $mysqli->prepare("SELECT fee, time_slot FROM delivery_options WHERE delivery_option_id = ?");
-$delivery_stmt->bind_param("i", $delivery_option_id);
-$delivery_stmt->execute();
-$delivery_result = $delivery_stmt->get_result();
-if ($delivery_result->num_rows === 0) {
+// First check if selected delivery option is valid and has available slots
+$delivery_check_stmt = $mysqli->prepare("
+    SELECT do.fee, do.time_slot, do.max_orders_per_slot, 
+           (SELECT COUNT(*) FROM orders WHERE delivery_option_id = ? AND expected_delivery_date = ?) as order_count
+    FROM delivery_options do
+    WHERE do.delivery_option_id = ? AND do.is_active = 1
+");
+$delivery_check_stmt->bind_param("isi", $delivery_option_id, $delivery_date, $delivery_option_id);
+$delivery_check_stmt->execute();
+$delivery_check_result = $delivery_check_stmt->get_result();
+
+if ($delivery_check_result->num_rows === 0) {
     echo json_encode(['success' => false, 'message' => 'Invalid delivery option']);
     exit;
 }
-$delivery_option = $delivery_result->fetch_assoc();
-$delivery_fee = $delivery_option['fee'];
-$delivery_time = $delivery_option['time_slot'];
+
+$delivery_slot = $delivery_check_result->fetch_assoc();
+$delivery_fee = $delivery_slot['fee'];
+$delivery_time = $delivery_slot['time_slot'];
+
+// Check if slot is full
+if ($delivery_slot['order_count'] >= $delivery_slot['max_orders_per_slot']) {
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Sorry, this delivery slot is now fully booked. Please select another time slot.',
+        'error_code' => 'SLOT_FULL'
+    ]);
+    exit;
+}
 
 // Expected delivery date is the selected date
 $expected_delivery_date = $delivery_date;

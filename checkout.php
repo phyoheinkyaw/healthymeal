@@ -50,7 +50,8 @@ $delivery_options = [];
 $delivery_stmt = $mysqli->prepare("
     SELECT delivery_option_id, name, description, fee, 
            TIME_FORMAT(time_slot, '%h:%i %p') as formatted_time,
-           time_slot
+           TIME_FORMAT(cutoff_time, '%h:%i %p') as formatted_cutoff,
+           time_slot, cutoff_time, max_orders_per_slot
     FROM delivery_options
     WHERE is_active = 1
     ORDER BY time_slot ASC
@@ -296,6 +297,173 @@ $order_total = $total_amount + $tax;
         .form-check-label, .btn, .btn-sm, .alert-link, a {
             cursor: pointer;
         }
+        
+        .delivery-option {
+            position: relative;
+            transition: all 0.25s ease-in-out;
+            border-radius: 10px !important;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.1) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .delivery-option:hover:not(.full) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-color: rgba(var(--bs-primary-rgb), 0.4) !important;
+        }
+        
+        .delivery-option.full {
+            opacity: 0.85;
+            background-color: #f8f8f8;
+            border-color: rgba(0,0,0,0.1) !important;
+        }
+        
+        .delivery-option-radio:disabled + label {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .delivery-option-radio:checked + label {
+            border-left: 3px solid var(--primary);
+            font-weight: 600;
+        }
+        
+        .slots-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .slots-badge.slots-available {
+            background-color: rgba(25, 135, 84, 0.1);
+            color: #198754;
+            border: 1px solid rgba(25, 135, 84, 0.3);
+        }
+        
+        .slots-badge.slots-limited {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: #fd7e14;
+            border: 1px solid rgba(255, 193, 7, 0.4);
+        }
+        
+        .slots-badge.slots-full {
+            background-color: rgba(220, 53, 69, 0.15);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.4);
+        }
+        
+        .delivery-full-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(33, 37, 41, 0.03);
+            backdrop-filter: blur(1px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        
+        .full-badge {
+            background: linear-gradient(135deg, #dc3545, #b02a37);
+            color: white;
+            font-weight: 700;
+            padding: 6px 15px;
+            border-radius: 25px;
+            letter-spacing: 0.5px;
+            transform: rotate(-5deg);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .delivery-time-info {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .delivery-time-info i {
+            margin-right: 5px;
+            color: var(--primary);
+            font-size: 0.85rem;
+        }
+        
+        .fee-badge {
+            position: absolute;
+            right: 15px;
+            bottom: 15px;
+            color: white;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), red);
+            box-shadow: 0 2px 5px rgba(13, 110, 253, 0.2);
+            font-size: 0.85rem;
+        }
+        
+        /* Custom radio button styling */
+        .delivery-option input[type="radio"] {
+            position: absolute;
+            visibility: hidden;
+        }
+
+        .delivery-option input[type="radio"] + label {
+            position: relative;
+            padding-left: 30px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .delivery-option input[type="radio"] + label:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 3px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 50%;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .delivery-option input[type="radio"]:checked + label:before {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .delivery-option input[type="radio"]:checked + label:after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 8px;
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        .delivery-option input[type="radio"]:disabled + label:before {
+            background: #e9ecef;
+            border-color: #ced4da;
+        }
+
+        .delivery-option-content {
+            padding-left: 10px;
+        }
     </style>
 </head>
 
@@ -531,15 +699,28 @@ $order_total = $total_amount + $tax;
                                                    value="<?php echo $option['delivery_option_id']; ?>" 
                                                    data-fee="<?php echo $option['fee']; ?>"
                                                    data-time="<?php echo $option['time_slot']; ?>"
+                                                   data-max="<?php echo $option['max_orders_per_slot']; ?>"
                                                    <?php echo $index === 0 ? 'checked' : ''; ?>>
                                             <label class="form-check-label d-block ms-2" for="delivery_<?php echo $option['delivery_option_id']; ?>">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="fw-semibold"><?php echo htmlspecialchars($option['name']); ?></span>
-                                                    <span class="badge" style="background-color: var(--primary);"><?php echo number_format($option['fee'], 0); ?> MMK</span>
+                                                <div class="delivery-option-content">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="fw-semibold fs-6"><?php echo htmlspecialchars($option['name']); ?></span>
+                                                    </div>
+                                                    <div class="text-muted small mt-1"><?php echo htmlspecialchars($option['description']); ?></div>
+                                                    <div class="delivery-time-info">
+                                                        <i class="bi bi-clock-fill me-2"></i>
+                                                        <span>Delivery Time: <?php echo htmlspecialchars($option['formatted_time']); ?> - <?php echo htmlspecialchars($option['formatted_cutoff']); ?></span>
+                                                    </div>
                                                 </div>
-                                                <div class="text-muted small mt-1"><?php echo htmlspecialchars($option['description']); ?></div>
-                                                <div class="text-muted small">Delivery time: <?php echo htmlspecialchars($option['formatted_time']); ?></div>
                                             </label>
+                                            <!-- Slots counter badge -->
+                                            <span class="slots-badge" id="slots_<?php echo $option['delivery_option_id']; ?>">
+                                                <i class="bi bi-hourglass-split me-1"></i> Loading...
+                                            </span>
+                                            <!-- Fee badge -->
+                                            <span class="fee-badge">
+                                                <?php echo number_format($option['fee'], 0); ?> MMK
+                                            </span>
                                         </div>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
@@ -1000,7 +1181,121 @@ $order_total = $total_amount + $tax;
                 submitOrder();
             });
         }
+        
+        // Handle delivery date change
+        const deliveryDateInput = document.getElementById('deliveryDate');
+        if (deliveryDateInput) {
+            deliveryDateInput.addEventListener('change', function() {
+                updateDeliverySlotAvailability(this.value);
+            });
+            
+            // Load slot availability on page load
+            updateDeliverySlotAvailability(deliveryDateInput.value);
+        }
     });
+    
+    // Function to update slot availability for delivery options
+    function updateDeliverySlotAvailability(selectedDate) {
+        // Show loading indicators
+        const slotBadges = document.querySelectorAll('.slots-badge');
+        slotBadges.forEach(badge => {
+            badge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Loading...';
+            badge.className = 'slots-badge';
+        });
+        
+        // Remove any existing full overlays
+        document.querySelectorAll('.delivery-full-overlay').forEach(el => el.remove());
+        
+        // Re-enable all options
+        document.querySelectorAll('.delivery-option-radio').forEach(radio => {
+            radio.disabled = false;
+            radio.closest('.delivery-option').classList.remove('full');
+        });
+        
+        // Make AJAX request to get slot availability
+        fetch('api/orders/check_delivery_slots.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                delivery_date: selectedDate
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update each slot with availability
+                data.slot_availability.forEach(slot => {
+                    const slotId = 'slots_' + slot.delivery_option_id;
+                    const badgeElement = document.getElementById(slotId);
+                    const radioElement = document.getElementById('delivery_' + slot.delivery_option_id);
+                    
+                    if (badgeElement && radioElement) {
+                        const availableSlots = slot.max_orders - slot.order_count;
+                        const deliveryOption = radioElement.closest('.delivery-option');
+                        
+                        // Update badge content
+                        let badgeClass = 'slots-badge ';
+                        let badgeContent = '';
+                        
+                        if (availableSlots <= 0) {
+                            // No slots available
+                            badgeClass += 'slots-full';
+                            badgeContent = '<i class="bi bi-x-circle me-1"></i> Full';
+                            
+                            // Disable the radio button
+                            radioElement.disabled = true;
+                            deliveryOption.classList.add('full');
+                            
+                            // Add full overlay
+                            const overlay = document.createElement('div');
+                            overlay.className = 'delivery-full-overlay';
+                            overlay.innerHTML = '<span class="full-badge">FULLY RESERVED</span>';
+                            deliveryOption.appendChild(overlay);
+                            
+                            // If this was selected, select the first available option instead
+                            if (radioElement.checked) {
+                                const firstAvailable = document.querySelector('.delivery-option-radio:not(:disabled)');
+                                if (firstAvailable) {
+                                    firstAvailable.checked = true;
+                                    // Trigger change event to update price calculation
+                                    const event = new Event('change');
+                                    firstAvailable.dispatchEvent(event);
+                                }
+                            }
+                        } else if (availableSlots <= 3) {
+                            // Limited slots
+                            badgeClass += 'slots-limited';
+                            badgeContent = '<i class="bi bi-exclamation-triangle me-1"></i> ' + availableSlots + '/' + slot.max_orders + ' left';
+                        } else {
+                            // Plenty of slots
+                            badgeClass += 'slots-available';
+                            badgeContent = '<i class="bi bi-check-circle me-1"></i> ' + availableSlots + '/' + slot.max_orders + ' available';
+                        }
+                        
+                        badgeElement.className = badgeClass;
+                        badgeElement.innerHTML = badgeContent;
+                    }
+                });
+            } else {
+                console.error('Failed to load slot availability:', data.message);
+                // Show error in badges
+                slotBadges.forEach(badge => {
+                    badge.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Error loading';
+                    badge.className = 'slots-badge slots-limited';
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error checking delivery slots:', error);
+            // Show error in badges
+            slotBadges.forEach(badge => {
+                badge.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Error loading';
+                badge.className = 'slots-badge slots-limited';
+            });
+        });
+    }
     </script>
 </body>
 

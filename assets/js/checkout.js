@@ -6,6 +6,11 @@
 // Global variables for addresses
 let savedAddresses = [];
 
+// Define variables
+let orderFormData = {};
+let transferSlipFile = null;
+let currentPaymentMethodId = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize variables
     
@@ -793,16 +798,21 @@ function submitOrderWithFile(formData) {
 }
 
 /**
- * Handles the order response
+ * Handle order response
+ * @param {Object} data - Response data
  */
 function handleOrderResponse(data) {
     document.getElementById('placeOrderBtn').disabled = false;
     
     if (data.success) {
-        // Address is already saved before order submission
         redirectAfterOrder(data);
     } else {
-        showAlert('danger', data.message || 'An error occurred while placing your order');
+        // Handle error responses
+        if (data.error_code === 'SLOT_FULL') {
+            handleOrderError(data); // This will handle the specific SLOT_FULL error
+        } else {
+            showErrorAlert(data.message || 'An error occurred while placing your order.');
+        }
     }
 }
 
@@ -821,9 +831,27 @@ function redirectAfterOrder(data) {
  * Handles order error
  */
 function handleOrderError(error) {
-    document.getElementById('placeOrderBtn').disabled = false;
-    console.error('Error:', error);
-    showAlert('danger', 'An error occurred while placing your order');
+    console.error('Order Error:', error);
+    
+    hideLoadingOverlay();
+    
+    // Check if error has specific error_code for slot availability
+    if (error && error.error_code === 'SLOT_FULL') {
+        // Show error about slot being full
+        showErrorAlert(error.message || 'This delivery slot is now fully booked. Please select another time.');
+        
+        // Force refresh the delivery slots to show updated availability
+        const deliveryDateInput = document.getElementById('deliveryDate');
+        if (deliveryDateInput) {
+            updateDeliverySlotAvailability(deliveryDateInput.value);
+        }
+        
+        // Expand the delivery section and scroll to it
+        expandSectionAndFocus('deliveryDateSection');
+    } else {
+        // Show generic error
+        showErrorAlert(error.message || 'An error occurred processing your order. Please try again.');
+    }
 }
 
 /**
@@ -1000,4 +1028,117 @@ function checkAddressLimit() {
         .catch(error => {
             console.error('Error checking address limit:', error);
         });
+}
+
+/**
+ * Function to show error alerts
+ * @param {string} message - Error message to display
+ */
+function showErrorAlert(message) {
+    const alertContainer = document.getElementById('alertContainer');
+    if (alertContainer) {
+        alertContainer.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Scroll to the alert
+        alertContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+/**
+ * Helper function for development/testing only
+ */
+function testSlotAvailability(overrideData) {
+    // Sample data with different slot statuses
+    const testData = overrideData || {
+        success: true,
+        delivery_date: document.getElementById('deliveryDate').value,
+        slot_availability: [
+            {
+                delivery_option_id: 1,
+                order_count: 10,
+                max_orders: 10,
+                is_available: false
+            },
+            {
+                delivery_option_id: 2,
+                order_count: 8,
+                max_orders: 10,
+                is_available: true
+            },
+            {
+                delivery_option_id: 3,
+                order_count: 2,
+                max_orders: 10,
+                is_available: true
+            }
+        ]
+    };
+    
+    // Process this test data as if it came from the server
+    const slotBadges = document.querySelectorAll('.slots-badge');
+    slotBadges.forEach(badge => {
+        badge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Testing...';
+    });
+    
+    // Remove any existing full overlays
+    document.querySelectorAll('.delivery-full-overlay').forEach(el => el.remove());
+    
+    // Re-enable all options
+    document.querySelectorAll('.delivery-option-radio').forEach(radio => {
+        radio.disabled = false;
+        radio.closest('.delivery-option').classList.remove('full');
+    });
+    
+    // Simulate processing the data from server
+    setTimeout(() => {
+        testData.slot_availability.forEach(slot => {
+            const slotId = 'slots_' + slot.delivery_option_id;
+            const badgeElement = document.getElementById(slotId);
+            const radioElement = document.getElementById('delivery_' + slot.delivery_option_id);
+            
+            if (badgeElement && radioElement) {
+                const availableSlots = slot.max_orders - slot.order_count;
+                const deliveryOption = radioElement.closest('.delivery-option');
+                
+                // Update badge content
+                let badgeClass = 'slots-badge ';
+                let badgeContent = '';
+                
+                if (availableSlots <= 0) {
+                    // No slots available
+                    badgeClass += 'slots-full';
+                    badgeContent = '<i class="bi bi-x-circle me-1"></i> Full';
+                    
+                    // Disable the radio button
+                    radioElement.disabled = true;
+                    deliveryOption.classList.add('full');
+                    
+                    // Add full overlay
+                    const overlay = document.createElement('div');
+                    overlay.className = 'delivery-full-overlay';
+                    overlay.innerHTML = '<span class="full-badge">FULLY BOOKED</span>';
+                    deliveryOption.appendChild(overlay);
+                } else if (availableSlots <= 3) {
+                    // Limited slots
+                    badgeClass += 'slots-limited';
+                    badgeContent = '<i class="bi bi-exclamation-triangle me-1"></i> ' + availableSlots + '/' + slot.max_orders + ' left';
+                } else {
+                    // Plenty of slots
+                    badgeClass += 'slots-available';
+                    badgeContent = '<i class="bi bi-check-circle me-1"></i> ' + availableSlots + '/' + slot.max_orders + ' available';
+                }
+                
+                badgeElement.className = badgeClass;
+                badgeElement.innerHTML = badgeContent;
+            }
+        });
+        
+        // Log test completion
+        console.log('Test slot availability display completed');
+    }, 500);
 } 
