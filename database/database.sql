@@ -374,12 +374,13 @@ INSERT INTO delivery_options (name, description, fee, time_slot, cutoff_time, ma
 
 -- Insert users
 -- Users (1372004zinlaimon)
-INSERT INTO users (username, email, password, full_name, role) VALUES
-('admin', 'admin@healthymeal.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Admin User', 1),
-('a_mon', 'amonpooh@gmail.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'A Mon', 0),
-('zin_lai', 'zinlai@example.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Zin_Lai', 0),
-('mike_wilson', 'mike@example.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Mike Wilson', 0),
-('sarah_brown', 'sarah@example.com', '$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq', 'Sarah Brown', 0);
+INSERT INTO users VALUES
+(1,'admin','admin@healthymeal.com','$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq','Admin User',1,1,'2025-05-31 12:12:23',NULL,NULL,NULL,'2025-05-30 04:13:14'),
+(2,'a_mon','amonpooh@gmail.com','$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq','A Mon',0,1,NULL,NULL,NULL,NULL,'2025-05-30 04:13:14'),
+(3,'zin_lai','zinlai@example.com','$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq','Zin_Lai',0,1,NULL,NULL,NULL,NULL,'2025-05-30 04:13:14'),
+(4,'mike_wilson','mike@example.com','$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq','Mike Wilson',0,1,NULL,NULL,NULL,NULL,'2025-05-30 04:13:14'),
+(5,'sarah_brown','sarah@example.com','$2y$10$9ClmaEyPPcO47uITkn9Vh.3FzMWddrxp//VuBPA2Kx4o/4qB/1Dyq','Sarah Brown',0,1,NULL,NULL,NULL,NULL,'2025-05-30 04:13:14'),
+(6,'allena345','allena345@gmail.com','$2y$10$kntwMdrZ.ief7kz16xuLFux/sJC7WcguAUvrzwUfBMbrfkwYlTp3i','Alle na',0,1,'2025-05-31 21:31:43',NULL,NULL,NULL,'2025-05-30 04:20:22');
 
 -- Insert categories
 INSERT INTO categories (name, description) VALUES
@@ -390,17 +391,40 @@ INSERT INTO categories (name, description) VALUES
 ('Desserts', 'Guilt-free desserts');
 
 -- Insert ingredients
-INSERT INTO ingredients (name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, price_per_100g, is_vegetarian, is_vegan, is_halal) VALUES
-('Chicken Breast', 165, 31, 0, 3.6, 5000, 0, 0, 1),
-('Brown Rice', 111, 2.6, 23, 0.9, 1600, 1, 1, 1),
-('Broccoli', 34, 2.8, 7, 0.4, 1200, 1, 1, 1),
-('Carrots', 41, 0.9, 9.6, 0.2, 800, 1, 1, 1),
-('Olive Oil', 884, 0, 0, 100, 6000, 1, 1, 1),
-('Salmon', 208, 22, 0, 13, 9000, 0, 0, 0),
-('Quinoa', 120, 4.4, 21.3, 1.9, 2400, 1, 1, 1),
-('Sweet Potato', 86, 1.6, 20.1, 0.1, 1400, 1, 1, 1),
-('Kale', 49, 4.3, 8.8, 0.9, 1800, 1, 1, 1),
-('Tofu', 76, 8, 1.9, 4.8, 3000, 1, 1, 1);
+INSERT INTO ingredients VALUES 
+(1,'Chicken Breast',165.00,31.00,0.00,3.60,5000,0,0,0,1,'2025-05-30 04:13:14'),
+(2,'Brown Rice',111.00,2.60,23.00,0.90,1600,0,1,1,1,'2025-05-30 04:13:14'),
+(3,'Broccoli',34.00,2.80,7.00,0.40,1200,0,1,1,1,'2025-05-30 04:13:14'),
+(4,'Carrots',41.00,0.90,9.60,0.20,800,0,1,1,1,'2025-05-30 04:13:14'),
+(5,'Olive Oil',884.00,0.00,0.00,100.00,6000,0,1,1,1,'2025-05-30 04:13:14'),
+(6,'Salmon',208.00,22.00,0.00,13.00,9000,0,0,0,0,'2025-05-30 04:13:14'),
+(7,'Quinoa',120.00,4.40,21.30,1.90,2400,0,1,1,1,'2025-05-30 04:13:14'),
+(8,'Sweet Potato',86.00,1.60,20.10,0.10,1400,0,1,1,1,'2025-05-30 04:13:14'),
+(9,'Kale',49.00,4.30,8.80,0.90,1800,0,1,1,1,'2025-05-30 04:13:14'),
+(10,'Tofu',76.00,8.00,1.90,4.80,3000,0,1,1,1,'2025-05-30 04:13:14'),
+(11,'Spinach',23.00,2.90,3.60,0.40,1500,0,1,1,1,'2025-05-30 04:13:14'),
+(12,'Red Bell Pepper',31.00,1.00,6.00,0.30,1900,0,1,1,1,'2025-05-30 04:13:14'),
+(13,'Brown Lentils',116.00,9.00,20.00,0.40,1800,0,1,1,1,'2025-05-30 04:13:14'),
+(14,'Chickpeas',164.00,8.90,27.00,2.60,1600,0,1,1,1,'2025-05-30 04:13:14'),
+(15,'Beef',250.00,26.00,0.00,17.00,8000,1,0,0,1,'2025-05-30 04:13:14'),
+(16,'Lamb',294.00,25.00,0.00,21.00,9500,1,0,0,1,'2025-05-30 04:13:14'),
+(17,'Pork',242.00,27.00,0.00,14.00,7500,1,0,0,0,'2025-05-30 04:13:14'),
+(18,'Avocado',160.00,2.00,8.50,14.70,6000,0,1,1,1,'2025-05-30 04:13:14'),
+(19,'Greek Yogurt',59.00,10.00,3.60,0.40,3200,0,1,0,1,'2025-05-30 04:13:14'),
+(20,'Almonds',576.00,21.00,22.00,49.00,7000,0,1,1,1,'2025-05-30 04:13:14'),
+(21,'RIce',60.00,70.00,34.00,67.00,2000,0,1,1,1,'2025-05-30 04:24:40'),
+(22,'Cherry Tomatoe',30.00,50.00,3.00,6.00,4000,0,1,1,1,'2025-05-30 04:25:42'),
+(23,'Eggplant',50.00,30.00,5.00,8.00,2000,0,1,1,1,'2025-05-30 04:26:57'),
+(24,'Egg',50.00,70.00,3.00,6.00,1000,1,0,0,1,'2025-05-30 04:27:19'),
+(25,'Blue Berry',40.00,50.00,5.00,9.00,6000,0,1,1,1,'2025-05-30 04:29:18'),
+(26,'Banana',30.00,80.00,3.00,7.00,1000,0,1,1,1,'2025-05-30 04:30:05'),
+(27,'Resberry',60.00,30.00,6.00,9.00,5000,0,1,1,1,'2025-05-30 04:30:35'),
+(28,'Lentils',30.00,50.00,3.00,2.00,4000,0,1,1,1,'2025-05-30 04:33:15'),
+(29,'Lemon Juice',20.00,10.00,4.00,3.00,1000,0,1,1,1,'2025-05-30 04:33:44'),
+(30,'Apple',20.00,50.00,3.00,2.00,3000,0,1,1,1,'2025-05-30 04:37:35'),
+(31,'Almond flour',30.00,40.00,5.00,3.00,6000,0,1,1,1,'2025-05-30 04:48:02'),
+(32,'Cocoa powder',30.00,60.00,4.00,3.00,4000,0,1,1,1,'2025-05-30 04:48:28'),
+(33,'Coconut sugar',30.00,20.00,3.00,6.00,3000,0,1,1,1,'2025-05-30 04:49:00');
 
 -- Insert health tips
 INSERT INTO health_tips (content) VALUES
@@ -415,35 +439,78 @@ INSERT INTO health_tips (content) VALUES
 -- =============================================
 
 -- Insert user preferences
-INSERT INTO user_preferences (user_id, dietary_restrictions, allergies, cooking_experience, household_size, calorie_goal) VALUES
-(2, 'none', 'none', 1, 2, 2000),
-(3, 'vegetarian', 'dairy', 0, 1, 1800),
-(4, 'halal', 'none', 2, 4, 2200),
-(5, 'vegan', 'nuts', 1, 2, 1600);
+INSERT INTO user_preferences VALUES 
+(1,2,'none','none',1,2,2000,'2025-05-30 04:13:14','2025-05-30 04:13:14',NULL,NULL,0),
+(2,3,'vegetarian','dairy',0,1,1800,'2025-05-30 04:13:14','2025-05-30 04:13:14',NULL,NULL,0),
+(3,4,'halal','none',2,4,2200,'2025-05-30 04:13:14','2025-05-30 04:13:14',NULL,NULL,0),
+(4,5,'vegan','nuts',1,2,1600,'2025-05-30 04:13:14','2025-05-30 04:13:14',NULL,NULL,0),
+(5,6,NULL,NULL,0,1,2000,'2025-05-30 04:20:22','2025-05-30 04:20:22',NULL,NULL,0);
 
 -- Insert user addresses
-INSERT INTO user_addresses (user_id, address_name, full_address, city, postal_code, is_default) VALUES
-(2, 'Home', '123 Main St, Apt 4B', 'New York', '10001', 1),
-(2, 'Work', '456 Office Blvd, Suite 100', 'New York', '10002', 0),
-(3, 'Home', '789 Residential Ave', 'Los Angeles', '90001', 1),
-(4, 'Home', '101 Mountain View Rd', 'Denver', '80201', 1),
-(5, 'Home', '202 Seaside Dr', 'Miami', '33101', 1);
+INSERT INTO user_addresses VALUES 
+(1,2,'Home','123 Main St, Apt 4B','New York','10001',1,'2025-05-30 04:13:14'),
+(2,2,'Work','456 Office Blvd, Suite 100','New York','10002',0,'2025-05-30 04:13:14'),
+(3,3,'Home','789 Residential Ave','Los Angeles','90001',1,'2025-05-30 04:13:14'),
+(4,4,'Home','101 Mountain View Rd','Denver','80201',1,'2025-05-30 04:13:14'),
+(5,5,'Home','202 Seaside Dr','Miami','33101',1,'2025-05-30 04:13:14'),
+(6,6,'Work','1234 Main St','Yangon','11411',1,'2025-05-30 06:09:34');
 
 -- Insert meal kits
-INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, image_url) VALUES
-('Healthy Start Breakfast Bowl', 'Nutritious breakfast bowl with quinoa and fruits', 1, 25980, 450, ''),
-('Power Lunch Box', 'High protein lunch with lean meat and vegetables', 2, 31980, 600, ''),
-('Light Dinner Delight', 'Low-calorie dinner option', 3, 29980, 400, ''),
-('Energy Boost Snack Pack', 'Healthy snacking option', 4, 17980, 200, ''),
-('Guilt-free Dessert Box', 'Healthy dessert options', 5, 21980, 300, '');
+INSERT INTO meal_kits VALUES 
+(1,'Healthy Start Breakfast Bowl','Nutritious breakfast bowl with quinoa and fruits',1,25980,270,15,1,'mk_683934b4cc7926.59920056.jpg',1,'2025-05-30 04:13:14'),
+(2,'Power Lunch Box','High protein lunch with lean meat and vegetables',2,31980,398,30,1,'mk_683935f64d36e1.58604440.jpg',1,'2025-05-30 04:13:14'),
+(3,'Light Dinner Delight','Low-calorie dinner option',3,29000,398,30,1,'mk_683932e4a05702.99649155.jpg',1,'2025-05-30 04:13:14'),
+(4,'Energy Boost Snack Pack','Energy Boost Snack Pack with Egg, Chicken breast, olive oil, spinach, broccoli and almonds',4,17980,283,25,1,'mk_683937313c72e5.80377643.jpg',1,'2025-05-30 04:13:14'),
+(5,'Guilt-free Dessert','Almond Flour Brownie',5,21980,453,20,4,'mk_68393854d98102.94742973.jpg',1,'2025-05-30 04:13:14'),
+(6,'Vegan Breakfast Bowl','A delicious plant-based breakfast with quinoa, avocado, and fresh vegetables',1,24980,285,15,1,'mk_68393957a7ccb9.15669897.jpg',1,'2025-05-30 04:13:14'),
+(7,'Protein-Packed Morning Start','High protein breakfast with eggs, greek yogurt, and lean meat',1,27980,186,20,1,'mk_6839337d7a00a1.56870446.jpg',1,'2025-05-30 04:13:14'),
+(8,'Vegetarian Breakfast Platter','Vegetarian breakfast with tofu scramble, sweet potatoes, and vegetables',1,25000,214,25,1,'mk_683931d2960474.03489380.jpg',1,'2025-05-30 04:13:14'),
+(9,'Halal Breakfast Delight','Halal-friendly breakfast with chicken, brown rice, and vegetables',1,26980,258,20,1,'mk_6839316c606ba7.51516677.jpg',1,'2025-05-30 04:13:14'),
+(10,'Vegan Lunch Bowl','Plant-based lunch with lentils, chickpeas, and fresh vegetables',2,29980,310,30,1,'mk_683935717cf658.93193051.jpg',1,'2025-05-30 04:13:14'),
+(11,'High-Protein Lunch Box','Protein-rich lunch with beef, quinoa, and roasted vegetables',2,33980,620,35,1,NULL,1,'2025-05-30 04:13:14'),
+(12,'Vegetarian Lunch Delight','Vegetarian lunch with tofu, brown rice, and steamed vegetables',2,30980,590,25,1,NULL,1,'2025-05-30 04:13:14'),
+(13,'Halal Lunch Special','Halal-friendly lunch with lamb, couscous, and mixed vegetables',2,32980,610,30,1,NULL,1,'2025-05-30 04:13:14'),
+(14,'Vegan Dinner Plate','Light vegan dinner with tofu, quinoa, and steamed vegetables',3,27980,380,25,1,NULL,1,'2025-05-30 04:13:14'),
+(15,'Protein Dinner Box','Protein-rich dinner with chicken breast, sweet potato, and broccoli',3,31980,420,30,1,NULL,1,'2025-05-30 04:13:14'),
+(16,'Vegetarian Dinner Special','Vegetarian dinner with plant protein, brown rice, and seasonal vegetables',3,28980,390,25,1,NULL,1,'2025-05-30 04:13:14'),
+(17,'Halal Dinner Delight','Halal-friendly dinner with beef, vegetables, and light sauce',3,30980,410,30,1,NULL,1,'2025-05-30 04:13:14'),
+(18,'Vegan Snack Pack','Plant-based snacks with nuts, dried fruits, and vegetable chips',4,16980,190,10,1,NULL,1,'2025-05-30 04:13:14'),
+(19,'Protein Snack Box','Protein-rich snacks with Greek yogurt, nuts, and lean meat jerky',4,18980,210,5,1,NULL,1,'2025-05-30 04:13:14'),
+(20,'Vegetarian Snack Delight','Vegetarian snacks with cheese, crackers, and fresh fruits',4,17980,200,5,1,NULL,1,'2025-05-30 04:13:14'),
+(21,'Halal Snack Special','Halal-friendly snacks with halal meat, dates, and nuts',4,17980,205,5,1,NULL,1,'2025-05-30 04:13:14'),
+(22,'Vegan Sweet Treat','Plant-based dessert with fruit compote and nut toppings',5,20980,280,15,1,NULL,1,'2025-05-30 04:13:14'),
+(23,'Protein Dessert Box','Protein-enriched dessert with Greek yogurt and berries',5,22980,320,10,1,NULL,1,'2025-05-30 04:13:14'),
+(24,'Vegetarian Dessert Delight','Vegetarian dessert with honey, yogurt, and fresh fruits',5,21980,290,15,1,NULL,1,'2025-05-30 04:13:14'),
+(25,'Halal Dessert Special','Halal-friendly dessert with dates, nuts, and natural sweeteners',5,21980,310,10,1,NULL,1,'2025-05-30 04:13:14');
 
 -- Insert meal kit ingredients
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(1, 2, 100),
-(1, 3, 150),
-(2, 1, 200),
-(2, 3, 150),
-(3, 4, 180);
+INSERT INTO meal_kit_ingredients VALUES 
+(1,20,40),
+(1,25,40),
+(1,26,20),
+(1,27,30),
+(2,1,200),
+(2,3,150),
+(2,22,20),
+(2,24,10),
+(2,30,30),
+(3,1,100),
+(3,3,40),
+(3,4,180),
+(3,5,10),
+(3,11,20),
+(3,12,10),
+(3,14,30),
+(4,1,100),
+(4,5,10),
+(4,11,40),
+(4,19,20),
+(4,22,30),
+(5,5,20),
+(5,20,40),
+(5,24,20),
+(5,31,50),
+(5,32,50),(5,33,20),(6,5,5),(6,7,100),(6,11,50),(6,12,50),(6,18,50),(6,22,30),(6,24,10),(7,3,50),(7,18,50),(7,19,100),(7,22,50),(7,23,20),(7,24,10),(8,8,80),(8,10,100),(8,11,40),(8,12,40),(8,18,30),(9,1,80),(9,2,80),(9,3,50),(9,4,50),(10,11,50),(10,12,20),(10,13,100),(10,14,100),(10,19,20),(11,3,60),(11,4,60),(11,7,80),(11,15,120),(12,2,100),(12,3,70),(12,10,120),(12,11,50),(13,2,100),(13,4,60),(13,12,60),(13,16,120),(14,7,70),(14,10,100),(14,11,60),(14,18,30),(15,1,120),(15,3,80),(15,8,100),(16,2,80),(16,10,100),(16,11,60),(16,12,60),(17,3,70),(17,4,70),(17,5,10),(17,15,100),(18,14,40),(18,18,20),(18,20,30),(19,1,20),(19,19,60),(19,20,30),(20,18,20),(20,19,60),(20,20,30),(21,1,30),(21,5,5),(21,20,40),(22,5,5),(22,18,50),(22,20,30),(23,19,100),(23,20,30),(24,18,30),(24,19,80),(24,20,30),(25,5,10),(25,20,60);
 
 -- Insert blog posts
 INSERT INTO blog_posts (title, content, author_id, image_url) VALUES
@@ -460,273 +527,3 @@ INSERT INTO comments (post_id, user_id, content) VALUES
 (2, 4, 'Finally understanding macros better!'),
 (3, 5, 'These tips are game-changers!'),
 (4, 2, 'Perfect guide for beginners.');
-
--- =============================================
--- INSERT DATA - Complex relations
--- =============================================
-
--- Insert sample orders
-INSERT INTO orders (user_id, status_id, created_at, delivery_address, contact_number, customer_phone, account_phone, delivery_notes, payment_method_id, payment_reference, is_paid, delivery_fee, delivery_option_id, subtotal, tax, total_amount) VALUES
-(2, 4, '2024-02-01 10:00:00', '123 Main St, City, State 12345', '555-0123', '555-0123', '09123456789', 'Please leave at front door', 1, 'PAY-REF-001', 1, 10000, 1, 135940, 6800, 152740),
-(2, 2, '2024-02-15 14:30:00', '123 Main St, City, State 12345', '555-0123', '555-0123', '09123456789', NULL, 1, 'PAY-REF-002', 1, 10000, 1, 125940, 6300, 142240),
-(2, 2, '2024-02-28 09:15:00', '123 Main St, City, State 12345', '555-0123', '555-0123', '09123456789', 'Ring doorbell', 1, 'PAY-REF-003', 1, 10000, 1, 141940, 7100, 159040),
-(2, 1, '2024-03-01 16:45:00', '123 Main St, City, State 12345', '555-0123', '555-0123', '09123456789', NULL, 1, 'PAY-REF-004', 0, 10000, 1, 165920, 8300, 184220),
-(2, 3, '2024-02-10 11:20:00', '123 Main St, City, State 12345', '555-0123', '555-0123', '09123456789', 'Cancelled due to out of stock', 1, 'PAY-REF-005', 1, 10000, 1, 89960, 4500, 104460);
-
--- Insert order items
-INSERT INTO order_items (order_id, meal_kit_id, quantity, price_per_unit, customization_notes) VALUES
--- Order 1 items
-(1, 1, 2, 49980, 'Extra spicy, no cilantro'),
-(1, 2, 1, 39980, NULL),
-(1, 3, 1, 45980, 'Gluten-free option'),
-
--- Order 2 items
-(2, 2, 2, 39980, 'Regular spice level'),
-(2, 3, 1, 45980, NULL),
-
--- Order 3 items
-(3, 1, 1, 49980, 'Vegetarian option'),
-(3, 3, 2, 45980, 'Extra vegetables'),
-
--- Order 4 items
-(4, 2, 3, 39980, NULL),
-(4, 3, 1, 45980, 'No nuts'),
-
--- Order 5 items
-(5, 1, 1, 49980, NULL),
-(5, 2, 1, 39980, 'Low sodium');
-
--- Insert payment history
-INSERT INTO payment_history (order_id, amount, payment_method_id, transaction_id, payment_reference, payment_status) VALUES
-(1, 159540, 1, 'TXN123456789', 'PAY-REF-001', 1),
-(2, 148540, 1, 'PP987654321', 'PAY-REF-002', 1),
-(3, 166140, 1, 'TXN567891234', 'PAY-REF-003', 1),
-(4, 92110, 1, 'PAYMENT-PENDING', 'PAY-REF-004', 0),
-(5, 108960, 1, 'TXN456789123', 'PAY-REF-005', 3);
-
--- Insert order item ingredients
-INSERT INTO order_item_ingredients (order_item_id, ingredient_id, custom_grams) VALUES
-    (1, 1, 150.00), -- Chicken 150g for order_item_id 1
-    (1, 2, 100.00), -- Rice 100g for order_item_id 1
-    (1, 3, 50.00),  -- Broccoli 50g for order_item_id 1
-    (2, 3, 120.00); -- Broccoli 120g for order_item_id 2
-
--- Insert payment verifications
-INSERT INTO payment_verifications (order_id, payment_id, transaction_id, amount_verified, payment_status, verification_notes, verified_by_id, transfer_slip, payment_verified, payment_verified_at, verification_attempt, resubmission_status) VALUES
-(1, 1, 'TXN123456789', 159540, 1, 'Payment slip matches transaction details', 1, 'slip1.jpg', 1, '2024-02-01 11:30:00', 1, 0),
-(2, 2, 'PP987654321', 148540, 1, 'Verified through PayPal API', 1, 'slip2.jpg', 1, '2024-02-15 15:45:00', 1, 0),
-(3, 3, 'TXN567891234', 166140, 1, 'Transaction confirmed in bank statement', 1, 'slip3.jpg', 1, '2024-02-28 10:20:00', 1, 0),
-(4, 4, 'PARTIAL-PAY', 92110, 4, 'Partial payment verified, waiting for remaining amount', 1, 'slip4.jpg', 0, NULL, 1, 0),
-(4, NULL, NULL, 0, 0, 'Awaiting payment for remaining balance', 1, NULL, 0, NULL, 2, 2),
-(5, 5, 'TXN456789123', 108960, 3, 'Refunded due to out of stock', 1, 'slip5.jpg', 1, '2024-02-10 13:15:00', 1, 0);
-
--- Insert payment verification logs
-INSERT INTO payment_verification_logs (verification_id, order_id, status_changed_from, status_changed_to, amount, admin_notes, verified_by_id) VALUES
-(1, 1, 0, 1, 159540, 'Payment verified successfully', 1),
-(2, 2, 0, 1, 148540, 'Payment verified successfully', 1),
-(3, 3, 0, 1, 166140, 'Payment verified successfully', 1),
-(4, 4, 0, 4, 92110, 'Partial payment received', 1),
-(6, 5, 0, 3, 108960, 'Payment refunded to customer', 1);
-
--- Insert order notifications
-INSERT INTO order_notifications (order_id, user_id, message, note, is_read) VALUES
-(1, 2, 'Your order has been cancelled as requested.', 'Payment not verified', 1),
-(2, 2, 'Your order has been confirmed and is being prepared.', NULL, 1),
-(3, 2, 'Your order has been confirmed and is being prepared.', NULL, 0),
-(4, 2, 'Your order has been received and is pending payment confirmation.', NULL, 0),
-(5, 2, 'Your order has been delivered. Enjoy your meal!', NULL, 1);
-
--- =============================================
--- ADDITIONAL TEST DATA FOR SIMILAR MEAL KIT RECOMMENDATIONS
--- =============================================
-
--- Add more ingredients
-INSERT INTO ingredients (name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, price_per_100g, is_meat, is_vegetarian, is_vegan, is_halal) VALUES
-('Spinach', 23, 2.9, 3.6, 0.4, 1500, 0, 1, 1, 1),
-('Red Bell Pepper', 31, 1.0, 6.0, 0.3, 1900, 0, 1, 1, 1),
-('Brown Lentils', 116, 9.0, 20.0, 0.4, 1800, 0, 1, 1, 1),
-('Chickpeas', 164, 8.9, 27.0, 2.6, 1600, 0, 1, 1, 1),
-('Beef', 250, 26.0, 0.0, 17.0, 8000, 1, 0, 0, 1),
-('Lamb', 294, 25.0, 0.0, 21.0, 9500, 1, 0, 0, 1),
-('Pork', 242, 27.0, 0.0, 14.0, 7500, 1, 0, 0, 0),
-('Avocado', 160, 2.0, 8.5, 14.7, 6000, 0, 1, 1, 1),
-('Greek Yogurt', 59, 10.0, 3.6, 0.4, 3200, 0, 1, 0, 1),
-('Almonds', 576, 21.0, 22.0, 49.0, 7000, 0, 1, 1, 1);
-
--- Add more meal kits for testing similar recommendations
-
--- BREAKFAST CATEGORY (ID: 1)
-INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
-('Vegan Breakfast Bowl', 'A delicious plant-based breakfast with quinoa, avocado, and fresh vegetables', 1, 24980, 420, 15, 1, 1),
-('Protein-Packed Morning Start', 'High protein breakfast with eggs, greek yogurt, and lean meat', 1, 27980, 480, 20, 1, 1),
-('Vegetarian Breakfast Platter', 'Vegetarian breakfast with tofu scramble, sweet potatoes, and vegetables', 1, 25980, 440, 25, 1, 1),
-('Halal Breakfast Delight', 'Halal-friendly breakfast with chicken, brown rice, and vegetables', 1, 26980, 460, 20, 1, 1);
-
--- LUNCH CATEGORY (ID: 2)
-INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
-('Vegan Lunch Bowl', 'Plant-based lunch with lentils, chickpeas, and fresh vegetables', 2, 29980, 580, 30, 1, 1),
-('High-Protein Lunch Box', 'Protein-rich lunch with beef, quinoa, and roasted vegetables', 2, 33980, 620, 35, 1, 1),
-('Vegetarian Lunch Delight', 'Vegetarian lunch with tofu, brown rice, and steamed vegetables', 2, 30980, 590, 25, 1, 1),
-('Halal Lunch Special', 'Halal-friendly lunch with lamb, couscous, and mixed vegetables', 2, 32980, 610, 30, 1, 1);
-
--- DINNER CATEGORY (ID: 3)
-INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
-('Vegan Dinner Plate', 'Light vegan dinner with tofu, quinoa, and steamed vegetables', 3, 27980, 380, 25, 1, 1),
-('Protein Dinner Box', 'Protein-rich dinner with chicken breast, sweet potato, and broccoli', 3, 31980, 420, 30, 1, 1),
-('Vegetarian Dinner Special', 'Vegetarian dinner with plant protein, brown rice, and seasonal vegetables', 3, 28980, 390, 25, 1, 1),
-('Halal Dinner Delight', 'Halal-friendly dinner with beef, vegetables, and light sauce', 3, 30980, 410, 30, 1, 1);
-
--- SNACKS CATEGORY (ID: 4)
-INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
-('Vegan Snack Pack', 'Plant-based snacks with nuts, dried fruits, and vegetable chips', 4, 16980, 190, 10, 1, 1),
-('Protein Snack Box', 'Protein-rich snacks with Greek yogurt, nuts, and lean meat jerky', 4, 18980, 210, 5, 1, 1),
-('Vegetarian Snack Delight', 'Vegetarian snacks with cheese, crackers, and fresh fruits', 4, 17980, 200, 5, 1, 1),
-('Halal Snack Special', 'Halal-friendly snacks with halal meat, dates, and nuts', 4, 17980, 205, 5, 1, 1);
-
--- DESSERTS CATEGORY (ID: 5)
-INSERT INTO meal_kits (name, description, category_id, preparation_price, base_calories, cooking_time, servings, is_active) VALUES
-('Vegan Sweet Treat', 'Plant-based dessert with fruit compote and nut toppings', 5, 20980, 280, 15, 1, 1),
-('Protein Dessert Box', 'Protein-enriched dessert with Greek yogurt and berries', 5, 22980, 320, 10, 1, 1),
-('Vegetarian Dessert Delight', 'Vegetarian dessert with honey, yogurt, and fresh fruits', 5, 21980, 290, 15, 1, 1),
-('Halal Dessert Special', 'Halal-friendly dessert with dates, nuts, and natural sweeteners', 5, 21980, 310, 10, 1, 1);
-
--- Link meal kits with ingredients
-
--- BREAKFAST MEAL KIT INGREDIENTS
-
--- Vegan Breakfast Bowl (ID: 6)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(6, 7, 100),  -- Quinoa
-(6, 11, 50),  -- Spinach
-(6, 12, 50),  -- Red Bell Pepper
-(6, 18, 50);  -- Avocado
-
--- Protein-Packed Morning Start (ID: 7)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(7, 1, 80),   -- Chicken Breast
-(7, 19, 100), -- Greek Yogurt
-(7, 2, 70),   -- Brown Rice
-(7, 3, 50);   -- Broccoli
-
--- Vegetarian Breakfast Platter (ID: 8)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(8, 10, 100), -- Tofu
-(8, 8, 80),   -- Sweet Potato
-(8, 11, 40),  -- Spinach
-(8, 12, 40);  -- Red Bell Pepper
-
--- Halal Breakfast Delight (ID: 9)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(9, 1, 80),   -- Chicken Breast (is_halal=1)
-(9, 2, 80),   -- Brown Rice
-(9, 3, 50),   -- Broccoli
-(9, 4, 50);   -- Carrots
-
--- LUNCH MEAL KIT INGREDIENTS
-
--- Vegan Lunch Bowl (ID: 10)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(10, 13, 100), -- Brown Lentils
-(10, 14, 100), -- Chickpeas
-(10, 11, 50),  -- Spinach
-(10, 12, 50);  -- Red Bell Pepper
-
--- High-Protein Lunch Box (ID: 11)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(11, 15, 120), -- Beef
-(11, 7, 80),   -- Quinoa
-(11, 3, 60),   -- Broccoli
-(11, 4, 60);   -- Carrots
-
--- Vegetarian Lunch Delight (ID: 12)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(12, 10, 120), -- Tofu
-(12, 2, 100),  -- Brown Rice
-(12, 3, 70),   -- Broccoli
-(12, 11, 50);  -- Spinach
-
--- Halal Lunch Special (ID: 13)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(13, 16, 120), -- Lamb (is_halal=1)
-(13, 2, 100),  -- Brown Rice
-(13, 4, 60),   -- Carrots
-(13, 12, 60);  -- Red Bell Pepper
-
--- DINNER MEAL KIT INGREDIENTS
-
--- Vegan Dinner Plate (ID: 14)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(14, 10, 100), -- Tofu
-(14, 7, 70),   -- Quinoa
-(14, 11, 60),  -- Spinach
-(14, 18, 30);  -- Avocado
-
--- Protein Dinner Box (ID: 15)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(15, 1, 120),  -- Chicken Breast
-(15, 8, 100),  -- Sweet Potato
-(15, 3, 80);   -- Broccoli
-
--- Vegetarian Dinner Special (ID: 16)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(16, 10, 100), -- Tofu
-(16, 2, 80),   -- Brown Rice
-(16, 12, 60),  -- Red Bell Pepper
-(16, 11, 60);  -- Spinach
-
--- Halal Dinner Delight (ID: 17)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(17, 15, 100), -- Beef (is_halal=1)
-(17, 3, 70),   -- Broccoli
-(17, 4, 70),   -- Carrots
-(17, 5, 10);   -- Olive Oil
-
--- SNACKS MEAL KIT INGREDIENTS
-
--- Vegan Snack Pack (ID: 18)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(18, 20, 30),  -- Almonds
-(18, 14, 40),  -- Chickpeas
-(18, 18, 20);  -- Avocado
-
--- Protein Snack Box (ID: 19)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(19, 19, 60),  -- Greek Yogurt
-(19, 20, 30),  -- Almonds
-(19, 1, 20);   -- Chicken Breast
-
--- Vegetarian Snack Delight (ID: 20)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(20, 19, 60),  -- Greek Yogurt
-(20, 20, 30),  -- Almonds
-(20, 18, 20);  -- Avocado
-
--- Halal Snack Special (ID: 21)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(21, 1, 30),   -- Chicken Breast (is_halal=1)
-(21, 20, 40),  -- Almonds
-(21, 5, 5);    -- Olive Oil
-
--- DESSERTS MEAL KIT INGREDIENTS
-
--- Vegan Sweet Treat (ID: 22)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(22, 18, 50),  -- Avocado
-(22, 20, 30),  -- Almonds
-(22, 5, 5);    -- Olive Oil
-
--- Protein Dessert Box (ID: 23)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(23, 19, 100), -- Greek Yogurt
-(23, 20, 30);  -- Almonds
-
--- Vegetarian Dessert Delight (ID: 24)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(24, 19, 80),  -- Greek Yogurt
-(24, 20, 30),  -- Almonds
-(24, 18, 30);  -- Avocado
-
--- Halal Dessert Special (ID: 25)
-INSERT INTO meal_kit_ingredients (meal_kit_id, ingredient_id, default_quantity) VALUES
-(25, 20, 60),  -- Almonds
-(25, 5, 10);   -- Olive Oil

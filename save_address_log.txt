@@ -43,3 +43,33 @@ Session data: Array
 is_default value: true
 Final is_default value: 1
 
+Request received at 2025-06-01 11:46:21
+POST data: {"address_name":"fad","full_address":"fda","city":"fda","postal_code":"fda","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+
+Request received at 2025-06-01 13:48:50
+POST data: {"address_name":"fda","full_address":"fda","city":"fdafa","postal_code":"fdafa","is_default":true}
+Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [full_name] => Admin User
+    [role] => 1
+    [cart_count] => 0
+)
+
+
+is_default value: true
+Final is_default value: 1
+

@@ -154,22 +154,6 @@ try {
             $updatePaymentStmt->close();
         }
     }
-
-    // Update order status based on payment status
-    $new_status_id = $verify ? 2 : 1; // 2 = confirmed, 1 = pending
-    
-    $updateOrderStmt = $mysqli->prepare("
-        UPDATE orders 
-        SET status_id = ?, 
-            updated_at = NOW() 
-        WHERE order_id = ?
-    ");
-    
-    if ($updateOrderStmt) {
-        $updateOrderStmt->bind_param("ii", $new_status_id, $order_id);
-        $updateOrderStmt->execute();
-        $updateOrderStmt->close();
-    }
     
     // Update or insert verification details
     if ($has_verification) {

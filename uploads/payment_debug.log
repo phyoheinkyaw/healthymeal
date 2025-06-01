@@ -309,3 +309,1172 @@
 [2025-05-29 22:46:26] Using previously processed transfer slip
 [2025-05-29 22:46:26] --- End of order processing ---
 
+[2025-05-30 14:17:24] --- New order submission ---
+[2025-05-30 14:17:24] REQUEST_METHOD: POST
+[2025-05-30 14:17:24] CONTENT_TYPE: application/json
+[2025-05-30 14:17:24] file_uploads enabled: Yes
+[2025-05-30 14:17:24] upload_max_filesize: 20M
+[2025-05-30 14:17:24] Upload directory checks:
+[2025-05-30 14:17:24] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-05-30 14:17:24] Directory exists: Yes
+[2025-05-30 14:17:24] Directory writable: Yes
+[2025-05-30 14:17:24] User ID: 1
+[2025-05-30 14:17:24] No files in request
+[2025-05-30 14:17:24] POST data: Array
+(
+)
+
+[2025-05-30 14:17:24] FILES array: []
+[2025-05-30 14:17:24] POST array: []
+[2025-05-30 14:17:24] Missing required data for file upload processing
+[2025-05-30 14:17:24] No transfer_slip in FILES
+[2025-05-30 14:17:24] No order_data in POST
+[2025-05-30 14:17:24] Raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fafd","contact_number":"fdafda","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-05-31","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-05-30 14:17:24] Parsed JSON from raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fafd","contact_number":"fdafda","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-05-31","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-05-30 14:17:24] --- End of order processing ---
+
+[2025-06-01 06:16:44] --- New order submission ---
+[2025-06-01 06:16:44] REQUEST_METHOD: POST
+[2025-06-01 06:16:44] CONTENT_TYPE: application/json
+[2025-06-01 06:16:44] file_uploads enabled: Yes
+[2025-06-01 06:16:44] upload_max_filesize: 20M
+[2025-06-01 06:16:44] Upload directory checks:
+[2025-06-01 06:16:44] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 06:16:44] Directory exists: Yes
+[2025-06-01 06:16:44] Directory writable: Yes
+[2025-06-01 06:16:44] User ID: 1
+[2025-06-01 06:16:44] No files in request
+[2025-06-01 06:16:44] POST data: Array
+(
+)
+
+[2025-06-01 06:16:44] FILES array: []
+[2025-06-01 06:16:44] POST array: []
+[2025-06-01 06:16:44] Missing required data for file upload processing
+[2025-06-01 06:16:44] No transfer_slip in FILES
+[2025-06-01 06:16:44] No order_data in POST
+[2025-06-01 06:16:44] Raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"dfsd","contact_number":"fdafda","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 06:16:44] Parsed JSON from raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"dfsd","contact_number":"fdafda","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 06:16:44] --- End of order processing ---
+
+[2025-06-01 06:19:43] --- New order submission ---
+[2025-06-01 06:19:43] REQUEST_METHOD: POST
+[2025-06-01 06:19:43] CONTENT_TYPE: application/json
+[2025-06-01 06:19:43] file_uploads enabled: Yes
+[2025-06-01 06:19:43] upload_max_filesize: 20M
+[2025-06-01 06:19:43] Upload directory checks:
+[2025-06-01 06:19:43] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 06:19:43] Directory exists: Yes
+[2025-06-01 06:19:43] Directory writable: Yes
+[2025-06-01 06:19:43] User ID: 1
+[2025-06-01 06:19:43] No files in request
+[2025-06-01 06:19:43] POST data: Array
+(
+)
+
+[2025-06-01 06:19:43] FILES array: []
+[2025-06-01 06:19:43] POST array: []
+[2025-06-01 06:19:43] Missing required data for file upload processing
+[2025-06-01 06:19:43] No transfer_slip in FILES
+[2025-06-01 06:19:43] No order_data in POST
+[2025-06-01 06:19:43] Raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fgdgfdg","contact_number":"gfdgdf","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":31460,"tax":1573,"delivery_fee":20000,"total_amount":53033}
+[2025-06-01 06:19:43] Parsed JSON from raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fgdgfdg","contact_number":"gfdgdf","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":31460,"tax":1573,"delivery_fee":20000,"total_amount":53033}
+[2025-06-01 06:19:43] --- End of order processing ---
+
+[2025-06-01 06:21:42] --- New order submission ---
+[2025-06-01 06:21:42] REQUEST_METHOD: POST
+[2025-06-01 06:21:42] CONTENT_TYPE: application/json
+[2025-06-01 06:21:42] file_uploads enabled: Yes
+[2025-06-01 06:21:42] upload_max_filesize: 20M
+[2025-06-01 06:21:42] Upload directory checks:
+[2025-06-01 06:21:42] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 06:21:42] Directory exists: Yes
+[2025-06-01 06:21:42] Directory writable: Yes
+[2025-06-01 06:21:42] User ID: 1
+[2025-06-01 06:21:42] No files in request
+[2025-06-01 06:21:42] POST data: Array
+(
+)
+
+[2025-06-01 06:21:42] FILES array: []
+[2025-06-01 06:21:42] POST array: []
+[2025-06-01 06:21:42] Missing required data for file upload processing
+[2025-06-01 06:21:42] No transfer_slip in FILES
+[2025-06-01 06:21:42] No order_data in POST
+[2025-06-01 06:21:42] Raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"dsadsa","contact_number":"dsadas","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 06:21:42] Parsed JSON from raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"dsadsa","contact_number":"dsadas","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 06:21:42] --- End of order processing ---
+
+[2025-06-01 06:23:46] --- New order submission ---
+[2025-06-01 06:23:46] REQUEST_METHOD: POST
+[2025-06-01 06:23:46] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundarySpeeftrAcrOiPKII
+[2025-06-01 06:23:46] file_uploads enabled: Yes
+[2025-06-01 06:23:46] upload_max_filesize: 20M
+[2025-06-01 06:23:46] Upload directory checks:
+[2025-06-01 06:23:46] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 06:23:46] Directory exists: Yes
+[2025-06-01 06:23:46] Directory writable: Yes
+[2025-06-01 06:23:46] User ID: 1
+[2025-06-01 06:23:46] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Invitation - E.G.M. 1-2025 - Bay Shore Ocean View Apartment-1.png
+            [full_path] => Invitation - E.G.M. 1-2025 - Bay Shore Ocean View Apartment-1.png
+            [type] => image/png
+            [tmp_name] => C:\xampp\tmp\php4619.tmp
+            [error] => 0
+            [size] => 222767
+        )
+
+)
+
+[2025-06-01 06:23:46] POST data: Array
+(
+    [transaction_id] => BAYSHORE
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"sdfsd","contact_number":"dfsf","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"rewrew","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"BAYSHORE"}
+)
+
+[2025-06-01 06:23:46] FILES array: {"transfer_slip":{"name":"Invitation - E.G.M. 1-2025 - Bay Shore Ocean View Apartment-1.png","full_path":"Invitation - E.G.M. 1-2025 - Bay Shore Ocean View Apartment-1.png","type":"image\/png","tmp_name":"C:\\xampp\\tmp\\php4619.tmp","error":0,"size":222767}}
+[2025-06-01 06:23:46] POST array: ["transaction_id","order_data"]
+[2025-06-01 06:23:46] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 06:23:46] Decoded order data from POST
+[2025-06-01 06:23:46] Using transaction_id from POST: BAYSHORE
+[2025-06-01 06:23:46] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 06:23:46] Processing uploaded file: Invitation - E.G.M. 1-2025 - Bay Shore Ocean View Apartment-1.png
+[2025-06-01 06:23:46] Processing file: {"name":"Invitation - E.G.M. 1-2025 - Bay Shore Ocean View Apartment-1.png","full_path":"Invitation - E.G.M. 1-2025 - Bay Shore Ocean View Apartment-1.png","type":"image\/png","tmp_name":"C:\\xampp\\tmp\\php4619.tmp","error":0,"size":222767}
+[2025-06-01 06:23:46] MIME type from file data: image/png
+[2025-06-01 06:23:46] MIME type from fileinfo: image/png
+[2025-06-01 06:23:46] Attempting to upload file to: ../../uploads/payment_slips/slip_683bd5d23620a.png
+[2025-06-01 06:23:46] File uploaded successfully to: ../../uploads/payment_slips/slip_683bd5d23620a.png
+[2025-06-01 06:23:46] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683bd5d23620a.png"}
+[2025-06-01 06:23:46] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683bd5d23620a.png
+[2025-06-01 06:23:46] Validating payment slip for KBZPay
+[2025-06-01 06:23:46] Already processed slip: Yes
+[2025-06-01 06:23:46] Using previously processed transfer slip
+[2025-06-01 06:23:46] --- End of order processing ---
+
+[2025-06-01 06:57:45] --- New order submission ---
+[2025-06-01 06:57:45] REQUEST_METHOD: POST
+[2025-06-01 06:57:45] CONTENT_TYPE: application/json
+[2025-06-01 06:57:45] file_uploads enabled: Yes
+[2025-06-01 06:57:45] upload_max_filesize: 20M
+[2025-06-01 06:57:45] Upload directory checks:
+[2025-06-01 06:57:45] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 06:57:45] Directory exists: Yes
+[2025-06-01 06:57:45] Directory writable: Yes
+[2025-06-01 06:57:45] User ID: 1
+[2025-06-01 06:57:45] No files in request
+[2025-06-01 06:57:45] POST data: Array
+(
+)
+
+[2025-06-01 06:57:45] FILES array: []
+[2025-06-01 06:57:45] POST array: []
+[2025-06-01 06:57:45] Missing required data for file upload processing
+[2025-06-01 06:57:45] No transfer_slip in FILES
+[2025-06-01 06:57:45] No order_data in POST
+[2025-06-01 06:57:45] Raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fdgdf","contact_number":"gffgd","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 06:57:45] Parsed JSON from raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fdgdf","contact_number":"gffgd","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 06:57:45] --- End of order processing ---
+
+[2025-06-01 09:44:12] --- New order submission ---
+[2025-06-01 09:44:12] REQUEST_METHOD: POST
+[2025-06-01 09:44:12] CONTENT_TYPE: application/json
+[2025-06-01 09:44:12] file_uploads enabled: Yes
+[2025-06-01 09:44:12] upload_max_filesize: 20M
+[2025-06-01 09:44:12] Upload directory checks:
+[2025-06-01 09:44:12] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 09:44:12] Directory exists: Yes
+[2025-06-01 09:44:12] Directory writable: Yes
+[2025-06-01 09:44:12] User ID: 1
+[2025-06-01 09:44:12] No files in request
+[2025-06-01 09:44:12] POST data: Array
+(
+)
+
+[2025-06-01 09:44:12] FILES array: []
+[2025-06-01 09:44:12] POST array: []
+[2025-06-01 09:44:12] Missing required data for file upload processing
+[2025-06-01 09:44:12] No transfer_slip in FILES
+[2025-06-01 09:44:12] No order_data in POST
+[2025-06-01 09:44:12] Raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"dfsf","contact_number":"dfsfd","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 09:44:12] Parsed JSON from raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"dfsf","contact_number":"dfsfd","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 09:44:12] --- End of order processing ---
+
+[2025-06-01 09:57:40] --- New order submission ---
+[2025-06-01 09:57:40] REQUEST_METHOD: POST
+[2025-06-01 09:57:40] CONTENT_TYPE: application/json
+[2025-06-01 09:57:40] file_uploads enabled: Yes
+[2025-06-01 09:57:40] upload_max_filesize: 20M
+[2025-06-01 09:57:40] Upload directory checks:
+[2025-06-01 09:57:40] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 09:57:40] Directory exists: Yes
+[2025-06-01 09:57:40] Directory writable: Yes
+[2025-06-01 09:57:40] User ID: 1
+[2025-06-01 09:57:40] No files in request
+[2025-06-01 09:57:40] POST data: Array
+(
+)
+
+[2025-06-01 09:57:40] FILES array: []
+[2025-06-01 09:57:40] POST array: []
+[2025-06-01 09:57:40] Missing required data for file upload processing
+[2025-06-01 09:57:40] No transfer_slip in FILES
+[2025-06-01 09:57:40] No order_data in POST
+[2025-06-01 09:57:40] Raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"gdfgdf","contact_number":"fgdfg","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 09:57:40] Parsed JSON from raw input: {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"gdfgdf","contact_number":"fgdfg","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849}
+[2025-06-01 09:57:40] --- End of order processing ---
+
+[2025-06-01 10:07:37] --- New order submission ---
+[2025-06-01 10:07:37] REQUEST_METHOD: POST
+[2025-06-01 10:07:37] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryH3t2x6OU7aBJ7Ki7
+[2025-06-01 10:07:37] file_uploads enabled: Yes
+[2025-06-01 10:07:37] upload_max_filesize: 20M
+[2025-06-01 10:07:37] Upload directory checks:
+[2025-06-01 10:07:37] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 10:07:37] Directory exists: Yes
+[2025-06-01 10:07:37] Directory writable: Yes
+[2025-06-01 10:07:37] User ID: 1
+[2025-06-01 10:07:37] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_1.jpg
+            [full_path] => LINE_NOTE_250601_1.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php36C4.tmp
+            [error] => 0
+            [size] => 295270
+        )
+
+)
+
+[2025-06-01 10:07:37] POST data: Array
+(
+    [transaction_id] => TRANSFER
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"trtgd","contact_number":"gdfgdf","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"gfsfgs","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"TRANSFER"}
+)
+
+[2025-06-01 10:07:37] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php36C4.tmp","error":0,"size":295270}}
+[2025-06-01 10:07:37] POST array: ["transaction_id","order_data"]
+[2025-06-01 10:07:37] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 10:07:37] Decoded order data from POST
+[2025-06-01 10:07:37] Using transaction_id from POST: TRANSFER
+[2025-06-01 10:07:37] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 10:07:37] Processing uploaded file: LINE_NOTE_250601_1.jpg
+[2025-06-01 10:07:37] Processing file: {"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php36C4.tmp","error":0,"size":295270}
+[2025-06-01 10:07:37] MIME type from file data: image/jpeg
+[2025-06-01 10:07:37] MIME type from fileinfo: image/jpeg
+[2025-06-01 10:07:37] Attempting to upload file to: ../../uploads/payment_slips/slip_683c0a492b9b9.jpg
+[2025-06-01 10:07:37] File uploaded successfully to: ../../uploads/payment_slips/slip_683c0a492b9b9.jpg
+[2025-06-01 10:07:37] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c0a492b9b9.jpg"}
+[2025-06-01 10:07:37] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c0a492b9b9.jpg
+[2025-06-01 10:07:37] Validating payment slip for KBZPay
+[2025-06-01 10:07:37] Already processed slip: Yes
+[2025-06-01 10:07:37] Using previously processed transfer slip
+[2025-06-01 10:07:37] --- End of order processing ---
+
+[2025-06-01 10:10:15] --- New order submission ---
+[2025-06-01 10:10:15] REQUEST_METHOD: POST
+[2025-06-01 10:10:15] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryPam4kbVFuf1Zes4Y
+[2025-06-01 10:10:15] file_uploads enabled: Yes
+[2025-06-01 10:10:15] upload_max_filesize: 20M
+[2025-06-01 10:10:15] Upload directory checks:
+[2025-06-01 10:10:15] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 10:10:15] Directory exists: Yes
+[2025-06-01 10:10:15] Directory writable: Yes
+[2025-06-01 10:10:15] User ID: 1
+[2025-06-01 10:10:15] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_2.jpg
+            [full_path] => LINE_NOTE_250601_2.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpA18B.tmp
+            [error] => 0
+            [size] => 305068
+        )
+
+)
+
+[2025-06-01 10:10:15] POST data: Array
+(
+    [transaction_id] => mussssssssses
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"dfdsf","contact_number":"fesf","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fdsfds","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"mussssssssses"}
+)
+
+[2025-06-01 10:10:15] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_2.jpg","full_path":"LINE_NOTE_250601_2.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpA18B.tmp","error":0,"size":305068}}
+[2025-06-01 10:10:15] POST array: ["transaction_id","order_data"]
+[2025-06-01 10:10:15] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 10:10:15] Decoded order data from POST
+[2025-06-01 10:10:15] Using transaction_id from POST: mussssssssses
+[2025-06-01 10:10:15] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 10:10:15] Processing uploaded file: LINE_NOTE_250601_2.jpg
+[2025-06-01 10:10:15] Processing file: {"name":"LINE_NOTE_250601_2.jpg","full_path":"LINE_NOTE_250601_2.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpA18B.tmp","error":0,"size":305068}
+[2025-06-01 10:10:15] MIME type from file data: image/jpeg
+[2025-06-01 10:10:15] MIME type from fileinfo: image/jpeg
+[2025-06-01 10:10:15] Attempting to upload file to: ../../uploads/payment_slips/slip_683c0ae78c6f0.jpg
+[2025-06-01 10:10:15] File uploaded successfully to: ../../uploads/payment_slips/slip_683c0ae78c6f0.jpg
+[2025-06-01 10:10:15] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c0ae78c6f0.jpg"}
+[2025-06-01 10:10:15] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c0ae78c6f0.jpg
+[2025-06-01 10:10:15] Validating payment slip for KBZPay
+[2025-06-01 10:10:15] Already processed slip: Yes
+[2025-06-01 10:10:15] Using previously processed transfer slip
+[2025-06-01 10:10:15] --- End of order processing ---
+
+[2025-06-01 10:12:54] --- New order submission ---
+[2025-06-01 10:12:54] REQUEST_METHOD: POST
+[2025-06-01 10:12:54] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryZuQ9CbtUpMOAQsnN
+[2025-06-01 10:12:54] file_uploads enabled: Yes
+[2025-06-01 10:12:54] upload_max_filesize: 20M
+[2025-06-01 10:12:54] Upload directory checks:
+[2025-06-01 10:12:54] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 10:12:54] Directory exists: Yes
+[2025-06-01 10:12:54] Directory writable: Yes
+[2025-06-01 10:12:54] User ID: 1
+[2025-06-01 10:12:54] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Line Broadcast.jpg
+            [full_path] => Line Broadcast.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpE09.tmp
+            [error] => 0
+            [size] => 687660
+        )
+
+)
+
+[2025-06-01 10:12:54] POST data: Array
+(
+    [transaction_id] => TREASURE
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"gdgdr","contact_number":"grdgdr","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"grsrs","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"TREASURE"}
+)
+
+[2025-06-01 10:12:54] FILES array: {"transfer_slip":{"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpE09.tmp","error":0,"size":687660}}
+[2025-06-01 10:12:54] POST array: ["transaction_id","order_data"]
+[2025-06-01 10:12:54] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 10:12:54] Decoded order data from POST
+[2025-06-01 10:12:54] Using transaction_id from POST: TREASURE
+[2025-06-01 10:12:54] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 10:12:54] Processing uploaded file: Line Broadcast.jpg
+[2025-06-01 10:12:54] Processing file: {"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpE09.tmp","error":0,"size":687660}
+[2025-06-01 10:12:54] MIME type from file data: image/jpeg
+[2025-06-01 10:12:54] MIME type from fileinfo: image/jpeg
+[2025-06-01 10:12:54] Attempting to upload file to: ../../uploads/payment_slips/slip_683c0b8669425.jpg
+[2025-06-01 10:12:54] File uploaded successfully to: ../../uploads/payment_slips/slip_683c0b8669425.jpg
+[2025-06-01 10:12:54] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c0b8669425.jpg"}
+[2025-06-01 10:12:54] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c0b8669425.jpg
+[2025-06-01 10:12:54] Validating payment slip for KBZPay
+[2025-06-01 10:12:54] Already processed slip: Yes
+[2025-06-01 10:12:54] Using previously processed transfer slip
+[2025-06-01 10:12:54] --- End of order processing ---
+
+[2025-06-01 10:50:56] --- New order submission ---
+[2025-06-01 10:50:56] REQUEST_METHOD: POST
+[2025-06-01 10:50:56] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundarynbDlEV92GFce3PJD
+[2025-06-01 10:50:56] file_uploads enabled: Yes
+[2025-06-01 10:50:56] upload_max_filesize: 20M
+[2025-06-01 10:50:56] Upload directory checks:
+[2025-06-01 10:50:56] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 10:50:56] Directory exists: Yes
+[2025-06-01 10:50:56] Directory writable: Yes
+[2025-06-01 10:50:56] User ID: 1
+[2025-06-01 10:50:56] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_1.jpg
+            [full_path] => LINE_NOTE_250601_1.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpE1A0.tmp
+            [error] => 0
+            [size] => 295270
+        )
+
+)
+
+[2025-06-01 10:50:56] POST data: Array
+(
+    [transaction_id] => TRANSFER
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"wqewqe","contact_number":"ewqeq2w","delivery_notes":"weweq","payment_method":"KBZPay","payment_method_id":"1","account_phone":"ewweq","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"TRANSFER"}
+)
+
+[2025-06-01 10:50:56] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpE1A0.tmp","error":0,"size":295270}}
+[2025-06-01 10:50:56] POST array: ["transaction_id","order_data"]
+[2025-06-01 10:50:56] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 10:50:56] Decoded order data from POST
+[2025-06-01 10:50:56] Using transaction_id from POST: TRANSFER
+[2025-06-01 10:50:56] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 10:50:56] Processing uploaded file: LINE_NOTE_250601_1.jpg
+[2025-06-01 10:50:56] Processing file: {"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpE1A0.tmp","error":0,"size":295270}
+[2025-06-01 10:50:56] MIME type from file data: image/jpeg
+[2025-06-01 10:50:56] MIME type from fileinfo: image/jpeg
+[2025-06-01 10:50:56] Attempting to upload file to: ../../uploads/payment_slips/slip_683c1470c96fd.jpg
+[2025-06-01 10:50:56] File uploaded successfully to: ../../uploads/payment_slips/slip_683c1470c96fd.jpg
+[2025-06-01 10:50:56] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c1470c96fd.jpg"}
+[2025-06-01 10:50:56] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c1470c96fd.jpg
+[2025-06-01 10:50:56] Validating payment slip for KBZPay
+[2025-06-01 10:50:56] Already processed slip: Yes
+[2025-06-01 10:50:56] Using previously processed transfer slip
+[2025-06-01 10:50:56] --- End of order processing ---
+
+[2025-06-01 10:52:22] --- New order submission ---
+[2025-06-01 10:52:22] REQUEST_METHOD: POST
+[2025-06-01 10:52:22] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryNMXHEItGlNndGAcU
+[2025-06-01 10:52:22] file_uploads enabled: Yes
+[2025-06-01 10:52:22] upload_max_filesize: 20M
+[2025-06-01 10:52:22] Upload directory checks:
+[2025-06-01 10:52:22] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 10:52:22] Directory exists: Yes
+[2025-06-01 10:52:22] Directory writable: Yes
+[2025-06-01 10:52:22] User ID: 1
+[2025-06-01 10:52:22] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_1.jpg
+            [full_path] => LINE_NOTE_250601_1.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php2E74.tmp
+            [error] => 0
+            [size] => 295270
+        )
+
+)
+
+[2025-06-01 10:52:22] POST data: Array
+(
+    [transaction_id] => TRANSFER
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fdsfd","contact_number":"dfafdd","delivery_notes":"faf","payment_method":"KBZPay","payment_method_id":"1","account_phone":"dfadfa","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"TRANSFER"}
+)
+
+[2025-06-01 10:52:22] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php2E74.tmp","error":0,"size":295270}}
+[2025-06-01 10:52:22] POST array: ["transaction_id","order_data"]
+[2025-06-01 10:52:22] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 10:52:22] Decoded order data from POST
+[2025-06-01 10:52:22] Using transaction_id from POST: TRANSFER
+[2025-06-01 10:52:22] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 10:52:22] Processing uploaded file: LINE_NOTE_250601_1.jpg
+[2025-06-01 10:52:22] Processing file: {"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php2E74.tmp","error":0,"size":295270}
+[2025-06-01 10:52:22] MIME type from file data: image/jpeg
+[2025-06-01 10:52:22] MIME type from fileinfo: image/jpeg
+[2025-06-01 10:52:22] Attempting to upload file to: ../../uploads/payment_slips/slip_683c14c603a92.jpg
+[2025-06-01 10:52:22] File uploaded successfully to: ../../uploads/payment_slips/slip_683c14c603a92.jpg
+[2025-06-01 10:52:22] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c14c603a92.jpg"}
+[2025-06-01 10:52:22] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c14c603a92.jpg
+[2025-06-01 10:52:22] Validating payment slip for KBZPay
+[2025-06-01 10:52:22] Already processed slip: Yes
+[2025-06-01 10:52:22] Using previously processed transfer slip
+[2025-06-01 10:52:22] --- End of order processing ---
+
+[2025-06-01 10:54:41] --- New order submission ---
+[2025-06-01 10:54:41] REQUEST_METHOD: POST
+[2025-06-01 10:54:41] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryRtsV2lpSXYwg8x7j
+[2025-06-01 10:54:41] file_uploads enabled: Yes
+[2025-06-01 10:54:41] upload_max_filesize: 20M
+[2025-06-01 10:54:41] Upload directory checks:
+[2025-06-01 10:54:41] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 10:54:41] Directory exists: Yes
+[2025-06-01 10:54:41] Directory writable: Yes
+[2025-06-01 10:54:41] User ID: 1
+[2025-06-01 10:54:41] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Line Broadcast.jpg
+            [full_path] => Line Broadcast.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php4D7D.tmp
+            [error] => 0
+            [size] => 687660
+        )
+
+)
+
+[2025-06-01 10:54:41] POST data: Array
+(
+    [transaction_id] => TREASURE
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fdsf","contact_number":"fdsfds","delivery_notes":"fdafd","payment_method":"KBZPay","payment_method_id":"1","account_phone":"dfadf","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"TREASURE"}
+)
+
+[2025-06-01 10:54:41] FILES array: {"transfer_slip":{"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php4D7D.tmp","error":0,"size":687660}}
+[2025-06-01 10:54:41] POST array: ["transaction_id","order_data"]
+[2025-06-01 10:54:41] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 10:54:41] Decoded order data from POST
+[2025-06-01 10:54:41] Using transaction_id from POST: TREASURE
+[2025-06-01 10:54:41] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 10:54:41] Processing uploaded file: Line Broadcast.jpg
+[2025-06-01 10:54:41] Processing file: {"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php4D7D.tmp","error":0,"size":687660}
+[2025-06-01 10:54:41] MIME type from file data: image/jpeg
+[2025-06-01 10:54:41] MIME type from fileinfo: image/jpeg
+[2025-06-01 10:54:41] Attempting to upload file to: ../../uploads/payment_slips/slip_683c1551082fd.jpg
+[2025-06-01 10:54:41] File uploaded successfully to: ../../uploads/payment_slips/slip_683c1551082fd.jpg
+[2025-06-01 10:54:41] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c1551082fd.jpg"}
+[2025-06-01 10:54:41] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c1551082fd.jpg
+[2025-06-01 10:54:41] Validating payment slip for KBZPay
+[2025-06-01 10:54:41] Already processed slip: Yes
+[2025-06-01 10:54:41] Using previously processed transfer slip
+[2025-06-01 10:54:41] --- End of order processing ---
+
+[2025-06-01 11:07:14] --- New order submission ---
+[2025-06-01 11:07:14] REQUEST_METHOD: POST
+[2025-06-01 11:07:14] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryxtjCBRLvGKCTnsMl
+[2025-06-01 11:07:14] file_uploads enabled: Yes
+[2025-06-01 11:07:14] upload_max_filesize: 20M
+[2025-06-01 11:07:14] Upload directory checks:
+[2025-06-01 11:07:14] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 11:07:14] Directory exists: Yes
+[2025-06-01 11:07:14] Directory writable: Yes
+[2025-06-01 11:07:14] User ID: 1
+[2025-06-01 11:07:14] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Line Broadcast.jpg
+            [full_path] => Line Broadcast.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpCDB5.tmp
+            [error] => 0
+            [size] => 687660
+        )
+
+)
+
+[2025-06-01 11:07:14] POST data: Array
+(
+    [transaction_id] => TREASURE
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fdsfds","contact_number":"dfsfds","delivery_notes":"dfa","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fdafa","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"TREASURE"}
+)
+
+[2025-06-01 11:07:14] FILES array: {"transfer_slip":{"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpCDB5.tmp","error":0,"size":687660}}
+[2025-06-01 11:07:14] POST array: ["transaction_id","order_data"]
+[2025-06-01 11:07:14] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 11:07:14] Decoded order data from POST
+[2025-06-01 11:07:14] Using transaction_id from POST: TREASURE
+[2025-06-01 11:07:14] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 11:07:14] Processing uploaded file: Line Broadcast.jpg
+[2025-06-01 11:07:14] Processing file: {"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpCDB5.tmp","error":0,"size":687660}
+[2025-06-01 11:07:14] MIME type from file data: image/jpeg
+[2025-06-01 11:07:14] MIME type from fileinfo: image/jpeg
+[2025-06-01 11:07:14] Attempting to upload file to: ../../uploads/payment_slips/slip_683c1842b840c.jpg
+[2025-06-01 11:07:14] File uploaded successfully to: ../../uploads/payment_slips/slip_683c1842b840c.jpg
+[2025-06-01 11:07:14] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c1842b840c.jpg"}
+[2025-06-01 11:07:14] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c1842b840c.jpg
+[2025-06-01 11:07:14] Validating payment slip for KBZPay
+[2025-06-01 11:07:14] Already processed slip: Yes
+[2025-06-01 11:07:14] Using previously processed transfer slip
+[2025-06-01 11:07:14] --- End of order processing ---
+
+[2025-06-01 11:28:46] --- New order submission ---
+[2025-06-01 11:28:46] REQUEST_METHOD: POST
+[2025-06-01 11:28:46] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryjq8fLfzpfcVJrWzU
+[2025-06-01 11:28:46] file_uploads enabled: Yes
+[2025-06-01 11:28:46] upload_max_filesize: 20M
+[2025-06-01 11:28:46] Upload directory checks:
+[2025-06-01 11:28:46] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 11:28:46] Directory exists: Yes
+[2025-06-01 11:28:46] Directory writable: Yes
+[2025-06-01 11:28:46] User ID: 1
+[2025-06-01 11:28:46] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Line Broadcast.jpg
+            [full_path] => Line Broadcast.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php84F3.tmp
+            [error] => 0
+            [size] => 687660
+        )
+
+)
+
+[2025-06-01 11:28:46] POST data: Array
+(
+    [transaction_id] => TREASURE
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fdafa","contact_number":"fdafda","delivery_notes":"fdafda","payment_method":"KBZPay","payment_method_id":"1","account_phone":"dfaf","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":29380,"tax":1469,"delivery_fee":20000,"total_amount":50849,"transaction_id":"TREASURE"}
+)
+
+[2025-06-01 11:28:46] FILES array: {"transfer_slip":{"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php84F3.tmp","error":0,"size":687660}}
+[2025-06-01 11:28:46] POST array: ["transaction_id","order_data"]
+[2025-06-01 11:28:46] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 11:28:46] Decoded order data from POST
+[2025-06-01 11:28:46] Using transaction_id from POST: TREASURE
+[2025-06-01 11:28:46] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 11:28:46] Processing uploaded file: Line Broadcast.jpg
+[2025-06-01 11:28:46] Processing file: {"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php84F3.tmp","error":0,"size":687660}
+[2025-06-01 11:28:46] MIME type from file data: image/jpeg
+[2025-06-01 11:28:46] MIME type from fileinfo: image/jpeg
+[2025-06-01 11:28:46] Attempting to upload file to: ../../uploads/payment_slips/slip_683c1d4ecfb39.jpg
+[2025-06-01 11:28:46] File uploaded successfully to: ../../uploads/payment_slips/slip_683c1d4ecfb39.jpg
+[2025-06-01 11:28:46] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c1d4ecfb39.jpg"}
+[2025-06-01 11:28:46] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c1d4ecfb39.jpg
+[2025-06-01 11:28:46] Validating payment slip for KBZPay
+[2025-06-01 11:28:46] Already processed slip: Yes
+[2025-06-01 11:28:46] Using previously processed transfer slip
+[2025-06-01 11:28:46] --- End of order processing ---
+
+[2025-06-01 11:30:55] --- New order submission ---
+[2025-06-01 11:30:55] REQUEST_METHOD: POST
+[2025-06-01 11:30:55] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundary9FD2lf98d9PllZBl
+[2025-06-01 11:30:55] file_uploads enabled: Yes
+[2025-06-01 11:30:55] upload_max_filesize: 20M
+[2025-06-01 11:30:55] Upload directory checks:
+[2025-06-01 11:30:55] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 11:30:55] Directory exists: Yes
+[2025-06-01 11:30:55] Directory writable: Yes
+[2025-06-01 11:30:55] User ID: 1
+[2025-06-01 11:30:55] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => a9236213-413f-4771-9e0f-30f9e7480920.jpeg
+            [full_path] => a9236213-413f-4771-9e0f-30f9e7480920.jpeg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php7CCD.tmp
+            [error] => 0
+            [size] => 270974
+        )
+
+)
+
+[2025-06-01 11:30:55] POST data: Array
+(
+    [transaction_id] => ocSopapoedd
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"dds","contact_number":"dsds","delivery_notes":"fds","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fds","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":46700,"tax":2335,"delivery_fee":20000,"total_amount":69035,"transaction_id":"ocSopapoedd"}
+)
+
+[2025-06-01 11:30:55] FILES array: {"transfer_slip":{"name":"a9236213-413f-4771-9e0f-30f9e7480920.jpeg","full_path":"a9236213-413f-4771-9e0f-30f9e7480920.jpeg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php7CCD.tmp","error":0,"size":270974}}
+[2025-06-01 11:30:55] POST array: ["transaction_id","order_data"]
+[2025-06-01 11:30:55] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 11:30:55] Decoded order data from POST
+[2025-06-01 11:30:55] Using transaction_id from POST: ocSopapoedd
+[2025-06-01 11:30:55] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 11:30:55] Processing uploaded file: a9236213-413f-4771-9e0f-30f9e7480920.jpeg
+[2025-06-01 11:30:55] Processing file: {"name":"a9236213-413f-4771-9e0f-30f9e7480920.jpeg","full_path":"a9236213-413f-4771-9e0f-30f9e7480920.jpeg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php7CCD.tmp","error":0,"size":270974}
+[2025-06-01 11:30:55] MIME type from file data: image/jpeg
+[2025-06-01 11:30:55] MIME type from fileinfo: image/jpeg
+[2025-06-01 11:30:55] Attempting to upload file to: ../../uploads/payment_slips/slip_683c1dcfca920.jpeg
+[2025-06-01 11:30:55] File uploaded successfully to: ../../uploads/payment_slips/slip_683c1dcfca920.jpeg
+[2025-06-01 11:30:55] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c1dcfca920.jpeg"}
+[2025-06-01 11:30:55] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c1dcfca920.jpeg
+[2025-06-01 11:30:55] Validating payment slip for KBZPay
+[2025-06-01 11:30:55] Already processed slip: Yes
+[2025-06-01 11:30:55] Using previously processed transfer slip
+[2025-06-01 11:30:55] --- End of order processing ---
+
+[2025-06-01 11:36:30] --- New order submission ---
+[2025-06-01 11:36:30] REQUEST_METHOD: POST
+[2025-06-01 11:36:30] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryWUo3I9UCjG7OsGDL
+[2025-06-01 11:36:30] file_uploads enabled: Yes
+[2025-06-01 11:36:30] upload_max_filesize: 20M
+[2025-06-01 11:36:30] Upload directory checks:
+[2025-06-01 11:36:30] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 11:36:30] Directory exists: Yes
+[2025-06-01 11:36:30] Directory writable: Yes
+[2025-06-01 11:36:30] User ID: 1
+[2025-06-01 11:36:30] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => a057f2db-25ff-43ae-993f-995bff6fac80.jpeg
+            [full_path] => a057f2db-25ff-43ae-993f-995bff6fac80.jpeg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php98E9.tmp
+            [error] => 0
+            [size] => 229152
+        )
+
+)
+
+[2025-06-01 11:36:30] POST data: Array
+(
+    [order_data] => {"delivery_address":"kjnjk, jnjk jkn","customer_phone":"fdsfds","contact_number":"fdsfds","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fsfs","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":125680,"tax":6284,"delivery_fee":20000,"total_amount":151964}
+)
+
+[2025-06-01 11:36:30] FILES array: {"transfer_slip":{"name":"a057f2db-25ff-43ae-993f-995bff6fac80.jpeg","full_path":"a057f2db-25ff-43ae-993f-995bff6fac80.jpeg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php98E9.tmp","error":0,"size":229152}}
+[2025-06-01 11:36:30] POST array: ["order_data"]
+[2025-06-01 11:36:30] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 11:36:30] Decoded order data from POST
+[2025-06-01 11:36:30] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 11:36:30] Processing uploaded file: a057f2db-25ff-43ae-993f-995bff6fac80.jpeg
+[2025-06-01 11:36:30] Processing file: {"name":"a057f2db-25ff-43ae-993f-995bff6fac80.jpeg","full_path":"a057f2db-25ff-43ae-993f-995bff6fac80.jpeg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php98E9.tmp","error":0,"size":229152}
+[2025-06-01 11:36:30] MIME type from file data: image/jpeg
+[2025-06-01 11:36:30] MIME type from fileinfo: image/jpeg
+[2025-06-01 11:36:30] Attempting to upload file to: ../../uploads/payment_slips/slip_683c1f1eadc36.jpeg
+[2025-06-01 11:36:30] File uploaded successfully to: ../../uploads/payment_slips/slip_683c1f1eadc36.jpeg
+[2025-06-01 11:36:30] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c1f1eadc36.jpeg"}
+[2025-06-01 11:36:30] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c1f1eadc36.jpeg
+[2025-06-01 11:36:30] Validating payment slip for KBZPay
+[2025-06-01 11:36:30] Already processed slip: Yes
+[2025-06-01 11:36:30] Using previously processed transfer slip
+[2025-06-01 11:36:30] --- End of order processing ---
+
+[2025-06-01 11:46:21] --- New order submission ---
+[2025-06-01 11:46:21] REQUEST_METHOD: POST
+[2025-06-01 11:46:21] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryfahpaWbSUnIVVTm6
+[2025-06-01 11:46:21] file_uploads enabled: Yes
+[2025-06-01 11:46:21] upload_max_filesize: 20M
+[2025-06-01 11:46:21] Upload directory checks:
+[2025-06-01 11:46:21] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 11:46:21] Directory exists: Yes
+[2025-06-01 11:46:21] Directory writable: Yes
+[2025-06-01 11:46:21] User ID: 1
+[2025-06-01 11:46:21] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Line Broadcast.jpg
+            [full_path] => Line Broadcast.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php9DC0.tmp
+            [error] => 0
+            [size] => 687660
+        )
+
+)
+
+[2025-06-01 11:46:21] POST data: Array
+(
+    [transaction_id] => TREASURE
+    [order_data] => {"delivery_address":"fda, fda fda","customer_phone":"dfa","contact_number":"fadf","delivery_notes":"fda","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fdas","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":63480,"tax":3174,"delivery_fee":20000,"total_amount":86654,"transaction_id":"TREASURE"}
+)
+
+[2025-06-01 11:46:21] FILES array: {"transfer_slip":{"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php9DC0.tmp","error":0,"size":687660}}
+[2025-06-01 11:46:21] POST array: ["transaction_id","order_data"]
+[2025-06-01 11:46:21] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 11:46:21] Decoded order data from POST
+[2025-06-01 11:46:21] Using transaction_id from POST: TREASURE
+[2025-06-01 11:46:21] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 11:46:21] Processing uploaded file: Line Broadcast.jpg
+[2025-06-01 11:46:21] Processing file: {"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php9DC0.tmp","error":0,"size":687660}
+[2025-06-01 11:46:21] MIME type from file data: image/jpeg
+[2025-06-01 11:46:21] MIME type from fileinfo: image/jpeg
+[2025-06-01 11:46:21] Attempting to upload file to: ../../uploads/payment_slips/slip_683c216dbc31c.jpg
+[2025-06-01 11:46:21] File uploaded successfully to: ../../uploads/payment_slips/slip_683c216dbc31c.jpg
+[2025-06-01 11:46:21] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c216dbc31c.jpg"}
+[2025-06-01 11:46:21] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c216dbc31c.jpg
+[2025-06-01 11:46:21] Validating payment slip for KBZPay
+[2025-06-01 11:46:21] Already processed slip: Yes
+[2025-06-01 11:46:21] Using previously processed transfer slip
+[2025-06-01 11:46:21] --- End of order processing ---
+
+[2025-06-01 11:54:23] --- New order submission ---
+[2025-06-01 11:54:23] REQUEST_METHOD: POST
+[2025-06-01 11:54:23] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryQq0b474XQjOt1dbV
+[2025-06-01 11:54:23] file_uploads enabled: Yes
+[2025-06-01 11:54:23] upload_max_filesize: 20M
+[2025-06-01 11:54:23] Upload directory checks:
+[2025-06-01 11:54:23] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 11:54:23] Directory exists: Yes
+[2025-06-01 11:54:23] Directory writable: Yes
+[2025-06-01 11:54:23] User ID: 1
+[2025-06-01 11:54:23] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_1.jpg
+            [full_path] => LINE_NOTE_250601_1.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpF70B.tmp
+            [error] => 0
+            [size] => 295270
+        )
+
+)
+
+[2025-06-01 11:54:23] POST data: Array
+(
+    [transaction_id] => TRANSFER
+    [order_data] => {"delivery_address":"fda, fda fda","customer_phone":"fds","contact_number":"fsd","delivery_notes":"fds","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fsfs","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32080,"tax":1604,"delivery_fee":20000,"total_amount":53684,"transaction_id":"TRANSFER"}
+)
+
+[2025-06-01 11:54:23] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpF70B.tmp","error":0,"size":295270}}
+[2025-06-01 11:54:23] POST array: ["transaction_id","order_data"]
+[2025-06-01 11:54:23] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 11:54:23] Decoded order data from POST
+[2025-06-01 11:54:23] Using transaction_id from POST: TRANSFER
+[2025-06-01 11:54:23] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 11:54:23] Processing uploaded file: LINE_NOTE_250601_1.jpg
+[2025-06-01 11:54:23] Processing file: {"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpF70B.tmp","error":0,"size":295270}
+[2025-06-01 11:54:23] MIME type from file data: image/jpeg
+[2025-06-01 11:54:23] MIME type from fileinfo: image/jpeg
+[2025-06-01 11:54:23] Attempting to upload file to: ../../uploads/payment_slips/slip_683c234f5b1a0.jpg
+[2025-06-01 11:54:23] File uploaded successfully to: ../../uploads/payment_slips/slip_683c234f5b1a0.jpg
+[2025-06-01 11:54:23] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c234f5b1a0.jpg"}
+[2025-06-01 11:54:23] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c234f5b1a0.jpg
+[2025-06-01 11:54:23] Validating payment slip for KBZPay
+[2025-06-01 11:54:23] Already processed slip: Yes
+[2025-06-01 11:54:23] Using previously processed transfer slip
+[2025-06-01 11:54:23] --- End of order processing ---
+
+[2025-06-01 11:56:17] --- New order submission ---
+[2025-06-01 11:56:17] REQUEST_METHOD: POST
+[2025-06-01 11:56:17] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryRsWAhiOkifeT62BC
+[2025-06-01 11:56:17] file_uploads enabled: Yes
+[2025-06-01 11:56:17] upload_max_filesize: 20M
+[2025-06-01 11:56:17] Upload directory checks:
+[2025-06-01 11:56:17] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 11:56:17] Directory exists: Yes
+[2025-06-01 11:56:17] Directory writable: Yes
+[2025-06-01 11:56:17] User ID: 1
+[2025-06-01 11:56:17] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_1.jpg
+            [full_path] => LINE_NOTE_250601_1.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpB3FF.tmp
+            [error] => 0
+            [size] => 295270
+        )
+
+)
+
+[2025-06-01 11:56:17] POST data: Array
+(
+    [transaction_id] => TRANSFER
+    [order_data] => {"delivery_address":"fda, fda fda","customer_phone":"fdsfd","contact_number":"fdsfs","delivery_notes":"fdsdfs","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fsfd","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32080,"tax":1604,"delivery_fee":20000,"total_amount":53684,"transaction_id":"TRANSFER"}
+)
+
+[2025-06-01 11:56:17] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpB3FF.tmp","error":0,"size":295270}}
+[2025-06-01 11:56:17] POST array: ["transaction_id","order_data"]
+[2025-06-01 11:56:17] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 11:56:17] Decoded order data from POST
+[2025-06-01 11:56:17] Using transaction_id from POST: TRANSFER
+[2025-06-01 11:56:17] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 11:56:17] Processing uploaded file: LINE_NOTE_250601_1.jpg
+[2025-06-01 11:56:17] Processing file: {"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpB3FF.tmp","error":0,"size":295270}
+[2025-06-01 11:56:17] MIME type from file data: image/jpeg
+[2025-06-01 11:56:17] MIME type from fileinfo: image/jpeg
+[2025-06-01 11:56:17] Attempting to upload file to: ../../uploads/payment_slips/slip_683c23c144be2.jpg
+[2025-06-01 11:56:17] File uploaded successfully to: ../../uploads/payment_slips/slip_683c23c144be2.jpg
+[2025-06-01 11:56:17] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c23c144be2.jpg"}
+[2025-06-01 11:56:17] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c23c144be2.jpg
+[2025-06-01 11:56:17] Validating payment slip for KBZPay
+[2025-06-01 11:56:17] Already processed slip: Yes
+[2025-06-01 11:56:17] Using previously processed transfer slip
+[2025-06-01 11:56:17] --- End of order processing ---
+
+[2025-06-01 12:06:53] --- New order submission ---
+[2025-06-01 12:06:53] REQUEST_METHOD: POST
+[2025-06-01 12:06:53] CONTENT_TYPE: application/json
+[2025-06-01 12:06:53] file_uploads enabled: Yes
+[2025-06-01 12:06:53] upload_max_filesize: 20M
+[2025-06-01 12:06:53] Upload directory checks:
+[2025-06-01 12:06:53] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 12:06:53] Directory exists: Yes
+[2025-06-01 12:06:53] Directory writable: Yes
+[2025-06-01 12:06:53] User ID: 1
+[2025-06-01 12:06:53] No files in request
+[2025-06-01 12:06:53] POST data: Array
+(
+)
+
+[2025-06-01 12:06:53] FILES array: []
+[2025-06-01 12:06:53] POST array: []
+[2025-06-01 12:06:53] Missing required data for file upload processing
+[2025-06-01 12:06:53] No transfer_slip in FILES
+[2025-06-01 12:06:53] No order_data in POST
+[2025-06-01 12:06:53] Raw input: {"delivery_address":"fda, fda fda","customer_phone":"fsfd","contact_number":"fsdfds","delivery_notes":"fda","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32080,"tax":1604,"delivery_fee":20000,"total_amount":53684}
+[2025-06-01 12:06:53] Parsed JSON from raw input: {"delivery_address":"fda, fda fda","customer_phone":"fsfd","contact_number":"fsdfds","delivery_notes":"fda","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32080,"tax":1604,"delivery_fee":20000,"total_amount":53684}
+[2025-06-01 12:06:53] --- End of order processing ---
+
+[2025-06-01 12:11:39] --- New order submission ---
+[2025-06-01 12:11:39] REQUEST_METHOD: POST
+[2025-06-01 12:11:39] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryijKy35gODg5DWKNN
+[2025-06-01 12:11:39] file_uploads enabled: Yes
+[2025-06-01 12:11:39] upload_max_filesize: 20M
+[2025-06-01 12:11:39] Upload directory checks:
+[2025-06-01 12:11:39] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 12:11:39] Directory exists: Yes
+[2025-06-01 12:11:39] Directory writable: Yes
+[2025-06-01 12:11:39] User ID: 1
+[2025-06-01 12:11:39] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_2.jpg
+            [full_path] => LINE_NOTE_250601_2.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpC66B.tmp
+            [error] => 0
+            [size] => 305068
+        )
+
+)
+
+[2025-06-01 12:11:39] POST data: Array
+(
+    [transaction_id] => mussssssssses
+    [order_data] => {"delivery_address":"fda, fda fda","customer_phone":"fdsfs","contact_number":"dfsfd","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fsfds","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32080,"tax":1604,"delivery_fee":20000,"total_amount":53684,"transaction_id":"mussssssssses"}
+)
+
+[2025-06-01 12:11:39] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_2.jpg","full_path":"LINE_NOTE_250601_2.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpC66B.tmp","error":0,"size":305068}}
+[2025-06-01 12:11:39] POST array: ["transaction_id","order_data"]
+[2025-06-01 12:11:39] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 12:11:39] Decoded order data from POST
+[2025-06-01 12:11:39] Using transaction_id from POST: mussssssssses
+[2025-06-01 12:11:39] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 12:11:39] Processing uploaded file: LINE_NOTE_250601_2.jpg
+[2025-06-01 12:11:39] Processing file: {"name":"LINE_NOTE_250601_2.jpg","full_path":"LINE_NOTE_250601_2.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpC66B.tmp","error":0,"size":305068}
+[2025-06-01 12:11:39] MIME type from file data: image/jpeg
+[2025-06-01 12:11:39] MIME type from fileinfo: image/jpeg
+[2025-06-01 12:11:39] Attempting to upload file to: ../../uploads/payment_slips/slip_683c275b7c1f8.jpg
+[2025-06-01 12:11:39] File uploaded successfully to: ../../uploads/payment_slips/slip_683c275b7c1f8.jpg
+[2025-06-01 12:11:39] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c275b7c1f8.jpg"}
+[2025-06-01 12:11:39] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c275b7c1f8.jpg
+[2025-06-01 12:11:39] Validating payment slip for KBZPay
+[2025-06-01 12:11:39] Already processed slip: Yes
+[2025-06-01 12:11:39] Using previously processed transfer slip
+[2025-06-01 12:11:39] --- End of order processing ---
+
+[2025-06-01 13:48:50] --- New order submission ---
+[2025-06-01 13:48:50] REQUEST_METHOD: POST
+[2025-06-01 13:48:50] CONTENT_TYPE: application/json
+[2025-06-01 13:48:50] file_uploads enabled: Yes
+[2025-06-01 13:48:50] upload_max_filesize: 20M
+[2025-06-01 13:48:50] Upload directory checks:
+[2025-06-01 13:48:50] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 13:48:50] Directory exists: Yes
+[2025-06-01 13:48:50] Directory writable: Yes
+[2025-06-01 13:48:50] User ID: 1
+[2025-06-01 13:48:50] No files in request
+[2025-06-01 13:48:50] POST data: Array
+(
+)
+
+[2025-06-01 13:48:50] FILES array: []
+[2025-06-01 13:48:50] POST array: []
+[2025-06-01 13:48:50] Missing required data for file upload processing
+[2025-06-01 13:48:50] No transfer_slip in FILES
+[2025-06-01 13:48:50] No order_data in POST
+[2025-06-01 13:48:50] Raw input: {"delivery_address":"fda, fdafa fdafa","customer_phone":"fdsdf","contact_number":"fdsfdf","delivery_notes":"fda","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32880,"tax":1644,"delivery_fee":20000,"total_amount":54524}
+[2025-06-01 13:48:50] Parsed JSON from raw input: {"delivery_address":"fda, fdafa fdafa","customer_phone":"fdsdf","contact_number":"fdsfdf","delivery_notes":"fda","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32880,"tax":1644,"delivery_fee":20000,"total_amount":54524}
+[2025-06-01 13:48:50] --- End of order processing ---
+
+[2025-06-01 13:49:32] --- New order submission ---
+[2025-06-01 13:49:32] REQUEST_METHOD: POST
+[2025-06-01 13:49:32] CONTENT_TYPE: application/json
+[2025-06-01 13:49:32] file_uploads enabled: Yes
+[2025-06-01 13:49:32] upload_max_filesize: 20M
+[2025-06-01 13:49:32] Upload directory checks:
+[2025-06-01 13:49:32] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 13:49:32] Directory exists: Yes
+[2025-06-01 13:49:32] Directory writable: Yes
+[2025-06-01 13:49:32] User ID: 1
+[2025-06-01 13:49:32] No files in request
+[2025-06-01 13:49:32] POST data: Array
+(
+)
+
+[2025-06-01 13:49:32] FILES array: []
+[2025-06-01 13:49:32] POST array: []
+[2025-06-01 13:49:32] Missing required data for file upload processing
+[2025-06-01 13:49:32] No transfer_slip in FILES
+[2025-06-01 13:49:32] No order_data in POST
+[2025-06-01 13:49:32] Raw input: {"delivery_address":"fda, fdafa fdafa","customer_phone":"fsdf","contact_number":"fdsfsd","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32880,"tax":1644,"delivery_fee":20000,"total_amount":54524}
+[2025-06-01 13:49:32] Parsed JSON from raw input: {"delivery_address":"fda, fdafa fdafa","customer_phone":"fsdf","contact_number":"fdsfsd","delivery_notes":"","payment_method":"Cash on Delivery","payment_method_id":"2","account_phone":null,"delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32880,"tax":1644,"delivery_fee":20000,"total_amount":54524}
+[2025-06-01 13:49:32] --- End of order processing ---
+
+[2025-06-01 13:49:57] --- New order submission ---
+[2025-06-01 13:49:57] REQUEST_METHOD: POST
+[2025-06-01 13:49:57] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryTKoESuy6lMxMPAAU
+[2025-06-01 13:49:57] file_uploads enabled: Yes
+[2025-06-01 13:49:57] upload_max_filesize: 20M
+[2025-06-01 13:49:57] Upload directory checks:
+[2025-06-01 13:49:57] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 13:49:57] Directory exists: Yes
+[2025-06-01 13:49:57] Directory writable: Yes
+[2025-06-01 13:49:57] User ID: 1
+[2025-06-01 13:49:57] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Line Broadcast.jpg
+            [full_path] => Line Broadcast.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpC722.tmp
+            [error] => 0
+            [size] => 687660
+        )
+
+)
+
+[2025-06-01 13:49:57] POST data: Array
+(
+    [transaction_id] => TREASURE
+    [order_data] => {"delivery_address":"fda, fdafa fdafa","customer_phone":"fdaf","contact_number":"adfda","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fafa","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32880,"tax":1644,"delivery_fee":20000,"total_amount":54524,"transaction_id":"TREASURE"}
+)
+
+[2025-06-01 13:49:57] FILES array: {"transfer_slip":{"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpC722.tmp","error":0,"size":687660}}
+[2025-06-01 13:49:57] POST array: ["transaction_id","order_data"]
+[2025-06-01 13:49:57] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 13:49:57] Decoded order data from POST
+[2025-06-01 13:49:57] Using transaction_id from POST: TREASURE
+[2025-06-01 13:49:57] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 13:49:57] Processing uploaded file: Line Broadcast.jpg
+[2025-06-01 13:49:57] Processing file: {"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpC722.tmp","error":0,"size":687660}
+[2025-06-01 13:49:57] MIME type from file data: image/jpeg
+[2025-06-01 13:49:57] MIME type from fileinfo: image/jpeg
+[2025-06-01 13:49:57] Attempting to upload file to: ../../uploads/payment_slips/slip_683c3e65e1745.jpg
+[2025-06-01 13:49:57] File uploaded successfully to: ../../uploads/payment_slips/slip_683c3e65e1745.jpg
+[2025-06-01 13:49:57] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c3e65e1745.jpg"}
+[2025-06-01 13:49:57] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c3e65e1745.jpg
+[2025-06-01 13:49:57] Validating payment slip for KBZPay
+[2025-06-01 13:49:57] Already processed slip: Yes
+[2025-06-01 13:49:57] Using previously processed transfer slip
+[2025-06-01 13:49:57] --- End of order processing ---
+
+[2025-06-01 13:50:34] --- New order submission ---
+[2025-06-01 13:50:34] REQUEST_METHOD: POST
+[2025-06-01 13:50:34] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryoCwLeszLH3q2TjBb
+[2025-06-01 13:50:34] file_uploads enabled: Yes
+[2025-06-01 13:50:34] upload_max_filesize: 20M
+[2025-06-01 13:50:34] Upload directory checks:
+[2025-06-01 13:50:34] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 13:50:34] Directory exists: Yes
+[2025-06-01 13:50:34] Directory writable: Yes
+[2025-06-01 13:50:34] User ID: 1
+[2025-06-01 13:50:34] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_1.jpg
+            [full_path] => LINE_NOTE_250601_1.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php54CC.tmp
+            [error] => 0
+            [size] => 295270
+        )
+
+)
+
+[2025-06-01 13:50:34] POST data: Array
+(
+    [transaction_id] => TRANSFER
+    [order_data] => {"delivery_address":"fda, fdafa fdafa","customer_phone":"fda","contact_number":"fda","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fdafa","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32880,"tax":1644,"delivery_fee":20000,"total_amount":54524,"transaction_id":"TRANSFER"}
+)
+
+[2025-06-01 13:50:34] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php54CC.tmp","error":0,"size":295270}}
+[2025-06-01 13:50:34] POST array: ["transaction_id","order_data"]
+[2025-06-01 13:50:34] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 13:50:34] Decoded order data from POST
+[2025-06-01 13:50:34] Using transaction_id from POST: TRANSFER
+[2025-06-01 13:50:34] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 13:50:34] Processing uploaded file: LINE_NOTE_250601_1.jpg
+[2025-06-01 13:50:34] Processing file: {"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php54CC.tmp","error":0,"size":295270}
+[2025-06-01 13:50:34] MIME type from file data: image/jpeg
+[2025-06-01 13:50:34] MIME type from fileinfo: image/jpeg
+[2025-06-01 13:50:34] Attempting to upload file to: ../../uploads/payment_slips/slip_683c3e8a2dbfe.jpg
+[2025-06-01 13:50:34] File uploaded successfully to: ../../uploads/payment_slips/slip_683c3e8a2dbfe.jpg
+[2025-06-01 13:50:34] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c3e8a2dbfe.jpg"}
+[2025-06-01 13:50:34] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c3e8a2dbfe.jpg
+[2025-06-01 13:50:34] Validating payment slip for KBZPay
+[2025-06-01 13:50:34] Already processed slip: Yes
+[2025-06-01 13:50:34] Using previously processed transfer slip
+[2025-06-01 13:50:34] --- End of order processing ---
+
+[2025-06-01 13:57:06] --- New order submission ---
+[2025-06-01 13:57:06] REQUEST_METHOD: POST
+[2025-06-01 13:57:06] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryrt0xugstq79OGOtR
+[2025-06-01 13:57:06] file_uploads enabled: Yes
+[2025-06-01 13:57:06] upload_max_filesize: 20M
+[2025-06-01 13:57:06] Upload directory checks:
+[2025-06-01 13:57:06] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 13:57:06] Directory exists: Yes
+[2025-06-01 13:57:06] Directory writable: Yes
+[2025-06-01 13:57:06] User ID: 1
+[2025-06-01 13:57:06] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => LINE_NOTE_250601_1.jpg
+            [full_path] => LINE_NOTE_250601_1.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\php5155.tmp
+            [error] => 0
+            [size] => 295270
+        )
+
+)
+
+[2025-06-01 13:57:06] POST data: Array
+(
+    [transaction_id] => TRANSFER
+    [order_data] => {"delivery_address":"fda, fdafa fdafa","customer_phone":"fdafa","contact_number":"fdafa","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fafa","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32880,"tax":1644,"delivery_fee":20000,"total_amount":54524,"transaction_id":"TRANSFER"}
+)
+
+[2025-06-01 13:57:06] FILES array: {"transfer_slip":{"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php5155.tmp","error":0,"size":295270}}
+[2025-06-01 13:57:06] POST array: ["transaction_id","order_data"]
+[2025-06-01 13:57:06] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 13:57:06] Decoded order data from POST
+[2025-06-01 13:57:06] Using transaction_id from POST: TRANSFER
+[2025-06-01 13:57:06] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 13:57:06] Processing uploaded file: LINE_NOTE_250601_1.jpg
+[2025-06-01 13:57:06] Processing file: {"name":"LINE_NOTE_250601_1.jpg","full_path":"LINE_NOTE_250601_1.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\php5155.tmp","error":0,"size":295270}
+[2025-06-01 13:57:06] MIME type from file data: image/jpeg
+[2025-06-01 13:57:06] MIME type from fileinfo: image/jpeg
+[2025-06-01 13:57:06] Attempting to upload file to: ../../uploads/payment_slips/slip_683c40127fae3.jpg
+[2025-06-01 13:57:06] File uploaded successfully to: ../../uploads/payment_slips/slip_683c40127fae3.jpg
+[2025-06-01 13:57:06] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c40127fae3.jpg"}
+[2025-06-01 13:57:06] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c40127fae3.jpg
+[2025-06-01 13:57:06] Validating payment slip for KBZPay
+[2025-06-01 13:57:06] Already processed slip: Yes
+[2025-06-01 13:57:06] Using previously processed transfer slip
+[2025-06-01 13:57:06] --- End of order processing ---
+
+[2025-06-01 13:57:32] --- New order submission ---
+[2025-06-01 13:57:32] REQUEST_METHOD: POST
+[2025-06-01 13:57:32] CONTENT_TYPE: multipart/form-data; boundary=----WebKitFormBoundaryzlPVfSeH41bBbHb4
+[2025-06-01 13:57:32] file_uploads enabled: Yes
+[2025-06-01 13:57:32] upload_max_filesize: 20M
+[2025-06-01 13:57:32] Upload directory checks:
+[2025-06-01 13:57:32] Path: ../../uploads/payment_slips/, Realpath: C:\xampp\htdocs\hm\uploads\payment_slips
+[2025-06-01 13:57:32] Directory exists: Yes
+[2025-06-01 13:57:32] Directory writable: Yes
+[2025-06-01 13:57:32] User ID: 1
+[2025-06-01 13:57:32] FILES data: Array
+(
+    [transfer_slip] => Array
+        (
+            [name] => Line Broadcast.jpg
+            [full_path] => Line Broadcast.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpB4E3.tmp
+            [error] => 0
+            [size] => 687660
+        )
+
+)
+
+[2025-06-01 13:57:32] POST data: Array
+(
+    [transaction_id] => TREASURE
+    [order_data] => {"delivery_address":"fda, fdafa fdafa","customer_phone":"fafda","contact_number":"fdadfa","delivery_notes":"","payment_method":"KBZPay","payment_method_id":"1","account_phone":"fdafa","delivery_option_id":1,"delivery_date":"2025-06-02","delivery_time":"09:00:00","subtotal":32880,"tax":1644,"delivery_fee":20000,"total_amount":54524,"transaction_id":"TREASURE"}
+)
+
+[2025-06-01 13:57:32] FILES array: {"transfer_slip":{"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpB4E3.tmp","error":0,"size":687660}}
+[2025-06-01 13:57:32] POST array: ["transaction_id","order_data"]
+[2025-06-01 13:57:32] Found both transfer_slip in FILES and order_data in POST
+[2025-06-01 13:57:32] Decoded order data from POST
+[2025-06-01 13:57:32] Using transaction_id from POST: TREASURE
+[2025-06-01 13:57:32] File upload status: No error, file uploaded successfully (UPLOAD_ERR_OK)
+[2025-06-01 13:57:32] Processing uploaded file: Line Broadcast.jpg
+[2025-06-01 13:57:32] Processing file: {"name":"Line Broadcast.jpg","full_path":"Line Broadcast.jpg","type":"image\/jpeg","tmp_name":"C:\\xampp\\tmp\\phpB4E3.tmp","error":0,"size":687660}
+[2025-06-01 13:57:32] MIME type from file data: image/jpeg
+[2025-06-01 13:57:32] MIME type from fileinfo: image/jpeg
+[2025-06-01 13:57:32] Attempting to upload file to: ../../uploads/payment_slips/slip_683c402c02936.jpg
+[2025-06-01 13:57:32] File uploaded successfully to: ../../uploads/payment_slips/slip_683c402c02936.jpg
+[2025-06-01 13:57:32] File processing result: {"success":true,"path":"uploads\/payment_slips\/slip_683c402c02936.jpg"}
+[2025-06-01 13:57:32] Transfer slip processed successfully and added to data: uploads/payment_slips/slip_683c402c02936.jpg
+[2025-06-01 13:57:32] Validating payment slip for KBZPay
+[2025-06-01 13:57:32] Already processed slip: Yes
+[2025-06-01 13:57:32] Using previously processed transfer slip
+[2025-06-01 13:57:32] --- End of order processing ---
+

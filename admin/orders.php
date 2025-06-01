@@ -190,7 +190,7 @@ if ($status_result) {
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                             </small>
-                                            <?php if($order['payment_method'] === 'Cash on Delivery' && $order['payment_verified'] == 0): ?>
+                                            <?php if($order['payment_method'] === 'Cash on Delivery' && $order['payment_status'] == 0 && $order['payment_verified'] == 0): ?>
                                             <div class="mt-1">
                                                 <button type="button" class="btn btn-sm btn-outline-success w-100" 
                                                         onclick="verifyCODPayment(<?php echo $order['order_id']; ?>)"
@@ -371,6 +371,65 @@ if ($status_result) {
     </div>
 </div>
 
+<!-- COD Payment Verification Modal -->
+<div class="modal fade" id="codVerificationModal" tabindex="-1" aria-labelledby="codVerificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 0.75rem; overflow: hidden;">
+            <div class="modal-header border-0 p-4" style="background: linear-gradient(135deg, #0093E9 0%, #80D0C7 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white p-2 rounded-circle shadow me-3">
+                        <i class="bi bi-cash-coin fs-4 text-primary"></i>
+                    </div>
+                    <h5 class="modal-title fs-4 fw-bold text-white m-0" id="codVerificationModalLabel">Verify Cash on Delivery Payment</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="codVerificationForm" class="bg-white p-4 rounded-4 shadow-sm">
+                    <input type="hidden" id="cod_order_id" name="order_id" value="">
+                    
+                    <div class="mb-3">
+                        <label for="cod_receipt_number" class="form-label fw-semibold">Receipt/Reference Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0 rounded-start-3 shadow-sm"><i class="bi bi-receipt"></i></span>
+                            <input type="text" class="form-control bg-light border-0 rounded-end-3 shadow-sm" id="cod_receipt_number" name="receipt_number" placeholder="Enter receipt or reference number" value="" required>
+                        </div>
+                        <div class="form-text small mt-1">Enter receipt number or reference for this cash payment</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cod_amount_collected" class="form-label fw-semibold">Amount Collected (MMK)</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-0 shadow-sm rounded-start-3">MMK</span>
+                            <input type="number" class="form-control border-0 shadow-sm rounded-end-3" id="cod_amount_collected" name="amount_collected" 
+                                step="1" min="0" value="" required>
+                        </div>
+                        <div class="form-text small mt-1">Enter the exact amount collected from the customer</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cod_verification_notes" class="form-label fw-semibold">Verification Notes</label>
+                        <textarea class="form-control border-0 shadow-sm rounded-3" id="cod_verification_notes" name="verification_notes" 
+                                  rows="3" placeholder="Add any verification notes here..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 bg-light p-3">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-success rounded-pill px-4 shadow-sm" onclick="submitCODVerification()">
+                        <i class="bi bi-cash-coin me-2"></i>Verify Cash Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Payment Verification History Modal -->
 <div class="modal fade" id="paymentHistoryModal" tabindex="-1" aria-labelledby="paymentHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -472,82 +531,84 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Function to verify Cash on Delivery payment without requiring a payment slip
+// Function to verify Cash on Delivery payment
 function verifyCODPayment(orderId) {
-    showGenericConfirmModal(
-        'Verify Cash on Delivery',
-        'Are you sure you want to mark this Cash on Delivery payment as verified?',
-        'success',
-        () => {
-            const verificationData = {
-                order_id: orderId,
-                verify: true,
-                verification_details: {
-                    transaction_id: 'COD-' + orderId, // Generate a pseudo transaction ID
-                    amount_verified: document.querySelector(`tr[data-order-id="${orderId}"]`).dataset.amount,
-                    verification_notes: 'Cash on Delivery payment marked as verified by admin',
-                    payment_status: 1 // Completed
-                }
-            };
-            
-            // Show loading toast
-            showToast('info', 'Verifying payment...');
-            
-            // Call the verification API
-            fetch('/hm/api/orders/verify_payment.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(verificationData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    showToast('success', 'Cash on Delivery payment verified successfully');
-                    
-                    // Store success message for after reload
-                    localStorage.setItem('orderMessage', 'Cash on Delivery payment verified successfully');
-                    localStorage.setItem('orderMessageType', 'success');
-                    
-                    // Reload page to reflect changes
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showToast('error', data.message || 'Failed to verify payment');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('error', 'An error occurred while verifying payment');
-            });
-        }
-    );
+    // Show the COD verification modal
+    const codModal = new bootstrap.Modal(document.getElementById('codVerificationModal'));
+    codModal.show();
+    
+    // Set order ID in the modal
+    document.getElementById('cod_order_id').value = orderId;
+    document.getElementById('cod_receipt_number').value = 'COD-' + orderId;
+    document.getElementById('cod_amount_collected').value = document.querySelector(`tr[data-order-id="${orderId}"]`).dataset.amount;
 }
 
-// Generic Confirmation Modal
-function showGenericConfirmModal(title, bodyText, type = 'primary', onConfirm, onCancel) {
-    $('#genericConfirmModal').remove(); // Remove previous modal
-    const modalHtml = `
-    <div class="modal fade" id="genericConfirmModal" tabindex="-1" aria-labelledby="genericConfirmLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-${type}-subtle">
-            <h5 class="modal-title" id="genericConfirmLabel">
-                <i class="bi bi-${type === 'danger' ? 'exclamation-triangle-fill text-danger' : (type === 'warning' ? 'exclamation-triangle-fill text-warning' : 'question-circle-fill text-primary')} me-2"></i>
-                ${title}
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            ${bodyText}
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="genericConfirmCancelBtn">Cancel</button>
-            <button type="button" class="btn btn-${type}" id="genericConfirmOkBtn">Yes, Proceed</button>
-          </div>
-        </div>
-      </div>
-    </div>`
+
+// Function to submit COD verification
+function submitCODVerification() {
+    const orderId = document.getElementById('cod_order_id').value;
+    const receiptNumber = document.getElementById('cod_receipt_number').value;
+    const amountCollected = document.getElementById('cod_amount_collected').value;
+    const verificationNotes = document.getElementById('cod_verification_notes').value;
+    
+    // Validate inputs
+    if (!receiptNumber) {
+        showToast('warning', 'Please enter a receipt/reference number');
+        return;
+    }
+    
+    if (!amountCollected || amountCollected <= 0) {
+        showToast('warning', 'Please enter a valid amount collected');
+        return;
+    }
+    
+    // Prepare verification data
+    const verificationData = {
+        order_id: orderId,
+        verify: true,
+        payment_receipt_number: receiptNumber,
+        collected_amount: amountCollected,
+        verification_notes: verificationNotes || 'Cash on Delivery payment verified by admin'
+    };
+    
+    // Show loading toast
+    showToast('info', 'Verifying payment...');
+    
+    // Call the verification API
+    fetch('/hm/admin/api/orders/verify_cod_payment.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(verificationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hide the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('codVerificationModal'));
+            if (modal) modal.hide();
+            
+            // Show success message
+            showToast('success', 'Cash on Delivery payment verified successfully');
+            
+            // Store success message for after reload
+            localStorage.setItem('orderMessage', 'Cash on Delivery payment verified successfully');
+            localStorage.setItem('orderMessageType', 'success');
+            
+            // Reload page to reflect changes
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showToast('error', data.message || 'Failed to verify payment');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'An error occurred while verifying payment');
+    });
+}
+</script>
+</body>
+</html>

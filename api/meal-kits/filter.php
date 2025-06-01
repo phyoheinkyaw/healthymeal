@@ -106,36 +106,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($calories) {
         if (preg_match('/^under(\d+)$/', $calories, $matches)) {
             $maxCalories = (int)$matches[1];
-            $query .= " HAVING base_calories < $maxCalories";
+            $query .= ($dietary ? " AND" : " HAVING") . " base_calories < $maxCalories";
         }
         else if (preg_match('/^(\d+)-(\d+)$/', $calories, $matches)) {
             $minCalories = (int)$matches[1];
             $maxCalories = (int)$matches[2];
-            $query .= " HAVING base_calories BETWEEN $minCalories AND $maxCalories";
+            $query .= ($dietary ? " AND" : " HAVING") . " base_calories BETWEEN $minCalories AND $maxCalories";
         }
         else if (preg_match('/^over(\d+)$/', $calories, $matches)) {
             $minCalories = (int)$matches[1];
-            $query .= " HAVING base_calories > $minCalories";
+            $query .= ($dietary ? " AND" : " HAVING") . " base_calories > $minCalories";
         }
     }
     
     // Add price filter - match dynamic ranges
     if ($price) {
+        // Check if any HAVING clause has been added (dietary or calories)
+        $havingExists = $dietary || $calories;
+        
         if ($price == 'under10' || preg_match('/^under(\d+)$/', $price, $matches)) {
             // Support both legacy and new dynamic value formats
             $maxPrice = isset($matches[1]) ? (int)$matches[1] : 20000;
-            $query .= ($calories ? " AND" : " HAVING") . " (mk.preparation_price + ingredients_price) < $maxPrice";
+            $query .= ($havingExists ? " AND" : " HAVING") . " (mk.preparation_price + ingredients_price) < $maxPrice";
         }
         else if ($price == '10-20' || preg_match('/^(\d+)-(\d+)$/', $price, $matches)) {
             // Support both legacy and new dynamic value formats
             $minPrice = isset($matches[1]) ? (int)$matches[1] : 20000;
             $maxPrice = isset($matches[2]) ? (int)$matches[2] : 40000;
-            $query .= ($calories ? " AND" : " HAVING") . " (mk.preparation_price + ingredients_price) BETWEEN $minPrice AND $maxPrice";
+            $query .= ($havingExists ? " AND" : " HAVING") . " (mk.preparation_price + ingredients_price) BETWEEN $minPrice AND $maxPrice";
         }
         else if ($price == 'over20' || preg_match('/^over(\d+)$/', $price, $matches)) {
             // Support both legacy and new dynamic value formats
             $minPrice = isset($matches[1]) ? (int)$matches[1] : 40000;
-            $query .= ($calories ? " AND" : " HAVING") . " (mk.preparation_price + ingredients_price) > $minPrice";
+            $query .= ($havingExists ? " AND" : " HAVING") . " (mk.preparation_price + ingredients_price) > $minPrice";
         }
     }
     

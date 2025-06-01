@@ -655,7 +655,7 @@ function submitPaymentVerification() {
     
     // Direct API call
     $.ajax({
-        url: '/hm/api/orders/verify_payment.php',
+        url: '/hm/admin/api/orders/verify_payment.php',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(verificationData),
@@ -1197,7 +1197,7 @@ function refundPayment(orderId, orderAmount) {
             
             // Call verification API
             $.ajax({
-                url: '/hm/api/orders/verify_payment.php',
+                url: '/hm/admin/api/orders/verify_payment.php',
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(verificationData),

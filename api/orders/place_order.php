@@ -392,6 +392,25 @@ try {
         );
         $verification_stmt->execute();
     }
+    // For Cash on Delivery orders, create a payment verification record with pending status
+    else if ($payment_method === 'Cash on Delivery') {
+        $verification_stmt = $mysqli->prepare("
+            INSERT INTO payment_verifications (
+                order_id, payment_id, transaction_id, amount_verified, 
+                payment_status, verification_notes, payment_verified
+            ) VALUES (?, ?, ?, ?, 0, ?, 0)
+        ");
+        $cod_transaction_id = 'COD-' . $order_id . '-' . time();
+        $verification_notes = "Cash on Delivery payment pending. Will be verified upon delivery and payment collection.";
+        $amount_verified = 0; // No amount verified yet
+        
+        $verification_stmt->bind_param(
+            "iisds", 
+            $order_id, $payment_id, $cod_transaction_id, $amount_verified, 
+            $verification_notes
+        );
+        $verification_stmt->execute();
+    }
     
     // Add notification
     $notification_stmt = $mysqli->prepare("
